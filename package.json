@@ -1,0 +1,10 @@
+{
+  "name": "nasadiya-lightcone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static browser layer for NĀSADĪYA LIGHTCONE.",
+  "type": "module",
+  "scripts": {
+    "check:modules": "node --check src/app.js && node --check src/core/lightcone-scene.js && node --check src/core/survey-points.js && node --check src/ui/lightcone-interface.js"
+  }
+}

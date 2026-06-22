@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+
+# JavaScript
+node_modules/
+
+# Raw survey downloads — source archive files are not versioned here
+data/raw/*
+!data/raw/.gitkeep
+
+# Browser products: permit only the small 2MRS first-release files
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/2mrs/
+!data/processed/2mrs/2mrs_lightcone.json
+!data/processed/2mrs/manifest.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

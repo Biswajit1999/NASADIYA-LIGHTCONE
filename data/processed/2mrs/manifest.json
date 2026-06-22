@@ -1,0 +1,8 @@
+{
+  "dataset_id": "2mrs-table3",
+  "object_count": 43533,
+  "browser_catalog": "2mrs_lightcone.json",
+  "browser_catalog_sha256": "48e2223a4a1729653307d7f211a1741e01d2f2a85839e3c4f9ece45005c2422d",
+  "source_file_sha256": "40e9adac08ecc68495b546cc55b6d0a59b7d76c3c0676fc0a909c4b98fdc97b0",
+  "is_synthetic": false
+}

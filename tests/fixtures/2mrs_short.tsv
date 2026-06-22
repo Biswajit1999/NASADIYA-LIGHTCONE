@@ -1,0 +1,6 @@
+# VizieR synthetic test fixture. It only tests parser shape; it is not a survey dataset.
+ID	RAJ2000	DEJ2000	cz	e_cz	type	Kcmag
+	deg	deg	km/s	km/s		mag
+----------------	--------	--------	------	------	----	------
+00424433+4116074	10.6847	41.2687	-301	4	Sb	0.984
+12345678-1234567	188.7360	-12.5824	10200	35	E	10.200

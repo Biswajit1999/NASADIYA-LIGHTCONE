@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NĀSADĪYA tile-store manifest",
+  "type": "object",
+  "required": ["format", "dataset", "record_count", "tile_count", "record_columns", "overview", "tiles"],
+  "properties": {
+    "format": {"const": "nasadiya-tile-store/v1"},
+    "record_count": {"type": "integer", "minimum": 1},
+    "tile_count": {"type": "integer", "minimum": 1},
+    "record_columns": {"type": "array", "items": {"type": "string"}},
+    "overview": {
+      "type": "object",
+      "required": ["path", "count"],
+      "properties": {
+        "path": {"type": "string"},
+        "count": {"type": "integer", "minimum": 1}
+      }
+    },
+    "tiles": {"type": "array", "minItems": 1}
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "format": "nasadiya-survey-registry/v1",
+  "project": "NĀSADĪYA LIGHTCONE",
+  "maintainer": "Biswajit Jana",
+  "layers": [
+    {
+      "id": "2mrs-table3",
+      "label": "2MRS Table 3",
+      "survey": "2MASS Redshift Survey",
+      "measurement_kind": "spectroscopic",
+      "object_count": 44599,
+      "browser_status": "available-after-local-build",
+      "source_url": "https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/ApJS/199/26/table3",
+      "notes": "First local-Universe layer; catalogue rows are browser-rendered after the documented build step."
+    },
+    {
+      "id": "2mpz",
+      "label": "2MPZ",
+      "survey": "2MASS Photometric Redshift Catalog",
+      "measurement_kind": "photometric",
+      "object_count": 1000000,
+      "browser_status": "tile-store-pipeline-ready",
+      "source_url": "https://arxiv.org/abs/1311.5246",
+      "notes": "Photometric-redshift uncertainty is mandatory and must be rendered as a radial uncertainty, never as exact distance."
+    },
+    {
+      "id": "desi-dr1",
+      "label": "DESI DR1",
+      "survey": "Dark Energy Spectroscopic Instrument",
+      "measurement_kind": "spectroscopic",
+      "object_count": 18659804,
+      "browser_status": "tile-store-pipeline-ready",
+      "source_url": "https://data.desi.lbl.gov/doc/releases/dr1/",
+      "notes": "External tile hosting is required. Data are not committed to Git history; selection, footprint, and release metadata must remain visible."
+    }
+  ]
+}

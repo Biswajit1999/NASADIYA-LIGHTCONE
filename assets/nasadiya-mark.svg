@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Nasadiya Lightcone mark">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#59e3ff"/><stop offset="1" stop-color="#f4b56e"/></linearGradient></defs>
+  <rect width="96" height="96" rx="20" fill="#07101d"/>
+  <circle cx="48" cy="48" r="5" fill="#edfaff"/>
+  <path d="M48 48 10 21v54zM48 48l38-27v54z" fill="none" stroke="url(#g)" stroke-width="4" opacity=".95"/>
+  <path d="M18 30c16 8 28 12 30 18M78 30C62 38 50 42 48 48" fill="none" stroke="#82f4ff" stroke-width="2" opacity=".5"/>
+</svg>

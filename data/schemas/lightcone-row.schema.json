@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nasadiya Lightcone browser row",
+  "type": "object",
+  "required": [
+    "object_id", "ra_deg", "dec_deg", "redshift", "source_survey",
+    "source_table", "measurement_kind", "is_synthetic", "x_mpc", "y_mpc", "z_mpc"
+  ],
+  "properties": {
+    "object_id": {"type": "string"},
+    "ra_deg": {"type": "number", "minimum": 0, "exclusiveMaximum": 360},
+    "dec_deg": {"type": "number", "minimum": -90, "maximum": 90},
+    "redshift": {"type": "number", "minimum": -0.02, "maximum": 20},
+    "redshift_error": {"type": ["number", "null"], "minimum": 0},
+    "source_survey": {"type": "string"},
+    "source_table": {"type": "string"},
+    "measurement_kind": {"enum": ["spectroscopic", "photometric", "derived", "simulation"]},
+    "is_synthetic": {"const": false},
+    "x_mpc": {"type": "number"},
+    "y_mpc": {"type": "number"},
+    "z_mpc": {"type": "number"}
+  }
+}
