@@ -1,11 +1,58 @@
 export const LIGHTCONE_CONFIG = Object.freeze({
-  dataUrl: './data/processed/2mrs/2mrs_lightcone.json',
   displayScale: 3.0,
-  defaultMaxRedshift: 0.025,
-  defaultPointBudget: 44500,
   defaultSliceThicknessMpc: 24,
   defaultSliceOffsetMpc: 0,
-  dataLabel: '2MRS Table 3 · real spectroscopic catalogue',
+});
+
+export const SURVEY_LAYERS = Object.freeze({
+  '2mrs': {
+    id: '2mrs',
+    label: '2MRS · 43,533 spectroscopic rows',
+    eyebrow: 'LOCAL UNIVERSE / 2MRS',
+    dataUrl: './data/processed/2mrs/2mrs_lightcone.json',
+    dataKind: 'catalog',
+    defaultMaxRedshift: 0.025,
+    defaultPointBudget: 44_500,
+    defaultSpatialMode: 'slice',
+    supportsSlice: true,
+    localBuild: 'Included in the public baseline.',
+  },
+  '2mpz': {
+    id: '2mpz',
+    label: '2MPZ · ~1 million photo-z galaxies',
+    eyebrow: 'WIDE UNIVERSE / 2MPZ',
+    dataUrl: './data/processed/2mpz/index.json',
+    dataKind: 'tile-store',
+    defaultMaxRedshift: 0.24,
+    defaultPointBudget: 100_000,
+    defaultSpatialMode: 'lightcone',
+    supportsSlice: false,
+    localBuild: 'scripts\\download_2mpz.py then scripts\\build_2mpz_tile_store.py',
+  },
+  'wise-sc': {
+    id: 'wise-sc',
+    label: 'WISE × SuperCOSMOS · ~20 million photo-z galaxies',
+    eyebrow: 'WIDE UNIVERSE / WISE × SUPERCOSMOS',
+    dataUrl: './data/processed/wise-sc/index.json',
+    dataKind: 'tile-store',
+    defaultMaxRedshift: 0.45,
+    defaultPointBudget: 125_000,
+    defaultSpatialMode: 'lightcone',
+    supportsSlice: false,
+    localBuild: 'scripts\\download_wise_sc.py then scripts\\build_wise_sc_tile_store.py',
+  },
+  'desi-dr1': {
+    id: 'desi-dr1',
+    label: 'DESI DR1 LSS · spectroscopic galaxies and quasars',
+    eyebrow: 'DEEP UNIVERSE / DESI DR1',
+    dataUrl: './data/processed/desi-dr1/index.json',
+    dataKind: 'tile-store',
+    defaultMaxRedshift: 2.5,
+    defaultPointBudget: 125_000,
+    defaultSpatialMode: 'lightcone',
+    supportsSlice: false,
+    localBuild: 'scripts\\download_desi_dr1_lss.py --yes then scripts\\build_desi_dr1_tile_store.py',
+  },
 });
 
 export const PALETTE = Object.freeze({

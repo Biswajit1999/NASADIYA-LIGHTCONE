@@ -214,3 +214,22 @@ kbd { color: var(--dim); float: right; font: 700 9px var(--mono); }
   .object-inspector { right: 18px; bottom: 107px; width: calc(100vw - 36px); }
   .help-pairs { grid-template-columns: 1fr; }
 }
+
+/* Multi-survey layer controls */
+.survey-layer-section select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(174, 204, 225, .16);
+  border-radius: 7px;
+  padding: 0 10px;
+  color: #eaf5fa;
+  background: rgba(0, 0, 0, .24);
+  outline: none;
+  font: 600 10px var(--mono);
+}
+.survey-layer-section select:focus {
+  border-color: rgba(114,231,255,.72);
+  box-shadow: 0 0 0 3px rgba(114,231,255,.08);
+}
+.survey-layer-section select option { color: #eaf5fa; background: #07111f; }
+.survey-layer-section output { text-transform: uppercase; }

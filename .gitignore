@@ -13,12 +13,21 @@ node_modules/
 data/raw/*
 !data/raw/.gitkeep
 
-# Browser products: permit only the small 2MRS first-release files
+# Browser products: permit only the small public 2MRS baseline files.
+# Multi-million-row tile stores and Gaia local products remain local/external assets.
 data/processed/*
 !data/processed/.gitkeep
 !data/processed/2mrs/
 !data/processed/2mrs/2mrs_lightcone.json
 !data/processed/2mrs/manifest.json
+!data/processed/2mpz/
+!data/processed/2mpz/.gitkeep
+!data/processed/wise-sc/
+!data/processed/wise-sc/.gitkeep
+!data/processed/desi-dr1/
+!data/processed/desi-dr1/.gitkeep
+!data/processed/gaia-dr3/
+!data/processed/gaia-dr3/.gitkeep
 
 # OS/editor
 .DS_Store

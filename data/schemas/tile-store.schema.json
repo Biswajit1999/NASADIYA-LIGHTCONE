@@ -1,13 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Biswajit1999/NASADIYA-LIGHTCONE/blob/main/data/schemas/tile-store.schema.json",
   "title": "NĀSADĪYA tile-store manifest",
   "type": "object",
-  "required": ["format", "dataset", "record_count", "tile_count", "record_columns", "overview", "tiles"],
+  "required": ["format", "dataset", "record_count", "record_columns", "overview", "tiles"],
   "properties": {
     "format": {"const": "nasadiya-tile-store/v1"},
     "record_count": {"type": "integer", "minimum": 1},
     "tile_count": {"type": "integer", "minimum": 1},
-    "record_columns": {"type": "array", "items": {"type": "string"}},
+    "record_columns": {
+      "type": "array",
+      "minItems": 11,
+      "items": {"type": "string"},
+      "allOf": [
+        {"contains": {"const": "object_id"}},
+        {"contains": {"const": "redshift"}},
+        {"contains": {"const": "redshift_error"}},
+        {"contains": {"const": "lookback_time_gyr"}}
+      ]
+    },
+    "dataset": {
+      "type": "object",
+      "required": ["dataset_id", "survey", "measurement_kind", "is_synthetic"],
+      "properties": {
+        "measurement_kind": {"enum": ["spectroscopic", "photometric"]},
+        "is_synthetic": {"const": false},
+        "radial_uncertainty_required": {"type": "boolean"}
+      }
+    },
     "overview": {
       "type": "object",
       "required": ["path", "count"],

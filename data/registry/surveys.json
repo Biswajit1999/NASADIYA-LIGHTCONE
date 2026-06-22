@@ -1,37 +1,56 @@
 {
-  "format": "nasadiya-survey-registry/v1",
+  "format": "nasadiya-survey-registry/v3",
   "project": "NĀSADĪYA LIGHTCONE",
   "maintainer": "Biswajit Jana",
+  "policy": "Real source rows only. Raw catalogues and multi-million-row tile stores are excluded from Git history.",
   "layers": [
     {
       "id": "2mrs-table3",
       "label": "2MRS Table 3",
       "survey": "2MASS Redshift Survey",
       "measurement_kind": "spectroscopic",
-      "object_count": 44599,
-      "browser_status": "available-after-local-build",
+      "object_count": 43533,
+      "browser_status": "public-baseline",
       "source_url": "https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/ApJS/199/26/table3",
-      "notes": "First local-Universe layer; catalogue rows are browser-rendered after the documented build step."
+      "notes": "Local spectroscopic anchor. Browser rows retain source identifiers, recession velocities, velocity errors, and provenance."
     },
     {
       "id": "2mpz",
       "label": "2MPZ",
-      "survey": "2MASS Photometric Redshift Catalog",
+      "survey": "2MASS Photometric Redshift Catalogue",
       "measurement_kind": "photometric",
-      "object_count": 1000000,
-      "browser_status": "tile-store-pipeline-ready",
+      "expected_object_count": 1000000,
+      "browser_status": "local-tile-store-supported",
       "source_url": "https://arxiv.org/abs/1311.5246",
-      "notes": "Photometric-redshift uncertainty is mandatory and must be rendered as a radial uncertainty, never as exact distance."
+      "notes": "Discovery downloader validates a published per-row photo-z error field before building a local lightcone tile store."
     },
     {
-      "id": "desi-dr1",
-      "label": "DESI DR1",
-      "survey": "Dark Energy Spectroscopic Instrument",
+      "id": "wise-sc",
+      "label": "WISE × SuperCOSMOS",
+      "survey": "WISE × SuperCOSMOS Photometric Redshift Catalogue",
+      "measurement_kind": "photometric",
+      "expected_object_count": 20000000,
+      "browser_status": "local-chunked-tile-store-supported",
+      "source_url": "https://arxiv.org/abs/1607.01182",
+      "notes": "Chunked builder prevents the full wide photo-z catalogue from being loaded into one browser JSON document."
+    },
+    {
+      "id": "desi-dr1-lss",
+      "label": "DESI DR1 LSS",
+      "survey": "Dark Energy Spectroscopic Instrument Data Release 1",
       "measurement_kind": "spectroscopic",
-      "object_count": 18659804,
-      "browser_status": "tile-store-pipeline-ready",
+      "browser_status": "local-chunked-tile-store-supported",
       "source_url": "https://data.desi.lbl.gov/doc/releases/dr1/",
-      "notes": "External tile hosting is required. Data are not committed to Git history; selection, footprint, and release metadata must remain visible."
+      "notes": "Uses official BGS, LRG, ELG and QSO clustering products selected explicitly by the user; source selection remains visible."
+    },
+    {
+      "id": "gaia-dr3-local-sample",
+      "label": "Gaia DR3 local stellar context",
+      "survey": "Gaia DR3",
+      "measurement_kind": "astrometric",
+      "browser_status": "separate-galactic-product-supported",
+      "source_url": "https://gea.esac.esa.int/archive/",
+      "notes": "Bounded public-TAP stellar sample only. Gaia is not merged into extragalactic galaxy statistics."
     }
   ]
 }

@@ -7,6 +7,11 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
+function magnitudeOf(object) {
+  const candidate = Number(object.magnitude ?? object.ks_mag);
+  return Number.isFinite(candidate) ? candidate : null;
+}
+
 function timeColour(object, maxRedshift) {
   const fraction = clamp01(Number(object.redshift) / Math.max(maxRedshift, 0.001));
   return hslToRgb(0.59 - fraction * 0.45, 0.8, 0.62);
@@ -14,8 +19,8 @@ function timeColour(object, maxRedshift) {
 
 function observedColour(object, maxRedshift) {
   const z = clamp01(Number(object.redshift) / Math.max(maxRedshift, 0.001));
-  const magnitude = Number(object.ks_mag);
-  const brightness = Number.isFinite(magnitude) ? clamp01((12.5 - magnitude) / 8.0) : 0.2;
+  const magnitude = magnitudeOf(object);
+  const brightness = magnitude === null ? 0.2 : clamp01((14.0 - magnitude) / 10.0);
   return [
     THREE.MathUtils.lerp(PALETTE.cyan[0], 0.94, brightness * 0.22 + z * 0.08),
     THREE.MathUtils.lerp(PALETTE.cyan[1], 0.91, brightness * 0.12),
@@ -31,8 +36,9 @@ function sliceEdgeAlpha(distanceFromPlane, halfThickness) {
 }
 
 export class SurveyPoints {
-  constructor(objects) {
+  constructor(objects, meta = {}) {
     this.objects = objects;
+    this.meta = meta;
     this.visibleIndices = new Set();
     this.geometry = new THREE.BufferGeometry();
     const count = objects.length;
@@ -45,6 +51,7 @@ export class SurveyPoints {
     const uncertainties = new Float32Array(count);
     const twinkles = new Float32Array(count);
 
+    this.maxDatasetDistance = 1;
     objects.forEach((object, index) => {
       const offset = index * 3;
       this.rawPositions[offset] = Number(object.x_mpc);
@@ -55,10 +62,13 @@ export class SurveyPoints {
       displayPositions[offset + 2] = this.rawPositions[offset + 2] * LIGHTCONE_CONFIG.displayScale;
       colours.set(PALETTE.cyan, offset);
       alphas[index] = 0;
-      const magnitude = Number(object.ks_mag);
-      sizes[index] = Number.isFinite(magnitude) ? THREE.MathUtils.clamp(4.7 - magnitude * 0.18, 1.9, 4.4) : 2.25;
+      const magnitude = magnitudeOf(object);
+      sizes[index] = magnitude === null
+        ? 1.75
+        : THREE.MathUtils.clamp(4.8 - magnitude * 0.18, 1.45, 4.4);
       uncertainties[index] = Math.max(0, Number(object.redshift_error) || 0);
       twinkles[index] = ((index * 73) % 97) / 97;
+      this.maxDatasetDistance = Math.max(this.maxDatasetDistance, Number(object.comoving_distance_mpc) || 0);
     });
 
     this.geometry.setAttribute('position', new THREE.BufferAttribute(displayPositions, 3));
@@ -81,7 +91,7 @@ export class SurveyPoints {
       },
     });
     this.points = new THREE.Points(this.geometry, this.material);
-    this.points.name = 'observed-2mrs-points';
+    this.points.name = `observed-${meta.dataset_id || 'survey'}-points`;
     this.points.frustumCulled = false;
   }
 
@@ -135,13 +145,13 @@ export class SurveyPoints {
       const offset = index * 3;
       const zCoordinate = this.rawPositions[offset + 2];
       const slabDistance = Math.abs(zCoordinate - sliceOffset);
-      const magnitude = Number(object.ks_mag);
-      const brightness = Number.isFinite(magnitude) ? clamp01((12.6 - magnitude) / 8.2) : 0.18;
+      const magnitude = magnitudeOf(object);
+      const brightness = magnitude === null ? 0.18 : clamp01((14.2 - magnitude) / 10.2);
       const radialDistance = Number(object.comoving_distance_mpc) || 0;
-      const radialWeight = clamp01(radialDistance / 350);
+      const radialWeight = clamp01(radialDistance / this.maxDatasetDistance);
       const edgeFade = state.spatialMode === 'slice' ? sliceEdgeAlpha(slabDistance, halfThickness) : 1;
-      const baseAlpha = 0.15 + brightness * 0.53 + (1 - radialWeight) * 0.12;
-      alpha.setX(index, visible ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.07, 0.9) : 0);
+      const baseAlpha = 0.10 + brightness * 0.50 + (1 - radialWeight) * 0.11;
+      alpha.setX(index, visible ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.05, 0.86) : 0);
 
       const rgb = state.viewMode === 'time'
         ? timeColour(object, maxRedshift)
@@ -150,9 +160,9 @@ export class SurveyPoints {
           : observedColour(object, maxRedshift);
       colour.setXYZ(index, rgb[0], rgb[1], rgb[2]);
 
-      const baseSize = Number.isFinite(magnitude)
-        ? THREE.MathUtils.clamp(4.9 - magnitude * 0.19, 1.85, 4.7)
-        : 2.25;
+      const baseSize = magnitude === null
+        ? 1.85
+        : THREE.MathUtils.clamp(4.9 - magnitude * 0.19, 1.45, 4.7);
       size.setX(index, state.spatialMode === 'slice' ? baseSize * 1.25 : baseSize);
     });
 
@@ -162,14 +172,17 @@ export class SurveyPoints {
     size.needsUpdate = true;
 
     this.material.uniforms.uMode.value = state.viewMode === 'uncertainty' ? 1 : state.viewMode === 'time' ? 2 : 0;
+    const denseScale = this.objects.length > 75_000 ? 0.82 : 1.0;
     this.material.uniforms.uPointScale.value = state.spatialMode === 'slice'
-      ? (state.pointBudget < 12000 ? 1.28 : 1.1)
-      : (state.pointBudget < 12000 ? 1.14 : 1.0);
+      ? denseScale * (state.pointBudget < 12_000 ? 1.28 : 1.1)
+      : denseScale * (state.pointBudget < 12_000 ? 1.14 : 1.0);
 
     const candidateObjects = candidates.map((index) => this.objects[index]);
     return {
       visibleCount: visibleSet.size,
       candidateCount: candidates.length,
+      underlyingCount: Number(this.meta.object_count || this.objects.length),
+      overviewCount: Number(this.meta.overview_count || this.objects.length),
       maxDistance: Math.max(0, ...candidateObjects.map((item) => Number(item.comoving_distance_mpc) || 0)),
       maxLookback: Math.max(0, ...candidateObjects.map((item) => Number(item.lookback_time_gyr) || 0)),
       sliceThickness: state.spatialMode === 'slice' ? halfThickness * 2 : null,
@@ -181,15 +194,16 @@ export class SurveyPoints {
     this.material.uniforms.uTime.value = seconds;
   }
 
+  dispose() {
+    this.geometry.dispose();
+    this.material.dispose();
+  }
+
   getObject(index) { return this.objects[index] ?? null; }
 
   getDisplayPosition(index) {
     const position = this.geometry.getAttribute('position');
     return new THREE.Vector3(position.getX(index), position.getY(index), position.getZ(index));
-  }
-
-  findObjectIndexById(objectId) {
-    return this.objects.findIndex((object) => object.object_id === objectId);
   }
 
   selectFromRaycaster(raycaster) {

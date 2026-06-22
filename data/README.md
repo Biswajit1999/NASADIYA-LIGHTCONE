@@ -1,7 +1,10 @@
-# Data directories
+# Data directory
 
-- `raw/` is for source downloads and is excluded from Git.
-- `processed/2mrs/2mrs_lightcone.json` is the browser product generated from 2MRS Table 3.
-- `schemas/` documents the source-to-browser row contract.
+- `raw/` holds untouched public-survey downloads. It is ignored by Git.
+- `processed/2mrs/` holds the compact public baseline derived from published 2MRS rows.
+- `processed/2mpz/`, `processed/wise-sc/`, and `processed/desi-dr1/` are local chunked tile stores after a successful build. Only `.gitkeep` files are committed.
+- `processed/gaia-dr3/` is a separate bounded local-star product. It is not an extragalactic layer.
+- `registry/` states layer intent and build status without claiming that an unbuilt layer is live.
+- `schemas/` specifies the serialisable browser and tile-store contracts.
 
-Run `python scripts/download_2mrs.py` followed by `python scripts/build_2mrs_lightcone.py` to create the first real layer.
+No directory may contain synthetic galaxies presented as survey rows.

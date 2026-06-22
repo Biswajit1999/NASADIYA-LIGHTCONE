@@ -1,24 +1,42 @@
-# Sources and acknowledgement record
+# Data sources and citation record
 
-## 2MRS v0.1
+## 2MRS Table 3
 
-- **Catalogue:** 2MASS Redshift Survey (2MRS), Table 3.
-- **VizieR catalogue identifier:** `J/ApJS/199/26/table3`.
-- **Catalogue access:** https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/ApJS/199/26/table3
-- **Source publication:** Huchra, J. P. et al. 2012, *The 2MASS Redshift Survey—Description and Data Release*, ApJS, 199, 26, doi:10.1088/0067-0049/199/2/26.
-- **Catalogue-access acknowledgement:** “This research has made use of the VizieR catalogue access tool, CDS, Strasbourg, France (DOI: 10.26093/cds/vizier).”
+- **Survey:** 2MASS Redshift Survey (2MRS)
+- **Published source table:** VizieR `J/ApJS/199/26/table3`
+- **Measurement:** spectroscopic recession velocity (`cz`) and uncertainty where supplied
+- **Browser treatment:** `z ≈ cz/c`; Planck18 comoving distance used for spatial navigation only
+- **Citation key:** `Huchra2012_2MRS`
 
-The `source_manifest.json` written by the download script records the query endpoint, retrieval time, table identifier, and file hash. Use the original catalogue publication and VizieR acknowledgement in any public page or presentation that uses this data layer.
+## 2MPZ
 
-## Planned layers
+- **Survey:** 2MASS Photometric Redshift Catalogue (2MPZ)
+- **Publication record:** Bilicki et al. (2014)
+- **Measurement:** photometric redshift with published source-table uncertainty required by the ingestion client
+- **Browser treatment:** observer lightcone only; uncertainty is retained and not presented as exact radial position
+- **Citation key:** `Bilicki2014_2MPZ`
 
-- 2MPZ: whole-sky photometric-redshift layer; radial uncertainty is mandatory.
-- DESI DR1: spectroscopic galaxies and quasars; include release, target class, redshift quality, completeness/footprint, and selection information.
-- Gaia: treated as a separate Milky Way stellar layer, not mixed with extragalactic catalogue points.
+## WISE × SuperCOSMOS
 
+- **Survey:** WISE × SuperCOSMOS Photometric Redshift Catalogue
+- **Publication record:** Bilicki et al. (2016)
+- **Measurement:** photometric redshift with published source-table uncertainty required by the ingestion client
+- **Browser treatment:** observer lightcone only; footprint/masking and uncertainty remain visible measurement properties
+- **Citation key:** `Bilicki2016_WISESC`
 
-## Multi-survey implementation references
+## DESI DR1 LSS
 
-- **2MPZ:** Bilicki et al. (2014), *2MASS Photometric Redshift catalog: a comprehensive three-dimensional census of the whole sky*, ApJS 210, 9; source paper: https://arxiv.org/abs/1311.5246. Its redshift estimates are photometric and must retain their radial uncertainty in every visual layer.
-- **DESI DR1:** official release documentation: https://data.desi.lbl.gov/doc/releases/dr1/. DR1 is CC BY 4.0 and requires the official acknowledgement/citation text. The public DR1 page provides the data root and documented LSS catalogue paths.
-- **Gaia:** any future Gaia integration is a Galactic context layer and must cite the relevant ESA Gaia data release separately.
+- **Survey:** Dark Energy Spectroscopic Instrument Data Release 1
+- **Local source products:** explicit BGS, LRG, ELG and/or QSO official LSS clustering files selected during acquisition
+- **Measurement:** spectroscopic redshift
+- **Browser treatment:** observer lightcone; manifest lists source filename, tracer and raw checksum
+- **Citation key:** `DESI2026_DR1`
+
+## Gaia DR3 local stellar context
+
+- **Survey:** Gaia DR3
+- **Measurement:** astrometry/parallax; a bounded public-TAP sample only
+- **Browser treatment:** separate Galactic context product; never combined with extragalactic galaxy counts
+- **Citation key:** `GaiaCollaboration2023_DR3`
+
+Every data product retains its catalogue-specific acknowledgement and reuse terms. NĀSADĪYA code is MIT licensed; survey data are not relicensed by this repository.

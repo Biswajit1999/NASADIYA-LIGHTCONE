@@ -4,6 +4,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const SLICE_CAMERA = new THREE.Vector3(0, 0, 940);
 const LIGHTCONE_CAMERA = new THREE.Vector3(1180, 740, 1400);
 
+function scaledFrame(distanceMpc, mode) {
+  const scaledRadius = Math.max(320, Number(distanceMpc || 0) * 3.0);
+  if (mode === 'lightcone') {
+    const distance = Math.max(1400, scaledRadius * 1.65);
+    return { position: new THREE.Vector3(distance * 0.82, distance * 0.52, distance), target: new THREE.Vector3() };
+  }
+  return { position: new THREE.Vector3(0, 0, Math.max(940, scaledRadius * 0.70)), target: new THREE.Vector3() };
+}
+
 function createObserverMarker() {
   const group = new THREE.Group();
   const core = new THREE.Mesh(
@@ -62,7 +71,7 @@ export class LightconeScene {
     this.scene.background = new THREE.Color(0x020611);
     this.scene.fog = new THREE.FogExp2(0x020611, 0.00034);
 
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 14000);
+    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100000);
     this.camera.position.copy(SLICE_CAMERA);
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -76,7 +85,7 @@ export class LightconeScene {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.065;
     this.controls.minDistance = 18;
-    this.controls.maxDistance = 7600;
+    this.controls.maxDistance = 70000;
     this.controls.target.set(0, 0, 0);
 
     this.world = new THREE.Group();
@@ -90,6 +99,7 @@ export class LightconeScene {
     this.world.add(this.selectionMarker);
 
     this.mode = 'slice';
+    this.datasetMaxDistanceMpc = 350;
     this.focusAnimation = null;
     this.timeStart = performance.now();
 
@@ -103,10 +113,15 @@ export class LightconeScene {
   }
 
   defaultFrame(mode = this.mode) {
-    if (mode === 'lightcone') {
-      return { position: LIGHTCONE_CAMERA.clone(), target: new THREE.Vector3() };
+    if (this.datasetMaxDistanceMpc <= 380) {
+      if (mode === 'lightcone') return { position: LIGHTCONE_CAMERA.clone(), target: new THREE.Vector3() };
+      return { position: SLICE_CAMERA.clone(), target: new THREE.Vector3() };
     }
-    return { position: SLICE_CAMERA.clone(), target: new THREE.Vector3() };
+    return scaledFrame(this.datasetMaxDistanceMpc, mode);
+  }
+
+  setDatasetExtent(maxDistanceMpc) {
+    this.datasetMaxDistanceMpc = Math.max(1, Number(maxDistanceMpc) || 1);
   }
 
   animateCamera(position, target, duration = 720) {

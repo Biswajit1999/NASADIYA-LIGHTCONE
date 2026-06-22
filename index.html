@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#020611" />
-    <meta name="description" content="NĀSADĪYA LIGHTCONE — a survey-native 3D view of measured galaxies in the local Universe." />
-    <title>NĀSADĪYA LIGHTCONE — 2MRS Local Universe</title>
+    <meta name="description" content="NĀSADĪYA LIGHTCONE — a survey-native 3D view of measured galaxies from local to wide-area catalogues." />
+    <title>NĀSADĪYA LIGHTCONE — Survey-native Universe</title>
     <link rel="icon" href="assets/nasadiya-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles/main.css?v=050" />
+    <link rel="stylesheet" href="styles/main.css?v=060" />
     <script type="importmap">
       {
         "imports": {
@@ -19,7 +19,7 @@
   </head>
   <body>
     <main class="stage">
-      <canvas id="lightcone-canvas" aria-label="Interactive 3D map of real 2MRS galaxies"></canvas>
+      <canvas id="lightcone-canvas" aria-label="Interactive 3D map of observed survey galaxies"></canvas>
       <div class="atmosphere atmosphere--north" aria-hidden="true"></div>
       <div class="atmosphere atmosphere--south" aria-hidden="true"></div>
       <div class="film-grain" aria-hidden="true"></div>
@@ -36,12 +36,12 @@
           <i id="dataset-dot" class="status-dot status-dot--pending"></i>
           <span id="dataset-status">2MRS layer loading</span>
           <span class="chip-separator"></span>
-          <span>measured galaxies</span>
+          <span id="survey-mode-status">measured galaxies</span>
         </div>
       </header>
 
       <section class="editorial-intro" aria-live="polite">
-        <p class="eyebrow">LOCAL UNIVERSE / 2MRS</p>
+        <p id="scene-eyebrow" class="eyebrow">LOCAL UNIVERSE / 2MRS</p>
         <h1 id="scene-title">A slice through the observed galaxy field.</h1>
         <p id="scene-description">Real survey rows, arranged in an observer-centred Cartesian slab. Drag to orbit, scroll to move closer, and select a point for its source record.</p>
         <div class="intro-rule"><span></span></div>
@@ -75,10 +75,21 @@
           <button id="close-controls" class="dismiss-button" type="button" aria-label="Close data lens">×</button>
         </div>
 
+        <section class="drawer-section survey-layer-section">
+          <label for="survey-layer"><span>Survey layer</span><output id="survey-layer-status">local</output></label>
+          <select id="survey-layer" disabled>
+            <option value="2mrs">2MRS · 43,533 local spectroscopic rows</option>
+            <option value="2mpz">2MPZ · ~1 million photo-z galaxies</option>
+            <option value="wise-sc">WISE × SuperCOSMOS · ~20 million photo-z galaxies</option>
+            <option value="desi-dr1">DESI DR1 LSS · deep spectroscopic survey layer</option>
+          </select>
+          <p id="survey-layer-note">2MRS is installed. Each additional survey appears only after its real source download and local tile-store build.</p>
+        </section>
+
         <section class="drawer-section">
           <label for="max-redshift"><span>Redshift ceiling</span><output id="max-redshift-output">0.0250</output></label>
           <input id="max-redshift" type="range" min="0.003" max="0.15" step="0.0025" value="0.025" disabled />
-          <p>2MRS provides recession velocity. The display uses z ≈ cz / c only as a spatial navigation convention.</p>
+          <p id="redshift-note">2MRS provides recession velocity. The display uses z ≈ cz / c only as a spatial navigation convention.</p>
         </section>
 
         <section id="slice-controls" class="drawer-section">
@@ -86,13 +97,13 @@
           <input id="slice-thickness" type="range" min="6" max="90" step="2" value="24" disabled />
           <label for="slice-offset"><span>Slice offset (Cartesian Z)</span><output id="slice-offset-output">0 Mpc</output></label>
           <input id="slice-offset" type="range" min="-120" max="120" step="2" value="0" disabled />
-          <p>The local slice retains real rows within a finite Cartesian Z-slab. It is a viewing selection, not a reconstructed filament model.</p>
+          <p>The local slice retains real rows inside a finite Cartesian Z-slab. It is a viewing selection, not a reconstructed filament model.</p>
         </section>
 
         <section class="drawer-section">
           <label for="point-budget"><span>Rendered rows</span><output id="point-budget-output">44,500</output></label>
-          <input id="point-budget" type="range" min="1000" max="50000" step="500" value="44500" disabled />
-          <p>This is a browser display budget. It does not alter the underlying catalogue or source provenance.</p>
+          <input id="point-budget" type="range" min="1000" max="125000" step="500" value="44500" disabled />
+          <p id="budget-note">This is a browser display budget. It does not alter the underlying catalogue or source provenance.</p>
         </section>
 
         <section class="drawer-section">
@@ -100,13 +111,13 @@
           <div class="mode-switch" role="group" aria-label="Colour representation">
             <button class="mode-button is-active" data-view-mode="catalog" type="button" disabled>Observed</button>
             <button class="mode-button" data-view-mode="time" type="button" disabled>Look-back</button>
-            <button class="mode-button" data-view-mode="uncertainty" type="button" disabled>cz error</button>
+            <button class="mode-button" data-view-mode="uncertainty" type="button" disabled>Uncertainty</button>
           </div>
         </section>
 
         <section class="drawer-section drawer-section--last">
-          <label class="switch-line"><span><i></i>Measured galaxy rows</span><input id="toggle-galaxies" type="checkbox" checked disabled /><b></b></label>
-          <p class="footprint-note">2MRS is magnitude-limited and does not observe the whole sky uniformly. Its Zone of Avoidance is a survey selection effect, not physical empty space.</p>
+          <label class="switch-line"><span><i></i>Measured catalogue rows</span><input id="toggle-galaxies" type="checkbox" checked disabled /><b></b></label>
+          <p id="footprint-note" class="footprint-note">2MRS is magnitude-limited and does not observe the whole sky uniformly. Its Zone of Avoidance is a survey selection effect, not physical empty space.</p>
         </section>
 
         <div class="drawer-actions">
@@ -131,23 +142,23 @@
           <span><b id="depth-readout">—</b><small>radial depth</small></span>
           <span><b id="lookback-readout">—</b><small>look-back window</small></span>
         </div>
-        <a href="docs/sources.md" class="source-link">2MRS source record ↗</a>
+        <a id="source-link" href="docs/sources.md" class="source-link">2MRS source record ↗</a>
       </section>
 
-      <p class="corner-note">2MRS Table 3 · Huchra et al. 2012 · VizieR J/ApJS/199/26/table3</p>
+      <p id="corner-note" class="corner-note">2MRS Table 3 · Huchra et al. 2012 · VizieR J/ApJS/199/26/table3</p>
 
       <div id="help-modal" class="modal-backdrop" hidden>
         <section class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
           <button id="close-help" class="dismiss-button" type="button" aria-label="Close navigation note">×</button>
           <p class="eyebrow">READING THE VIEW</p>
-          <h2 id="help-title">Measured galaxies, not a simulated cosmic web.</h2>
+          <h2 id="help-title">Measured rows, not a simulated cosmic web.</h2>
           <div class="help-pairs">
             <div><strong>Drag</strong><span>Orbit around the current slice or radial volume.</span></div>
             <div><strong>Scroll</strong><span>Move closer to or farther from the active data view.</span></div>
-            <div><strong>Click</strong><span>Open the selected 2MRS row and its source metadata.</span></div>
-            <div><strong>R</strong><span>Return to the intended camera frame for the active mode.</span></div>
+            <div><strong>Click</strong><span>Open one rendered catalogue row and its source metadata.</span></div>
+            <div><strong>R</strong><span>Return to the intended camera frame for the active layer.</span></div>
           </div>
-          <p class="help-note">The local slice shows only observed 2MRS catalogue rows inside a finite Cartesian slab. It preserves survey geometry and does not add interpolated filaments, inferred voids, or artificial galaxies.</p>
+          <p class="help-note">Spectroscopic layers use measured redshifts. Photometric layers retain published per-row radial uncertainty and are therefore available only as observer lightcones, not exact Cartesian slices. Gaia is kept separate as a local Milky Way stellar context layer.</p>
         </section>
       </div>
 
@@ -164,6 +175,6 @@
 
       <noscript><div class="noscript">NĀSADĪYA LIGHTCONE requires JavaScript and WebGL.</div></noscript>
     </main>
-    <script type="module" src="src/app.js?v=050"></script>
+    <script type="module" src="src/app.js?v=070"></script>
   </body>
 </html>
