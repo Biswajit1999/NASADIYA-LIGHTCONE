@@ -12,6 +12,16 @@ NĀSADĪYA LIGHTCONE is not a synthetic cosmic-web animation. Each rendered poin
 [![Code: MIT](https://img.shields.io/badge/code-MIT-8be9fd.svg)](LICENSE)
 [![Data policy](https://img.shields.io/badge/data-provenance--first-efb276.svg)](DATA_POLICY.md)
 
+## Explorer 1.0
+
+The public interface now separates four visitor tasks: **Explorer** for the live WebGL field, **Data** for catalogue status, **Methods** for placement and uncertainty, and **Community** for contribution. This crawlable document layer complements the browser canvas without changing the survey pipeline.
+
+- [About the project](about.html)
+- [Public data ledger](data.html)
+- [Methods note](methods.html)
+- [Community guide](community.html)
+- [Explorer v1 design note](docs/frontend-v1.md)
+
 ## What is live now
 
 | Layer | Measurement | Current browser status |
