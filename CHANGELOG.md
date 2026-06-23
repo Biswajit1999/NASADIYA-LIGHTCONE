@@ -1,4 +1,13 @@
 
+## 1.0.0 — Research Explorer
+
+- Rebuilt the explorer shell around a map-first, product-style information hierarchy.
+- Added a direct local-to-deep survey navigator and compact spatial-lens dock.
+- Added public About, Data, Methods and Community pages for crawlable context and visitor orientation.
+- Added canonical metadata, JSON-LD, robots.txt, sitemap.xml and a web manifest.
+- Preserved the existing Three.js renderer, survey pipeline and no-synthetic-data rule.
+
+
 ## 0.9.1 — banner and sharing metadata
 
 - Added the project survey-visualisation banner to `assets/`.
