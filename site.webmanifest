@@ -1,0 +1,10 @@
+{
+  "name": "NĀSADĪYA LIGHTCONE",
+  "short_name": "NĀSADĪYA",
+  "description": "Survey-native 3D views of measured galaxy catalogues.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#030813",
+  "theme_color": "#030813",
+  "icons": [{"src": "assets/nasadiya-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}
