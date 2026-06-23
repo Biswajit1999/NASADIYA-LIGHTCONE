@@ -27,14 +27,9 @@ let points = null;
 let pointerStart = null;
 let loadSequence = 0;
 
-function maxField(objects, field) {
-  return objects.reduce((maximum, object) => Math.max(maximum, Number(object[field]) || 0), 0);
-}
+function maxField(objects, field) { return objects.reduce((maximum, object) => Math.max(maximum, Number(object[field]) || 0), 0); }
 function currentLayer() { return SURVEY_LAYERS[state.layerId]; }
-function applyState() {
-  if (!points) return;
-  ui.updateTelemetry(points.applyState(state), state);
-}
+function applyState() { if (!points) return; ui.updateTelemetry(points.applyState(state), state); }
 function selectAtPointer(event) {
   if (!points) return;
   const bounds = canvas.getBoundingClientRect();
@@ -42,24 +37,12 @@ function selectAtPointer(event) {
   pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
   raycaster.setFromCamera(pointer, scene.camera);
   const match = points.selectFromRaycaster(raycaster);
-  if (match) {
-    scene.setSelection(points.getDisplayPosition(match.index));
-    ui.inspect(match.object);
-  }
+  if (match) { scene.setSelection(points.getDisplayPosition(match.index)); ui.inspect(match.object); }
 }
-async function loadLayerPayload(layer) {
-  return layer.dataKind === 'catalog'
-    ? loadCatalog(layer.dataUrl, layer.label)
-    : loadTileStoreOverview(layer.dataUrl, layer.label);
-}
+async function loadLayerPayload(layer) { return layer.dataKind === 'catalog' ? loadCatalog(layer.dataUrl, layer.label) : loadTileStoreOverview(layer.dataUrl, layer.label); }
 function loadingText(layer) {
   const tiled = layer.dataKind === 'tile-store';
-  return {
-    title: tiled ? `Opening ${layer.label.split(' · ')[0]}` : 'Opening the observed local Universe',
-    copy: tiled
-      ? 'Reading the tile-store index and deterministic overview of real observed source rows…'
-      : 'Reading the 2MRS browser catalogue and its source provenance…',
-  };
+  return { title: tiled ? `Opening ${layer.label.split(' · ')[0]}` : 'Opening the observed local Universe', copy: tiled ? 'Reading the tile-store index and deterministic overview of real observed source rows…' : 'Reading the 2MRS browser catalogue and its source provenance…' };
 }
 async function activateLayer(layerId, { initial = false } = {}) {
   const requestedLayer = SURVEY_LAYERS[layerId];
@@ -71,15 +54,7 @@ async function activateLayer(layerId, { initial = false } = {}) {
   try {
     const { meta, objects } = await loadLayerPayload(requestedLayer);
     if (requestId !== loadSequence) return;
-    ui.setLoadingState({
-      title: `Selecting the ${meta.measurement_kind === 'photometric' ? 'wide photometric' : 'spectroscopic'} survey field`,
-      copy: meta.measurement_kind === 'photometric'
-        ? 'Placing real overview rows in an observer-centred lightcone; published radial uncertainty remains attached to every accepted source row.'
-        : 'Placing real observed rows in an observer-centred survey volume…',
-      dataset: meta.dataset_label || requestedLayer.label,
-      count: `${new Intl.NumberFormat('en-GB').format(meta.object_count || objects.length)} observed source rows`,
-      progress: 64,
-    });
+    ui.setLoadingState({ title: `Selecting the ${meta.measurement_kind === 'photometric' ? 'wide photometric' : 'spectroscopic'} survey field`, copy: meta.measurement_kind === 'photometric' ? 'Placing real overview rows in an observer-centred lightcone; published radial uncertainty remains attached to every accepted source row.' : 'Placing real observed rows in an observer-centred survey volume…', dataset: meta.dataset_label || requestedLayer.label, count: `${new Intl.NumberFormat('en-GB').format(meta.object_count || objects.length)} observed source rows`, progress: 64 });
     const nextPoints = new SurveyPoints(objects, meta);
     const maxRedshift = maxField(objects, 'redshift');
     const maxDistance = maxField(objects, 'comoving_distance_mpc');
@@ -114,6 +89,9 @@ function initialise() {
     onFocusLocal: () => { scene.setSpatialMode('slice'); scene.setSelection(null); },
     onCloseSelection: () => scene.setSelection(null),
     onLayerChange: (layerId) => activateLayer(layerId),
+  });
+  document.querySelectorAll('[data-layer-shortcut]').forEach((button) => {
+    button.addEventListener('click', () => activateLayer(button.dataset.layerShortcut));
   });
   activateLayer('2mrs', { initial: true });
   canvas.addEventListener('pointerdown', (event) => { pointerStart = { x: event.clientX, y: event.clientY }; });
