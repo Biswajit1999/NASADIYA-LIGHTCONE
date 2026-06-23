@@ -7,11 +7,11 @@ sys.path.insert(0, str(PROJECT_ROOT / "pipeline"))
 from nasadiya_lightcone.photoz import PHOTOZ_PROFILES
 
 
-def test_photoz_profiles_have_explicit_vizier_catalogue_identifiers():
+def test_photoz_profiles_do_not_claim_unverified_vizier_identifiers():
     for dataset_id in ("2mpz", "wise-sc"):
         profile = PHOTOZ_PROFILES[dataset_id]
-        assert profile.vizier_catalog_ids
-        assert all(identifier.startswith("J/") for identifier in profile.vizier_catalog_ids)
+        assert isinstance(profile.vizier_catalog_ids, tuple)
+        assert not profile.vizier_catalog_ids
 
 
 def test_photoz_profiles_are_explicit_about_expected_scale():
