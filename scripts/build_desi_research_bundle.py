@@ -17,7 +17,6 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import sys
 from typing import Iterator
 
 import pandas as pd
@@ -68,7 +67,9 @@ def sha256(path: Path) -> str:
 def load_index(index_path: Path) -> dict:
     payload = json.loads(index_path.read_text(encoding="utf-8"))
     if payload.get("format") != TILE_FORMAT:
-        raise RuntimeError(f"Unsupported tile-store format in {index_path}: {payload.get('format')!r}")
+        raise RuntimeError(
+            f"Unsupported tile-store format in {index_path}: {payload.get('format')!r}"
+        )
     if payload.get("dataset", {}).get("dataset_id") != "desi-dr1":
         raise RuntimeError("Research bundle input must be the observed DESI DR1 tile store.")
     if payload.get("dataset", {}).get("is_synthetic") is not False:
