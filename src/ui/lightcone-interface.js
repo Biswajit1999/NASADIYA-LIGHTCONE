@@ -69,6 +69,7 @@ export class LightconeInterface {
   constructor() {
     this.currentMeta = null;
     this.currentLayer = null;
+    this.tileStreamStatus = null;
     this.dom = {
       datasetStatus: document.querySelector('#dataset-status'), datasetDot: document.querySelector('#dataset-dot'), surveyModeStatus: document.querySelector('#survey-mode-status'),
       sceneEyebrow: document.querySelector('#scene-eyebrow'), sceneTitle: document.querySelector('#scene-title'), sceneDescription: document.querySelector('#scene-description'), openingCount: document.querySelector('#opening-count'), summaryLayer: document.querySelector('#summary-layer'), summaryCount: document.querySelector('#summary-count'), footprintIndicator: document.querySelector('#footprint-indicator'), footprintIndicatorCopy: document.querySelector('#footprint-indicator-copy'),
@@ -108,7 +109,7 @@ export class LightconeInterface {
     const copy = isDesi && mode === 'lightcone'
       ? {
         title: 'DESI DR1 spectroscopic lightcone.',
-        description: 'Six million measured redshifts underpin this view. The separated regions are the real North/South survey footprint - not a fabricated all-sky cosmic web.',
+        description: 'Six million measured redshifts underpin this view. The separated regions are the real North/South survey footprint — not a fabricated all-sky cosmic web.',
         railMode: 'DESI DR1 lightcone',
       }
       : defaultCopy;
@@ -140,6 +141,7 @@ export class LightconeInterface {
     const copy = copyForSurvey(meta, layer);
     this.currentMeta = meta;
     this.currentLayer = layer;
+    this.tileStreamStatus = null;
     document.body.dataset.layer = layer.id;
     this.dom.surveyLayer.value = layer.id;
     this.dom.surveyLayerStatus.textContent = copy.photo ? 'photo-z' : 'spectroscopic';
@@ -164,6 +166,23 @@ export class LightconeInterface {
     if (!layer.supportsSlice && state.spatialMode === 'slice') state.spatialMode = 'lightcone';
     this.setTracerControls(meta, state, layer);
     this.dom.inspector.innerHTML = copy.empty;
+  }
+
+  setTileStreamingStatus({ available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason } = {}) {
+    if (this.currentLayer?.id !== 'desi-dr1') return;
+    this.tileStreamStatus = { available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason };
+    const overview = formatNumber(this.currentMeta?.overview_count || 0);
+    const full = formatNumber(this.currentMeta?.object_count || 0);
+    const tiles = formatNumber(totalTiles || this.currentMeta?.tile_count || 0);
+    if (available && active) {
+      const loaded = Number.isFinite(Number(loadedTiles)) ? `${loadedTiles}/${requestedTiles || loadedTiles} active tiles` : 'adaptive tiles active';
+      const rows = Number.isFinite(Number(streamedRows)) ? `${formatNumber(streamedRows)} streamed rows` : 'camera-selected observed rows';
+      this.dom.surveyLayerNote.textContent = `Adaptive ${delivery || 'tile'} delivery is active: ${loaded}; ${rows}. The 125k overview remains the global context while detail follows the camera.`;
+      this.dom.budgetNote.textContent = `Rendering is capped at the browser budget. Adaptive tiles add real camera-relevant rows without downloading all ${full} DESI rows at once.`;
+      return;
+    }
+    this.dom.surveyLayerNote.textContent = `This deployment renders the ${overview}-row deterministic DESI overview. The full ${full}-row store is partitioned into ${tiles} tiles; ${reason || 'no local or remote tile endpoint is configured.'}`;
+    this.dom.budgetNote.textContent = `The 125k overview gives an instant public load. Full-resolution tiles stream only from a local build or configured object-store endpoint.`;
   }
 
   syncControlsFromState(state) {
@@ -286,7 +305,11 @@ export class LightconeInterface {
       if (count !== undefined) countNode.textContent = formatNumber(count);
     });
     if (this.currentLayer?.id === 'desi-dr1') {
-      this.dom.railDetail.textContent = `${activeTracers.length}/4 tracer classes · z ≤ ${Number(state.maxRedshift).toFixed(4)} · real NGC/SGC footprint`;
+      const stream = this.tileStreamStatus;
+      const streamDetail = stream?.active
+        ? ` · ${stream.loadedTiles || 0}/${stream.requestedTiles || 0} adaptive tiles`
+        : ` · ${formatNumber(this.currentMeta?.overview_count || 0)}-row overview`;
+      this.dom.railDetail.textContent = `${activeTracers.length}/4 tracer classes · z ≤ ${Number(state.maxRedshift).toFixed(4)} · real NGC/SGC footprint${streamDetail}`;
       this.dom.summaryCount.textContent = `${formatNumber(metrics.visibleCount)} drawn`;
       return;
     }
