@@ -26,6 +26,7 @@ class PhotoZProfile:
     expected_rows: int | None
     footprint_note: str
     archive_landing_urls: tuple[str, ...]
+    vizier_catalog_ids: tuple[str, ...]
 
 
 PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
@@ -44,6 +45,9 @@ PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
             "http://surveys.roe.ac.uk/ssa/TWOMPZ/",
             "https://ssa.roe.ac.uk/TWOMPZ/",
         ),
+        # Explicit bibliography-based identifiers. The downloader probes tables before
+        # fetching all rows and accepts only a source table with a per-object z error.
+        vizier_catalog_ids=("J/ApJS/210/9",),
     ),
     "wise-sc": PhotoZProfile(
         dataset_id="wise-sc",
@@ -52,7 +56,7 @@ PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
         citation_key="Bilicki2016_WISESC",
         source_url="https://arxiv.org/abs/1607.01182",
         search_terms=("WISE SuperCOSMOS", "WISE x SuperCOSMOS", "SuperCOSMOS photometric redshift"),
-        table_hints=("wise", "supercosmos", "supercosmos", "photo", "redshift"),
+        table_hints=("wise", "supercosmos", "photo", "redshift"),
         expected_rows=20_000_000,
         footprint_note="Wide photo-z layer; survey masking and radial uncertainty remain visible measurement properties.",
         archive_landing_urls=(
@@ -60,6 +64,7 @@ PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
             "http://ssa.roe.ac.uk/WISExSCOS/",
             "https://surveys.roe.ac.uk/ssa/WISExSCOS/",
         ),
+        vizier_catalog_ids=("J/ApJS/225/5",),
     ),
 }
 
@@ -111,27 +116,27 @@ def infer_photoz_columns(source: pd.DataFrame) -> PhotoZColumnMapping:
     return PhotoZColumnMapping(
         object_id=_resolve(
             columns,
-            ("2MASS", "2MASX", "AllWISE", "WISE", "source_id", "objid", "ID", "Name"),
+            ("2MASS", "2MASX", "AllWISE", "WISE", "source_id", "objid", "ID", "Name", "Object"),
             "object identifier",
         ),
-        ra_deg=_resolve(columns, ("RAJ2000", "RAdeg", "RA", "RA_ICRS", "ra"), "right ascension"),
-        dec_deg=_resolve(columns, ("DEJ2000", "DEdeg", "DEC", "DE_ICRS", "dec"), "declination"),
+        ra_deg=_resolve(columns, ("RAJ2000", "RAdeg", "RA", "RA_ICRS", "ra", "RAdegJ2000"), "right ascension"),
+        dec_deg=_resolve(columns, ("DEJ2000", "DEdeg", "DEC", "DE_ICRS", "dec", "DEdegJ2000"), "declination"),
         redshift=_resolve(
             columns,
-            ("zphot", "z_phot", "zPhoto", "zph", "zANN", "zmean", "z"),
+            ("zphot", "z_phot", "zPhoto", "zphoto", "zph", "zANN", "zmean", "z", "zphotANN"),
             "photometric redshift",
         ),
         redshift_error=_resolve(
             columns,
             (
-                "e_zphot", "e_z_phot", "zerr", "zphoterr", "zPhotoErr", "zsig",
-                "sigma_z", "sigz", "zstd", "zerr68", "zerr_68",
+                "e_zphot", "e_z_phot", "e_zphoto", "e_zph", "zerr", "zphoterr", "zPhotoErr",
+                "zsig", "sigma_z", "sigz", "zstd", "zerr68", "zerr_68", "zphot_sigma",
             ),
             "photometric-redshift uncertainty",
         ),
         magnitude=_resolve(
             columns,
-            ("Kcmag", "Kmag", "Ks", "Ksmag", "K", "W1", "w1mpro", "rmag", "Rmag"),
+            ("Kcmag", "Kmag", "Ks", "Ksmag", "K", "W1", "w1mpro", "rmag", "Rmag", "R1mag"),
             "representative magnitude",
             required=False,
         ),
