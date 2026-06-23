@@ -109,13 +109,79 @@ function selectAtPointer(event) {
   }
 }
 
-async function loadLayerPayload(layer) {
+async function loadSingleLayerPayload(layer) {
   return layer.dataKind === 'catalog'
     ? loadCatalog(layer.dataUrl, layer.label)
     : loadTileStoreOverview(layer.dataUrl, layer.label);
 }
 
+function annotateSourceLayer(objects, layerId) {
+  return objects.map((object) => ({ ...object, source_layer: layerId }));
+}
+
+async function loadCompositeLayer(layer) {
+  const memberIds = layer.memberLayerIds || [];
+  if (memberIds.length < 2) throw new Error('Composite view requires at least two installed survey layers.');
+  const members = await Promise.all(memberIds.map(async (memberId) => {
+    const memberLayer = SURVEY_LAYERS[memberId];
+    if (!memberLayer?.installed) throw new Error(`Composite member ${memberId} is not installed.`);
+    return { id: memberId, result: await loadSingleLayerPayload(memberLayer) };
+  }));
+
+  const objects = members.flatMap(({ id, result }) => annotateSourceLayer(result.objects, id));
+  const desi = members.find((member) => member.id === 'desi-dr1')?.result;
+  const sourceRowCount = members.reduce((total, member) => total + Number(member.result.meta.object_count || member.result.objects.length), 0);
+  const tracerCounts = desi?.meta?.tracer_counts || {};
+
+  return {
+    meta: {
+      dataset_id: 'all-live-observed-surveys',
+      dataset_label: `2MRS + DESI DR1 LSS · ${sourceRowCount.toLocaleString('en-GB')} source rows (non-deduplicated)`,
+      object_count: sourceRowCount,
+      overview_count: objects.length,
+      source_survey: '2MRS + DESI DR1 LSS',
+      source_release: 'Huchra et al. 2012 + DESI DR1',
+      source_url: 'docs/sources.md',
+      citation_key: 'Huchra2012_2MRS;DESI_DR1',
+      measurement_kind: 'spectroscopic',
+      object_type: 'galaxies and quasars',
+      distance_note: 'Non-deduplicated comparison stack. Individual records retain their original survey provenance and cosmological placement note.',
+      radial_uncertainty_required: false,
+      is_synthetic: false,
+      composite: true,
+      component_layers: members.map(({ id, result }) => ({
+        id,
+        source_survey: result.meta.source_survey,
+        source_rows: Number(result.meta.object_count || result.objects.length),
+        overview_rows: Number(result.meta.overview_count || result.objects.length),
+      })),
+      overview_selection: {
+        method: 'concatenate-installed-public-layers',
+        non_deduplicated: true,
+        note: 'This is a survey-comparison stack, not a unified or completeness-corrected catalogue.',
+      },
+      tracer_counts: tracerCounts,
+      // DESI remains the only high-resolution tile source in the composite. 2MRS is
+      // retained fully in the browser baseline while DESI detail streams around it.
+      tile_count: Number(desi?.meta?.tile_count || 0),
+      tile_manifest: desi?.meta?.tile_manifest || null,
+      tile_index_url: desi?.meta?.tile_index_url || null,
+    },
+    objects,
+  };
+}
+
+async function loadLayerPayload(layer) {
+  return layer.dataKind === 'composite' ? loadCompositeLayer(layer) : loadSingleLayerPayload(layer);
+}
+
 function loadingText(layer) {
+  if (layer.dataKind === 'composite') {
+    return {
+      title: 'Stacking available observed surveys',
+      copy: 'Loading the complete public 2MRS anchor with the deterministic DESI overview. Their records remain separately identified; no cross-survey deduplication is implied.',
+    };
+  }
   const tiled = layer.dataKind === 'tile-store';
   return {
     title: tiled ? `Opening ${layer.label.split(' · ')[0]}` : 'Opening the observed local Universe',
@@ -154,7 +220,7 @@ async function configureAdaptiveTiles(layer, meta, requestId) {
 async function activateLayer(layerId, { initial = false } = {}) {
   const requestedLayer = SURVEY_LAYERS[layerId];
   const previousLayer = currentLayer();
-  if (!requestedLayer) return;
+  if (!requestedLayer || requestedLayer.installed === false) return;
   const requestId = ++loadSequence;
   window.clearTimeout(tileRefreshTimer);
   tileStreamer = null;
@@ -166,10 +232,14 @@ async function activateLayer(layerId, { initial = false } = {}) {
     const { meta, objects } = await loadLayerPayload(requestedLayer);
     if (requestId !== loadSequence) return;
     ui.setLoadingState({
-      title: `Selecting the ${meta.measurement_kind === 'photometric' ? 'wide photometric' : 'spectroscopic'} survey field`,
-      copy: meta.measurement_kind === 'photometric'
-        ? 'Placing real overview rows in an observer-centred lightcone; published radial uncertainty remains attached to every accepted source row.'
-        : 'Placing real observed rows in an observer-centred survey volume…',
+      title: meta.composite
+        ? 'Preparing the available-survey comparison stack'
+        : `Selecting the ${meta.measurement_kind === 'photometric' ? 'wide photometric' : 'spectroscopic'} survey field`,
+      copy: meta.composite
+        ? 'Both surveys retain their own record provenance. The view is a visual comparison stack, not a deduplicated master catalogue.'
+        : meta.measurement_kind === 'photometric'
+          ? 'Placing real overview rows in an observer-centred lightcone; published radial uncertainty remains attached to every accepted source row.'
+          : 'Placing real observed rows in an observer-centred survey volume…',
       dataset: meta.dataset_label || requestedLayer.label,
       count: `${new Intl.NumberFormat('en-GB').format(meta.object_count || objects.length)} observed source rows`,
       progress: 64,
