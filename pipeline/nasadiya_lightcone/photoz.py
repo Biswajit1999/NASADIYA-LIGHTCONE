@@ -45,9 +45,9 @@ PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
             "http://surveys.roe.ac.uk/ssa/TWOMPZ/",
             "https://ssa.roe.ac.uk/TWOMPZ/",
         ),
-        # Explicit bibliography-based identifiers. The downloader probes tables before
-        # fetching all rows and accepts only a source table with a per-object z error.
-        vizier_catalog_ids=("J/ApJS/210/9",),
+        # The paper reference is not itself a VizieR catalogue key. Keep this empty
+        # until a maintained, verified public table endpoint is confirmed.
+        vizier_catalog_ids=(),
     ),
     "wise-sc": PhotoZProfile(
         dataset_id="wise-sc",
@@ -64,7 +64,9 @@ PHOTOZ_PROFILES: dict[str, PhotoZProfile] = {
             "http://ssa.roe.ac.uk/WISExSCOS/",
             "https://surveys.roe.ac.uk/ssa/WISExSCOS/",
         ),
-        vizier_catalog_ids=("J/ApJS/225/5",),
+        # No verified VizieR source key is configured. A user-supplied key must be
+        # validated with --probe before a full download is allowed.
+        vizier_catalog_ids=(),
     ),
 }
 
@@ -93,13 +95,7 @@ def _normalise(name: str) -> str:
     return "".join(char.lower() for char in str(name) if char.isalnum())
 
 
-def _resolve(
-    columns: Iterable[str],
-    aliases: tuple[str, ...],
-    label: str,
-    *,
-    required: bool = True,
-) -> str | None:
+def _resolve(columns: Iterable[str], aliases: tuple[str, ...], label: str, *, required: bool = True) -> str | None:
     available = {_normalise(column): str(column) for column in columns}
     for alias in aliases:
         match = available.get(_normalise(alias))
@@ -114,41 +110,16 @@ def _resolve(
 def infer_photoz_columns(source: pd.DataFrame) -> PhotoZColumnMapping:
     columns = [str(column) for column in source.columns]
     return PhotoZColumnMapping(
-        object_id=_resolve(
-            columns,
-            ("2MASS", "2MASX", "AllWISE", "WISE", "source_id", "objid", "ID", "Name", "Object"),
-            "object identifier",
-        ),
+        object_id=_resolve(columns, ("2MASS", "2MASX", "AllWISE", "WISE", "source_id", "objid", "ID", "Name", "Object"), "object identifier"),
         ra_deg=_resolve(columns, ("RAJ2000", "RAdeg", "RA", "RA_ICRS", "ra", "RAdegJ2000"), "right ascension"),
         dec_deg=_resolve(columns, ("DEJ2000", "DEdeg", "DEC", "DE_ICRS", "dec", "DEdegJ2000"), "declination"),
-        redshift=_resolve(
-            columns,
-            ("zphot", "z_phot", "zPhoto", "zphoto", "zph", "zANN", "zmean", "z", "zphotANN"),
-            "photometric redshift",
-        ),
-        redshift_error=_resolve(
-            columns,
-            (
-                "e_zphot", "e_z_phot", "e_zphoto", "e_zph", "zerr", "zphoterr", "zPhotoErr",
-                "zsig", "sigma_z", "sigz", "zstd", "zerr68", "zerr_68", "zphot_sigma",
-            ),
-            "photometric-redshift uncertainty",
-        ),
-        magnitude=_resolve(
-            columns,
-            ("Kcmag", "Kmag", "Ks", "Ksmag", "K", "W1", "w1mpro", "rmag", "Rmag", "R1mag"),
-            "representative magnitude",
-            required=False,
-        ),
+        redshift=_resolve(columns, ("zphot", "z_phot", "zPhoto", "zphoto", "zph", "zANN", "zmean", "z", "zphotANN"), "photometric redshift"),
+        redshift_error=_resolve(columns, ("e_zphot", "e_z_phot", "e_zphoto", "e_zph", "zerr", "zphoterr", "zPhotoErr", "zsig", "sigma_z", "sigz", "zstd", "zerr68", "zerr_68", "zphot_sigma"), "photometric-redshift uncertainty"),
+        magnitude=_resolve(columns, ("Kcmag", "Kmag", "Ks", "Ksmag", "K", "W1", "w1mpro", "rmag", "Rmag", "R1mag"), "representative magnitude", required=False),
     )
 
 
-def build_photoz_frame(
-    source: pd.DataFrame,
-    profile: PhotoZProfile,
-    *,
-    mapping: PhotoZColumnMapping | None = None,
-) -> tuple[pd.DataFrame, PhotoZColumnMapping, SurveyDescriptor]:
+def build_photoz_frame(source: pd.DataFrame, profile: PhotoZProfile, *, mapping: PhotoZColumnMapping | None = None) -> tuple[pd.DataFrame, PhotoZColumnMapping, SurveyDescriptor]:
     mapping = mapping or infer_photoz_columns(source)
     descriptor = SurveyDescriptor(
         dataset_id=profile.dataset_id,
@@ -158,10 +129,7 @@ def build_photoz_frame(
         citation_key=profile.citation_key,
         measurement_kind="photometric",
         object_type="galaxy",
-        distance_note=(
-            "Photometric-redshift Planck18 visual placement; supplied radial uncertainty is retained "
-            "and is not an exact distance measurement"
-        ),
+        distance_note="Photometric-redshift Planck18 visual placement; supplied radial uncertainty is retained and is not an exact distance measurement",
     )
     frame = canonicalise_survey_frame(
         source,
