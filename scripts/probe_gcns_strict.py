@@ -31,8 +31,18 @@ def keys(table_list) -> list[str]:
 
 
 def is_gcns_catalogue(identifier: str, descriptor) -> bool:
-    text = " ".join((identifier, str(getattr(descriptor, "description", "")), str(getattr(descriptor, "meta", {})))).lower()
-    return "gcns" in text or "catalogue of nearby stars" in text or "catalog of nearby stars" in text
+    text = " ".join(
+        (
+            identifier,
+            str(getattr(descriptor, "description", "")),
+            str(getattr(descriptor, "meta", {})),
+        )
+    ).lower()
+    return (
+        "gcns" in text
+        or "catalogue of nearby stars" in text
+        or "catalog of nearby stars" in text
+    )
 
 
 def match_column(columns: list[str], aliases: tuple[str, ...]) -> str | None:
@@ -44,7 +54,10 @@ def main() -> int:
     try:
         from astroquery.vizier import Vizier
     except ImportError:
-        print("Missing astroquery. Run: .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt")
+        print(
+            "Missing astroquery. Run: "
+            ".\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt"
+        )
         return 2
 
     finder = Vizier(columns=["*"], row_limit=1)
@@ -64,7 +77,10 @@ def main() -> int:
 
     if not candidates:
         print("\nNo catalogue record identified itself as GCNS or Gaia Catalogue of Nearby Stars.")
-        print("Generic Gaia tables are intentionally rejected; they do not establish the GCNS 100-pc selection.")
+        print(
+            "Generic Gaia tables are intentionally rejected; they do not establish "
+            "the GCNS 100-pc selection."
+        )
         return 3
 
     required = {
@@ -84,7 +100,10 @@ def main() -> int:
             continue
         for key in keys(tables):
             columns = [str(column) for column in tables[key].colnames]
-            mapping = {name: match_column(columns, aliases) for name, aliases in required.items()}
+            mapping = {
+                name: match_column(columns, aliases)
+                for name, aliases in required.items()
+            }
             valid = all(mapping.values())
             print(f"  {'PASS' if valid else 'REJECT'} {key}")
             print(f"    mapping: {mapping}")
@@ -92,7 +111,10 @@ def main() -> int:
                 passed += 1
 
     if passed:
-        print("\nA verified GCNS-shaped schema is available. Paste this output before a downloader is added.")
+        print(
+            "\nA verified GCNS-shaped schema is available. "
+            "Paste this output before a downloader is added."
+        )
         return 0
     print("\nNo self-identified GCNS candidate passed the required schema check.")
     return 3
