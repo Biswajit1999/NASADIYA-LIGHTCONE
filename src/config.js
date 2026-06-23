@@ -6,6 +6,25 @@ export const LIGHTCONE_CONFIG = Object.freeze({
 
 export const DESI_TRACERS = Object.freeze(['BGS', 'LRG', 'ELG', 'QSO']);
 
+/**
+ * Adaptive tile delivery is intentionally opt-in. The public GitHub Pages build
+ * begins from the committed 125k-row overview; full-resolution tiles can stream
+ * from a local build or a separately configured object-store endpoint.
+ */
+export const TILE_STREAMING = Object.freeze({
+  'desi-dr1': {
+    enabled: true,
+    // Set this to a directory that contains the same index.json/tiles layout as
+    // data/processed/desi-dr1 after publishing tiles to object storage. Leave null
+    // to probe the local relative tile directory only.
+    remoteBaseUrl: null,
+    maxTiles: 18,
+    maxCachedTiles: 42,
+    maxLoadedRows: 180_000,
+    refreshDebounceMs: 550,
+  },
+});
+
 export const SURVEY_LAYERS = Object.freeze({
   '2mrs': {
     id: '2mrs',
