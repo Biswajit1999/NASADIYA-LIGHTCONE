@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 import pandas as pd
 
@@ -11,6 +12,7 @@ MODULE_PATH = PROJECT_ROOT / "scripts" / "build_desi_research_bundle.py"
 SPEC = importlib.util.spec_from_file_location("research_bundle", MODULE_PATH)
 assert SPEC and SPEC.loader
 research_bundle = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = research_bundle
 SPEC.loader.exec_module(research_bundle)
 
 
