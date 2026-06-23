@@ -26,8 +26,9 @@ function stableStride(objects, limit) {
 
 /**
  * Streams only a camera-relevant subset of an observed tile store. It never invents
- * rows or merges data across survey layers. When the tiles are unavailable (the
- * normal GitHub Pages case), the caller keeps the deterministic browser overview.
+ * rows or merges records into a deduplicated master catalogue. When tiles are
+ * unavailable (the normal GitHub Pages case), the deterministic browser overview
+ * remains the active display layer.
  */
 export class TileStreamer {
   constructor({ manifest, indexUrl, overviewObjects, remoteBaseUrl = null, maxTiles = 18, maxCachedTiles = 42, maxLoadedRows = 180_000 }) {
@@ -109,7 +110,12 @@ export class TileStreamer {
     const streamed = [];
     for (const id of this.activeIds) streamed.push(...(this.cache.get(id)?.objects || []));
     const streamedIds = new Set(streamed.map((object) => object.object_id));
-    const local = stableStride(streamed, this.maxLoadedRows);
+
+    // Keep a deterministic global overview fraction visible even when nearby high-
+    // resolution tiles are loaded. The detailed set receives 78% of the budget;
+    // the remaining 22% anchors the full survey footprint and any other live layer.
+    const detailBudget = Math.max(1, Math.floor(this.maxLoadedRows * 0.78));
+    const local = stableStride(streamed, detailBudget);
     const remaining = Math.max(0, this.maxLoadedRows - local.length);
     const overviewRemainder = this.overviewObjects.filter((object) => !streamedIds.has(object.object_id));
     return [...stableStride(overviewRemainder, remaining), ...local];
