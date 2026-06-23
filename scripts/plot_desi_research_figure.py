@@ -47,9 +47,9 @@ def retain_lowest_hashes(
 ) -> pd.DataFrame:
     """Keep exactly the globally lowest object-ID hashes seen so far.
 
-    This bounded streaming reduction avoids loading the full Parquet table into
-    memory. Sorting the hash and object ID together also makes the vanishingly rare
-    hash ties deterministic.
+    The bounded streaming reduction avoids loading the full Parquet table into memory.
+    Sorting by object ID gives a deterministic tie-breaker for the extremely rare hash
+    collision.
     """
     incoming = incoming.copy()
     incoming["_stable_hash"] = stable_hashes(incoming["object_id"])
@@ -69,6 +69,7 @@ def update_sky_histogram(
     dec_edges: np.ndarray,
     ra_edges: np.ndarray,
 ) -> None:
+    """Accumulate observed objects into a sky-coordinate count grid."""
     coordinates = group.loc[group["ra_deg"].notna() & group["dec_deg"].notna()]
     if coordinates.empty:
         return
@@ -80,6 +81,12 @@ def update_sky_histogram(
     histogram += counts.astype(np.int64)
 
 
+def finite_max(series: pd.Series) -> float:
+    values = pd.to_numeric(series, errors="coerce").to_numpy(dtype=float)
+    finite = values[np.isfinite(values)]
+    return float(finite.max()) if finite.size else 0.0
+
+
 def scan_bundle(
     input_path: Path,
     *,
@@ -87,19 +94,21 @@ def scan_bundle(
     hist_z_max: float,
     hist_bins: int,
 ) -> tuple[pd.DataFrame, dict, dict[str, np.ndarray]]:
+    """Scan every row and retain an exact global deterministic 3D subset."""
     parquet = pq.ParquetFile(input_path)
     total_rows = parquet.metadata.num_rows
-    bins = np.linspace(0.0, hist_z_max, hist_bins + 1)
+    redshift_edges = np.linspace(0.0, hist_z_max, hist_bins + 1)
     ra_edges = np.linspace(0.0, 360.0, FOOTPRINT_RA_BINS + 1)
     dec_edges = np.linspace(-90.0, 90.0, FOOTPRINT_DEC_BINS + 1)
-    histograms = defaultdict(lambda: np.zeros(hist_bins, dtype=np.int64))
+
+    redshift_histograms = defaultdict(lambda: np.zeros(hist_bins, dtype=np.int64))
     sky_histograms = {
         tracer: np.zeros((FOOTPRINT_DEC_BINS, FOOTPRINT_RA_BINS), dtype=np.int64)
         for tracer in TRACERS
     }
     tracer_counts: Counter[str] = Counter()
     render_candidates: pd.DataFrame | None = None
-    over_range = 0
+    rows_above_z_max = 0
     max_distance = 0.0
     max_lookback = 0.0
     max_redshift = 0.0
@@ -122,17 +131,19 @@ def scan_bundle(
         frame["redshift"] = pd.to_numeric(frame["redshift"], errors="coerce")
         frame["ra_deg"] = pd.to_numeric(frame["ra_deg"], errors="coerce")
         frame["dec_deg"] = pd.to_numeric(frame["dec_deg"], errors="coerce")
-        valid = frame["redshift"].notna() & frame["redshift"].ge(0)
-        frame = frame.loc[valid].copy()
+        frame = frame.loc[frame["redshift"].notna() & frame["redshift"].ge(0)].copy()
         if frame.empty:
             continue
 
         tracer_counts.update(frame["tracer"].tolist())
-        max_redshift = max(max_redshift, float(frame["redshift"].max()))
+        max_redshift = max(max_redshift, finite_max(frame["redshift"]))
+        max_distance = max(max_distance, finite_max(frame["comoving_distance_mpc"]))
+        max_lookback = max(max_lookback, finite_max(frame["lookback_time_gyr"]))
+
         for tracer, group in frame.groupby("tracer", sort=False):
             values = group["redshift"].to_numpy(dtype=float)
-            histograms[tracer] += np.histogram(values, bins=bins)[0]
-            over_range += int(np.count_nonzero(values > hist_z_max))
+            redshift_histograms[tracer] += np.histogram(values, bins=redshift_edges)[0]
+            rows_above_z_max += int(np.count_nonzero(values > hist_z_max))
             if tracer not in sky_histograms:
                 sky_histograms[tracer] = np.zeros(
                     (FOOTPRINT_DEC_BINS, FOOTPRINT_RA_BINS),
@@ -140,18 +151,11 @@ def scan_bundle(
                 )
             update_sky_histogram(sky_histograms[tracer], group, dec_edges, ra_edges)
 
-        max_distance = max(
-            max_distance,
-            float(pd.to_numeric(frame["comoving_distance_mpc"], errors="coerce").max()),
-        )
-        max_lookback = max(
-            max_lookback,
-            float(pd.to_numeric(frame["lookback_time_gyr"], errors="coerce").max()),
-        )
         render_candidates = retain_lowest_hashes(render_candidates, frame, render_rows)
 
     if render_candidates is None or render_candidates.empty:
         raise RuntimeError("No valid DESI rows were available for plotting.")
+
     render_frame = render_candidates.drop(columns="_stable_hash").copy()
     render_frame = render_frame.sort_values("object_id", kind="mergesort", ignore_index=True)
     summary = {
@@ -169,8 +173,11 @@ def scan_bundle(
             "z_min": 0.0,
             "z_max": hist_z_max,
             "bins": hist_bins,
-            "counts": {name: values.tolist() for name, values in sorted(histograms.items())},
-            "rows_above_z_max": over_range,
+            "counts": {
+                name: values.tolist()
+                for name, values in sorted(redshift_histograms.items())
+            },
+            "rows_above_z_max": rows_above_z_max,
             "maximum_observed_redshift": max_redshift,
         },
         "sky_footprint": {
@@ -303,7 +310,8 @@ def plot_redshift_summary(summary: dict, output_path: Path, dpi: int) -> None:
         0.125,
         0.02,
         f"Full observed bundle scan: {summary['input_rows']:,} rows  |  "
-        f"z ≤ {histogram['z_max']:.1f}: {summary['input_rows'] - histogram['rows_above_z_max']:,} rows  |  "
+        f"z ≤ {histogram['z_max']:.1f}: "
+        f"{summary['input_rows'] - histogram['rows_above_z_max']:,} rows  |  "
         f"Above range: {histogram['rows_above_z_max']:,}",
         ha="left",
         va="bottom",
@@ -321,10 +329,24 @@ def plot_sky_footprint(
     output_path: Path,
     dpi: int,
 ) -> None:
+    """Plot four tracer footprints with a dedicated colour-bar axis outside the grid."""
     display_tracers = tuple(tracer for tracer in TRACERS if tracer != "UNKNOWN")
-    panels = [sky_histograms.get(tracer, np.zeros((FOOTPRINT_DEC_BINS, FOOTPRINT_RA_BINS))) for tracer in display_tracers]
+    panels = [
+        sky_histograms.get(
+            tracer,
+            np.zeros((FOOTPRINT_DEC_BINS, FOOTPRINT_RA_BINS)),
+        )
+        for tracer in display_tracers
+    ]
     maximum = max(float(np.log10(panel + 1).max()) for panel in panels)
-    figure, axes = plt.subplots(2, 2, figsize=(12.4, 7.5), dpi=dpi, sharex=True, sharey=True)
+    figure, axes = plt.subplots(
+        2,
+        2,
+        figsize=(12.9, 7.5),
+        dpi=dpi,
+        sharex=True,
+        sharey=True,
+    )
     image = None
     for axis, tracer, panel in zip(axes.ravel(), display_tracers, panels):
         image = axis.imshow(
@@ -350,16 +372,19 @@ def plot_sky_footprint(
 
     figure.suptitle(
         "DESI DR1 LSS — observed sky footprint by tracer class",
-        x=0.5,
+        x=0.49,
         y=0.98,
         fontsize=15,
         fontweight="semibold",
     )
+    # Reserve a separate right-side corridor for the colour bar. This must not use
+    # the subplot axes list, otherwise Matplotlib may shrink/overlap the right panels.
     if image is not None:
-        colourbar = figure.colorbar(image, ax=axes.ravel().tolist(), shrink=0.86, pad=0.02)
+        colourbar_axis = figure.add_axes([0.915, 0.19, 0.018, 0.62])
+        colourbar = figure.colorbar(image, cax=colourbar_axis)
         colourbar.set_label(r"$\log_{10}$(observed rows + 1) per 1° × 1° bin")
     figure.text(
-        0.5,
+        0.49,
         0.012,
         "Counts show survey footprint, targeting and completeness structure. They are not an estimate of physical sky density.",
         ha="center",
@@ -367,7 +392,14 @@ def plot_sky_footprint(
         fontsize=8,
         color="#4f5b66",
     )
-    figure.subplots_adjust(left=0.07, right=0.91, bottom=0.10, top=0.90, wspace=0.16, hspace=0.24)
+    figure.subplots_adjust(
+        left=0.07,
+        right=0.88,
+        bottom=0.10,
+        top=0.90,
+        wspace=0.16,
+        hspace=0.24,
+    )
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 
