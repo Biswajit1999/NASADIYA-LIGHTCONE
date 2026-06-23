@@ -1,3 +1,10 @@
+
+## 0.9.1 — banner and sharing metadata
+
+- Added the project survey-visualisation banner to `assets/`.
+- Added Open Graph and Twitter sharing metadata.
+- Added the banner to the README.
+
 # Changelog
 
 ## 0.9.0 - Explorer and community release

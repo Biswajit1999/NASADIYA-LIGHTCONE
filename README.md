@@ -4,6 +4,8 @@
 
 Created and developed by **Biswajit Jana**.
 
+![NĀSADĪYA LIGHTCONE survey visualisation](assets/nasadiya-lightcone-banner.png)
+
 NĀSADĪYA LIGHTCONE is not a synthetic cosmic-web animation. Each rendered point originates in a published survey product, preserves source provenance, and remains separate from any future derived density or reconstruction layer. The project currently combines a nearby 2MRS anchor with a deep DESI DR1 LSS browser layer.
 
 [![CI](https://github.com/Biswajit1999/NASADIYA-LIGHTCONE/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
