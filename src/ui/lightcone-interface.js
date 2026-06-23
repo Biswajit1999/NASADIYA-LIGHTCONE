@@ -6,6 +6,7 @@ import {
   formatRedshift,
   formatVelocity,
 } from '../utils/format.js';
+import { SURVEY_LAYERS } from '../config.js';
 
 const TRACERS = ['BGS', 'LRG', 'ELG', 'QSO'];
 const TRACER_LABELS = Object.freeze({
@@ -33,36 +34,53 @@ const COLOUR_COPY = Object.freeze({
   tracer: 'Colour mapped by DESI tracer class',
   time: 'Colour mapped by look-back time',
   uncertainty: 'Marker scale mapped by redshift uncertainty',
+  survey: 'Colour mapped by source survey',
 });
 
 function copyForSurvey(meta, layer) {
   const photo = meta.measurement_kind === 'photometric';
   const survey = meta.source_survey || 'active survey';
+  const isComposite = layer?.id === 'all-live' || Boolean(meta.composite);
   const isDesi = layer?.id === 'desi-dr1';
+  const hasDesi = isDesi || isComposite;
   return {
     photo,
+    isComposite,
     isDesi,
-    intro: isDesi
-      ? 'DESI DR1 LSS is a deep spectroscopic survey, not an all-sky reconstruction. The separated regions follow the observed North and South survey footprint; their edges reflect targeting and mask geometry, not disconnected Universes.'
+    hasDesi,
+    intro: isComposite
+      ? '2MRS and DESI DR1 are rendered together as a non-deduplicated observed-survey comparison stack. Colours can expose their original source layer; overlapping sky coverage must not be interpreted as a unified completeness-corrected catalogue.'
+      : isDesi
+        ? 'DESI DR1 LSS is a deep spectroscopic survey, not an all-sky reconstruction. The separated regions follow the observed North and South survey footprint; their edges reflect targeting and mask geometry, not disconnected Universes.'
+        : photo
+          ? `The full ${survey} tile store contains observed photometric-redshift rows. This browser view begins with a deterministic set of real source rows while preserving the layer’s total count and radial uncertainty.`
+          : `Real ${survey} rows are shown as an observer-centred survey volume. Drag to orbit, scroll to move closer, and select a point for its source record.`,
+    redshift: isComposite
+      ? 'All currently stacked rows are spectroscopic, but their survey selection functions remain distinct. The view is not a merged master catalogue.'
       : photo
-        ? `The full ${survey} tile store contains observed photometric-redshift rows. This browser view begins with a deterministic set of real source rows while preserving the layer’s total count and radial uncertainty.`
-        : `Real ${survey} rows are shown as an observer-centred survey volume. Drag to orbit, scroll to move closer, and select a point for its source record.`,
-    redshift: photo
-      ? `${survey} uses photometric redshifts. Radial placement is a navigation convention; each accepted row retains its supplied photo-z uncertainty.`
-      : `${survey} uses measured spectroscopic redshifts. Radial placement is a cosmological visual-navigation convention.`,
-    footprint: isDesi
-      ? 'DESI DR1 LSS does not observe the full sky. Separated point clouds follow the North and South Galactic Caps, targeting masks, and completeness cuts — they are not physical empty regions or isolated cosmic structures.'
+        ? `${survey} uses photometric redshifts. Radial placement is a navigation convention; each accepted row retains its supplied photo-z uncertainty.`
+        : `${survey} uses measured spectroscopic redshifts. Radial placement is a cosmological visual-navigation convention.`,
+    footprint: isComposite
+      ? 'The stack retains 2MRS all-sky selection and the DESI North/South survey footprint separately. Spatial overlap can contain duplicate astrophysical sources across catalogues.'
+      : isDesi
+        ? 'DESI DR1 LSS does not observe the full sky. Separated point clouds follow the North and South Galactic Caps, targeting masks, and completeness cuts — they are not physical empty regions or isolated cosmic structures.'
+        : photo
+          ? `${survey} has a survey footprint, masking, and photo-z uncertainty. These are measurement properties, not empty physical regions.`
+          : `${survey} has target selection and sky coverage limits. Gaps in the view are survey-selection effects, not physical empty space.`,
+    empty: isComposite
+      ? '<p class="empty-state">Select a rendered source row to inspect whether it originated in 2MRS or DESI DR1. The stack preserves survey provenance and is not cross-matched.</p>'
       : photo
-        ? `${survey} has a survey footprint, masking, and photo-z uncertainty. These are measurement properties, not empty physical regions.`
-        : `${survey} has target selection and sky coverage limits. Gaps in the view are survey-selection effects, not physical empty space.`,
-    empty: photo
-      ? `<p class="empty-state">Select a rendered ${escapeHtml(survey)} overview row to open its photometric-redshift source record.</p>`
-      : `<p class="empty-state">Select a measured ${escapeHtml(survey)} point to open its source record.</p>`,
+        ? `<p class="empty-state">Select a rendered ${escapeHtml(survey)} overview row to open its photometric-redshift source record.</p>`
+        : `<p class="empty-state">Select a measured ${escapeHtml(survey)} point to open its source record.</p>`,
   };
 }
 
 function enabledTracerNames(state) {
   return TRACERS.filter((tracer) => state.tracerFilters?.[tracer] !== false);
+}
+
+function sourceCount(metrics, id) {
+  return Number(metrics?.sourceCounts?.[id] || 0);
 }
 
 export class LightconeInterface {
@@ -82,10 +100,49 @@ export class LightconeInterface {
       galaxies: document.querySelector('#toggle-galaxies'), reset: document.querySelector('#reset-view'), focusLocal: document.querySelector('#focus-local'),
       visibleCount: document.querySelector('#visible-count'), depth: document.querySelector('#depth-readout'), lookback: document.querySelector('#lookback-readout'), railMode: document.querySelector('#rail-mode'), railDetail: document.querySelector('#rail-detail'),
       sourceLink: document.querySelector('#source-link'), cornerNote: document.querySelector('#corner-note'), objectInspector: document.querySelector('#object-inspector'), closeInspector: document.querySelector('#close-inspector'), inspector: document.querySelector('#inspector-content'),
+      layerShortcuts: [...document.querySelectorAll('[data-layer-shortcut]')],
       viewButtons: [...document.querySelectorAll('[data-spatial-mode]')], modeButtons: [...document.querySelectorAll('[data-view-mode]')], tracerModeButton: document.querySelector('[data-view-mode="tracer"]'),
       helpButton: document.querySelector('#help-button'), helpModal: document.querySelector('#help-modal'), closeHelp: document.querySelector('#close-help'),
       loadingScreen: document.querySelector('#loading-screen'), loadingTitle: document.querySelector('#loading-title'), loadingCopy: document.querySelector('#loading-copy'), loadingMeterBar: document.querySelector('#loading-meter-bar'), loadingDataset: document.querySelector('#loading-dataset'), loadingCount: document.querySelector('#loading-count'),
     };
+    this.installSurveyOptions();
+    this.installSurveyColourMode();
+  }
+
+  installSurveyOptions() {
+    const select = this.dom.surveyLayer;
+    if (!select) return;
+    if (!select.querySelector('option[value="all-live"]')) {
+      const option = document.createElement('option');
+      option.value = 'all-live';
+      option.textContent = 'AVAILABLE · 2MRS + DESI DR1 comparison stack';
+      select.insertBefore(option, select.firstChild);
+    }
+    [...select.options].forEach((option) => {
+      const layer = SURVEY_LAYERS[option.value];
+      if (!layer) return;
+      option.disabled = layer.installed === false;
+      if (layer.installed === false && !option.textContent.includes('PENDING')) option.textContent = `${option.textContent} — PENDING SOURCE VALIDATION`;
+    });
+  }
+
+  installSurveyColourMode() {
+    const host = document.querySelector('.mode-switch');
+    if (!host || host.querySelector('[data-view-mode="survey"]')) return;
+    const button = document.createElement('button');
+    button.className = 'mode-button';
+    button.type = 'button';
+    button.dataset.viewMode = 'survey';
+    button.textContent = 'Source';
+    button.disabled = true;
+    host.append(button);
+    host.classList.add('mode-switch--five');
+    host.style.gridTemplateColumns = 'repeat(5, minmax(0, 1fr))';
+    const style = document.createElement('style');
+    style.textContent = '@media (max-width:680px){.mode-switch--five{grid-template-columns:repeat(2,minmax(0,1fr))!important}}';
+    document.head.append(style);
+    this.dom.modeButtons = [...document.querySelectorAll('[data-view-mode]')];
+    this.dom.surveyModeButton = button;
   }
 
   setLoadingState({ title, copy, dataset, count, progress = 18 } = {}) {
@@ -104,15 +161,22 @@ export class LightconeInterface {
 
   updateSpatialCopy(mode, state = null) {
     const defaultCopy = SPATIAL_COPY[mode] || SPATIAL_COPY.slice;
+    const isComposite = this.currentLayer?.id === 'all-live' || Boolean(this.currentMeta?.composite);
     const isDesi = this.currentLayer?.id === 'desi-dr1';
-    const tracerText = state && isDesi ? enabledTracerNames(state).join(' · ') || 'no tracer classes' : null;
-    const copy = isDesi && mode === 'lightcone'
+    const tracerText = state && (isDesi || isComposite) ? enabledTracerNames(state).join(' · ') || 'no tracer classes' : null;
+    const copy = isComposite && mode === 'lightcone'
       ? {
-        title: 'DESI DR1 spectroscopic lightcone.',
-        description: 'Six million measured redshifts underpin this view. The separated regions are the real North/South survey footprint — not a fabricated all-sky cosmic web.',
-        railMode: 'DESI DR1 lightcone',
+        title: '2MRS + DESI observed-survey stack.',
+        description: 'The nearby 2MRS anchor and deep DESI DR1 footprint are displayed together for comparison. This is a non-deduplicated stack; source colours and point inspection retain the original survey identity.',
+        railMode: 'Available survey stack',
       }
-      : defaultCopy;
+      : isDesi && mode === 'lightcone'
+        ? {
+          title: 'DESI DR1 spectroscopic lightcone.',
+          description: 'Six million measured redshifts underpin this view. The separated regions are the real North/South survey footprint — not a fabricated all-sky cosmic web.',
+          railMode: 'DESI DR1 lightcone',
+        }
+        : defaultCopy;
     this.dom.sceneTitle.textContent = copy.title;
     this.dom.sceneDescription.textContent = copy.description;
     this.dom.railMode.textContent = copy.railMode;
@@ -121,11 +185,15 @@ export class LightconeInterface {
   }
 
   setTracerControls(meta, state, layer) {
-    const available = layer?.id === 'desi-dr1' && Object.keys(meta.tracer_counts || {}).length > 0;
+    const available = (layer?.id === 'desi-dr1' || layer?.id === 'all-live') && Object.keys(meta.tracer_counts || {}).length > 0;
     this.dom.tracerSection.hidden = !available;
     if (this.dom.tracerModeButton) {
       this.dom.tracerModeButton.disabled = !available;
       if (!available && state.viewMode === 'tracer') state.viewMode = 'catalog';
+    }
+    if (this.dom.surveyModeButton) {
+      this.dom.surveyModeButton.disabled = !meta.composite;
+      if (!meta.composite && state.viewMode === 'survey') state.viewMode = 'catalog';
     }
     this.dom.tracerInputs.forEach((input) => {
       input.disabled = !available;
@@ -144,32 +212,45 @@ export class LightconeInterface {
     this.tileStreamStatus = null;
     document.body.dataset.layer = layer.id;
     this.dom.surveyLayer.value = layer.id;
-    this.dom.surveyLayerStatus.textContent = copy.photo ? 'photo-z' : 'spectroscopic';
-    this.dom.surveyLayerNote.textContent = meta.overview_count
-      ? `${formatNumber(meta.object_count)} observed rows; ${formatNumber(meta.overview_count)} real rows in the public browser overview. Full-resolution tiles remain outside Git history.`
-      : `${formatNumber(meta.object_count)} observed rows are loaded from the browser catalogue.`;
+    this.dom.surveyLayerStatus.textContent = copy.photo ? 'photo-z' : copy.isComposite ? 'comparison stack' : 'spectroscopic';
+    this.dom.surveyLayerNote.textContent = copy.isComposite
+      ? `${formatNumber(meta.object_count)} source rows before cross-survey matching; ${formatNumber(meta.overview_count)} public rows in the stack. The two catalogues remain separately identified and are not deduplicated.`
+      : meta.overview_count
+        ? `${formatNumber(meta.object_count)} observed rows; ${formatNumber(meta.overview_count)} real rows in the public browser overview. Full-resolution tiles remain outside Git history.`
+        : `${formatNumber(meta.object_count)} observed rows are loaded from the browser catalogue.`;
     this.dom.sceneEyebrow.textContent = layer.eyebrow;
     this.dom.redshiftNote.textContent = copy.redshift;
     this.dom.footprintNote.textContent = copy.footprint;
     this.dom.datasetStatus.textContent = meta.dataset_label || layer.label;
     this.dom.summaryLayer.textContent = meta.source_survey || layer.label;
     this.dom.summaryCount.textContent = meta.overview_count ? `${formatNumber(meta.overview_count)} shown` : `${formatNumber(meta.object_count)} rows`;
-    this.dom.footprintIndicator.hidden = !copy.isDesi;
-    this.dom.footprintIndicatorCopy.textContent = copy.isDesi ? 'North/South Galactic Cap coverage and targeting geometry.' : 'Coverage is set by the active catalogue.';
-    this.dom.surveyModeStatus.textContent = copy.photo ? 'photo-z uncertainty retained' : 'measured redshifts';
-    this.dom.sourceLink.textContent = `${meta.source_survey || layer.id} source record ↗`;
+    this.dom.footprintIndicator.hidden = !copy.hasDesi;
+    this.dom.footprintIndicatorCopy.textContent = copy.isComposite
+      ? '2MRS selection and DESI North/South footprint are retained separately.'
+      : copy.isDesi
+        ? 'North/South Galactic Cap coverage and targeting geometry.'
+        : 'Coverage is set by the active catalogue.';
+    this.dom.surveyModeStatus.textContent = copy.isComposite ? 'separate survey provenance' : copy.photo ? 'photo-z uncertainty retained' : 'measured redshifts';
+    this.dom.sourceLink.textContent = copy.isComposite ? 'Survey source ledger ↗' : `${meta.source_survey || layer.id} source record ↗`;
     this.dom.sourceLink.href = 'docs/sources.md';
-    this.dom.cornerNote.textContent = `${meta.source_survey || layer.id} · ${meta.source_release || 'source provenance in record'} · ${copy.isDesi ? 'survey footprint and tracer filters shown explicitly' : copy.photo ? 'photometric redshift with radial uncertainty' : 'spectroscopic survey placement'}`;
+    this.dom.cornerNote.textContent = copy.isComposite
+      ? '2MRS + DESI DR1 · non-deduplicated comparison stack · source colours and records retained'
+      : `${meta.source_survey || layer.id} · ${meta.source_release || 'source provenance in record'} · ${copy.hasDesi ? 'survey footprint and tracer filters shown explicitly' : copy.photo ? 'photometric redshift with radial uncertainty' : 'spectroscopic survey placement'}`;
     this.dom.focusLocal.disabled = !layer.supportsSlice;
     this.dom.focusLocal.textContent = layer.supportsSlice ? 'Return to local slice' : 'Observer lightcone only';
     this.dom.viewButtons.forEach((button) => { button.disabled = button.dataset.spatialMode === 'slice' && !layer.supportsSlice; });
     if (!layer.supportsSlice && state.spatialMode === 'slice') state.spatialMode = 'lightcone';
+    this.dom.layerShortcuts.forEach((button) => {
+      const active = button.dataset.layerShortcut === layer.id;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
     this.setTracerControls(meta, state, layer);
     this.dom.inspector.innerHTML = copy.empty;
   }
 
   setTileStreamingStatus({ available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason } = {}) {
-    if (this.currentLayer?.id !== 'desi-dr1') return;
+    if (!['desi-dr1', 'all-live'].includes(this.currentLayer?.id)) return;
     this.tileStreamStatus = { available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason };
     const overview = formatNumber(this.currentMeta?.overview_count || 0);
     const full = formatNumber(this.currentMeta?.object_count || 0);
@@ -177,12 +258,14 @@ export class LightconeInterface {
     if (available && active) {
       const loaded = Number.isFinite(Number(loadedTiles)) ? `${loadedTiles}/${requestedTiles || loadedTiles} active tiles` : 'adaptive tiles active';
       const rows = Number.isFinite(Number(streamedRows)) ? `${formatNumber(streamedRows)} streamed rows` : 'camera-selected observed rows';
-      this.dom.surveyLayerNote.textContent = `Adaptive ${delivery || 'tile'} delivery is active: ${loaded}; ${rows}. The 125k overview remains the global context while detail follows the camera.`;
-      this.dom.budgetNote.textContent = `Rendering is capped at the browser budget. Adaptive tiles add real camera-relevant rows without downloading all ${full} DESI rows at once.`;
+      this.dom.surveyLayerNote.textContent = `Adaptive ${delivery || 'tile'} delivery is active: ${loaded}; ${rows}. The public overview remains global context while detail follows the camera.`;
+      this.dom.budgetNote.textContent = `Rendering is capped at the browser budget. Adaptive tiles add real camera-relevant rows without downloading all ${full} source rows at once.`;
       return;
     }
-    this.dom.surveyLayerNote.textContent = `This deployment renders the ${overview}-row deterministic DESI overview. The full ${full}-row store is partitioned into ${tiles} tiles; ${reason || 'no local or remote tile endpoint is configured.'}`;
-    this.dom.budgetNote.textContent = `The 125k overview gives an instant public load. Full-resolution tiles stream only from a local build or configured object-store endpoint.`;
+    this.dom.surveyLayerNote.textContent = this.currentMeta?.composite
+      ? `The comparison stack contains ${overview} public rows. DESI detail can stream from its ${tiles}-tile local build or configured object-store endpoint; 2MRS remains the nearby baseline.`
+      : `This deployment renders the ${overview}-row deterministic DESI overview. The full ${full}-row store is partitioned into ${tiles} tiles; ${reason || 'no local or remote tile endpoint is configured.'}`;
+    this.dom.budgetNote.textContent = `The public overview gives an instant first load. Full-resolution tiles stream only from a local build or configured object-store endpoint.`;
   }
 
   syncControlsFromState(state) {
@@ -203,6 +286,7 @@ export class LightconeInterface {
 
   bind({ getState, onStateChange, onSpatialModeChange, onReset, onFocusLocal, onCloseSelection, onLayerChange }) {
     [this.dom.surveyLayer, this.dom.maxRedshift, this.dom.sliceThickness, this.dom.sliceOffset, this.dom.pointBudget, this.dom.galaxies, this.dom.focusLocal, ...this.dom.viewButtons, ...this.dom.modeButtons].forEach((item) => { item.disabled = false; });
+    this.installSurveyOptions();
     const drawerOpen = (open) => {
       this.dom.controlDrawer.hidden = !open;
       document.body.classList.toggle('lens-open', open);
@@ -237,6 +321,7 @@ export class LightconeInterface {
       onSpatialModeChange(state.spatialMode);
     }));
     this.dom.modeButtons.forEach((button) => button.addEventListener('click', () => {
+      if (button.disabled) return;
       const state = getState();
       state.viewMode = button.dataset.viewMode;
       this.syncControlsFromState(state);
@@ -259,27 +344,41 @@ export class LightconeInterface {
     this.dom.helpButton.addEventListener('click', () => setHelp(true));
     this.dom.closeHelp.addEventListener('click', () => setHelp(false));
     this.dom.helpModal.addEventListener('click', (event) => { if (event.target === this.dom.helpModal) setHelp(false); });
-    window.addEventListener('keydown', (event) => { if (event.key === 'Escape') { setHelp(false); drawerOpen(false); } });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') { setHelp(false); drawerOpen(false); return; }
+      const editable = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+      if (!editable && event.key.toLowerCase() === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        onReset();
+        this.dom.objectInspector.hidden = true;
+      }
+    });
   }
 
   setDataReady(meta, maxRedshift, state, layer) {
     const count = formatNumber(meta.object_count);
     const photo = meta.measurement_kind === 'photometric';
+    const composite = Boolean(meta.composite);
     this.setLayerControls(meta, state, layer);
     this.dom.datasetDot.classList.remove('status-dot--pending');
-    this.dom.openingCount.textContent = meta.overview_count
-      ? `${meta.source_survey} · ${count} observed ${photo ? 'photo-z ' : ''}rows · ${formatNumber(meta.overview_count)} real rows in this overview`
-      : `${meta.source_survey} · ${count} observed rows`;
+    this.dom.openingCount.textContent = composite
+      ? `${count} source rows across 2MRS + DESI · ${formatNumber(meta.overview_count)} public rows in this non-deduplicated comparison stack`
+      : meta.overview_count
+        ? `${meta.source_survey} · ${count} observed ${photo ? 'photo-z ' : ''}rows · ${formatNumber(meta.overview_count)} real rows in this overview`
+        : `${meta.source_survey} · ${count} observed rows`;
     this.dom.maxRedshift.max = Math.max(0.02, Math.ceil(maxRedshift * 10000) / 10000).toFixed(4);
     this.dom.pointBudget.max = String(Math.max(50_000, Number(meta.overview_count || meta.object_count || 50_000)));
     this.syncControlsFromState(state);
     this.setLoadingState({
-      title: layer.id === 'desi-dr1' ? 'The DESI survey field is ready' : photo ? 'The wide photometric Universe is ready' : 'The observed survey volume is ready',
-      copy: layer.id === 'desi-dr1'
-        ? 'Real BGS, LRG, ELG and QSO rows are available as a deterministic browser overview. The footprint and tracer filters are visible in the Data Lens.'
-        : photo
-          ? 'Real photometric-redshift rows are displayed in an observer-centred lightcone with their published radial uncertainty retained.'
-          : 'Real measured spectroscopic rows are now arranged in an observer-centred spatial view.',
+      title: composite
+        ? 'Available surveys are ready'
+        : layer.id === 'desi-dr1' ? 'The DESI survey field is ready' : photo ? 'The wide photometric Universe is ready' : 'The observed survey volume is ready',
+      copy: composite
+        ? 'Use Source colour to distinguish the nearby 2MRS anchor from the DESI DR1 overview. Each point retains its source record; the stack is not cross-matched or completeness-corrected.'
+        : layer.id === 'desi-dr1'
+          ? 'Real BGS, LRG, ELG and QSO rows are available as a deterministic browser overview. The footprint and tracer filters are visible in the Data Lens.'
+          : photo
+            ? 'Real photometric-redshift rows are displayed in an observer-centred lightcone with their published radial uncertainty retained.'
+            : 'Real measured spectroscopic rows are now arranged in an observer-centred spatial view.',
       dataset: meta.dataset_label || layer.label,
       count: meta.overview_count ? `${count} source rows · ${formatNumber(meta.overview_count)} overview rows` : `${count} observed rows`,
       progress: 100,
@@ -304,7 +403,18 @@ export class LightconeInterface {
       const count = metrics.tracerCounts?.[tracer];
       if (count !== undefined) countNode.textContent = formatNumber(count);
     });
-    if (this.currentLayer?.id === 'desi-dr1') {
+    const isComposite = this.currentLayer?.id === 'all-live' || Boolean(this.currentMeta?.composite);
+    const isDesi = this.currentLayer?.id === 'desi-dr1';
+    if (isComposite) {
+      const stream = this.tileStreamStatus;
+      const streamDetail = stream?.active
+        ? ` · ${stream.loadedTiles || 0}/${stream.requestedTiles || 0} adaptive DESI tiles`
+        : ' · public overview stack';
+      this.dom.railDetail.textContent = `2MRS ${formatNumber(sourceCount(metrics, '2mrs'))} + DESI ${formatNumber(sourceCount(metrics, 'desi-dr1'))} candidate rows · non-deduplicated${streamDetail}`;
+      this.dom.summaryCount.textContent = `${formatNumber(metrics.visibleCount)} drawn`;
+      return;
+    }
+    if (isDesi) {
       const stream = this.tileStreamStatus;
       const streamDetail = stream?.active
         ? ` · ${stream.loadedTiles || 0}/${stream.requestedTiles || 0} adaptive tiles`
@@ -328,11 +438,12 @@ export class LightconeInterface {
     const uncertainty = Number(object.redshift_error);
     const hasCz = Number.isFinite(Number(object.cz_km_s));
     const tracer = object.tracer ? `<div><dt>DESI tracer</dt><dd>${escapeHtml(object.tracer)} · ${escapeHtml(TRACER_LABELS[object.tracer] || object.tracer)}</dd></div>` : '';
+    const sourceLayer = object.source_layer ? `<div><dt>Survey layer</dt><dd>${escapeHtml(object.source_layer === '2mrs' ? '2MRS' : object.source_layer === 'desi-dr1' ? 'DESI DR1 LSS' : object.source_layer)}</dd></div>` : '';
     const positional = `<div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>`;
     const values = photo
-      ? `<div><dt>Photometric z</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Photo-z uncertainty</dt><dd>±${formatRedshift(uncertainty)}</dd></div><div><dt>Comoving placement</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div><div><dt>Placement note</dt><dd>not exact radial distance</dd></div>`
-      : `<div><dt>${hasCz ? 'cz' : 'Spectroscopic z'}</dt><dd>${hasCz ? formatVelocity(object.cz_km_s) : formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back time</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div>`;
-    const tag = object.tracer ? `OBSERVED / DESI ${escapeHtml(object.tracer)}` : `OBSERVED / ${photo ? 'PHOTOMETRIC' : 'SPECTROSCOPIC'}`;
+      ? `<div><dt>Photometric z</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Photo-z uncertainty</dt><dd>±${formatRedshift(uncertainty)}</dd></div><div><dt>Comoving placement</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${sourceLayer}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div><div><dt>Placement note</dt><dd>not exact radial distance</dd></div>`
+      : `<div><dt>${hasCz ? 'cz' : 'Spectroscopic z'}</dt><dd>${hasCz ? formatVelocity(object.cz_km_s) : formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back time</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${sourceLayer}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div>`;
+    const tag = object.source_layer ? `OBSERVED / ${escapeHtml(object.source_layer.toUpperCase())}` : object.tracer ? `OBSERVED / DESI ${escapeHtml(object.tracer)}` : `OBSERVED / ${photo ? 'PHOTOMETRIC' : 'SPECTROSCOPIC'}`;
     this.dom.inspector.innerHTML = `<div class="object-tag">${tag}</div><h2>${escapeHtml(object.name || object.object_id)}</h2><p class="object-type">${escapeHtml(object.source_survey)} · ${escapeHtml(object.source_table)} · ${escapeHtml(object.object_id)}</p><dl class="object-metrics">${values}</dl><div class="provenance-block"><span>PROVENANCE</span><strong>${escapeHtml(object.source_release)}</strong><p>${escapeHtml(object.source_url)}</p><p>${escapeHtml(object.distance_note)}</p></div>`;
   }
 
