@@ -14,9 +14,16 @@ export const DESI_TRACERS = Object.freeze(['BGS', 'LRG', 'ELG', 'QSO']);
 export const TILE_STREAMING = Object.freeze({
   'desi-dr1': {
     enabled: true,
-    // Set this to a directory that contains the same index.json/tiles layout as
-    // data/processed/desi-dr1 after publishing tiles to object storage. Leave null
-    // to probe the local relative tile directory only.
+    remoteBaseUrl: null,
+    maxTiles: 18,
+    maxCachedTiles: 42,
+    maxLoadedRows: 180_000,
+    refreshDebounceMs: 550,
+  },
+  'all-live': {
+    enabled: true,
+    // Uses the DESI tile store for depth detail while preserving the full 2MRS
+    // public layer as the nearby anchor in the composite view.
     remoteBaseUrl: null,
     maxTiles: 18,
     maxCachedTiles: 42,
@@ -26,6 +33,19 @@ export const TILE_STREAMING = Object.freeze({
 });
 
 export const SURVEY_LAYERS = Object.freeze({
+  'all-live': {
+    id: 'all-live',
+    label: 'Available surveys · 2MRS + DESI DR1',
+    eyebrow: 'AVAILABLE SURVEYS / OBSERVED STACK',
+    dataKind: 'composite',
+    memberLayerIds: ['2mrs', 'desi-dr1'],
+    defaultMaxRedshift: 2.5,
+    defaultPointBudget: 125_000,
+    defaultSpatialMode: 'lightcone',
+    supportsSlice: false,
+    installed: true,
+    localBuild: 'Included whenever the 2MRS and DESI browser layers are available.',
+  },
   '2mrs': {
     id: '2mrs',
     label: '2MRS · 43,533 spectroscopic rows',
@@ -36,6 +56,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 44_500,
     defaultSpatialMode: 'slice',
     supportsSlice: true,
+    installed: true,
     localBuild: 'Included in the public baseline.',
   },
   '2mpz': {
@@ -48,6 +69,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 100_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
+    installed: false,
     localBuild: 'Awaiting a corrected, validated official source endpoint before local ingestion is re-enabled.',
   },
   'wise-sc': {
@@ -60,6 +82,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 125_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
+    installed: false,
     localBuild: 'Awaiting a corrected, validated official source endpoint before local ingestion is re-enabled.',
   },
   'desi-dr1': {
@@ -72,6 +95,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 125_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
+    installed: true,
     localBuild: 'scripts\\download_desi_dr1_lss.py --yes then scripts\\build_desi_dr1_tile_store.py',
   },
 });
@@ -80,4 +104,5 @@ export const PALETTE = Object.freeze({
   cyan: [0.30, 0.86, 1.0],
   violet: [0.73, 0.61, 1.0],
   amber: [1.0, 0.70, 0.41],
+  green: [0.47, 0.93, 0.63],
 });
