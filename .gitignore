@@ -26,6 +26,9 @@ data/processed/*
 !data/processed/wise-sc/.gitkeep
 !data/processed/desi-dr1/
 !data/processed/desi-dr1/.gitkeep
+# Public deterministic browser overview; full raw FITS and detailed tiles remain excluded.
+!data/processed/desi-dr1/index.json
+!data/processed/desi-dr1/overview.json
 !data/processed/gaia-dr3/
 !data/processed/gaia-dr3/.gitkeep
 
@@ -34,3 +37,13 @@ data/processed/*
 Thumbs.db
 .vscode/
 .idea/
+
+# LaTeX report build artefacts
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.log
+report/*.out
+report/*.toc

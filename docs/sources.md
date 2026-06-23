@@ -26,11 +26,12 @@
 
 ## DESI DR1 LSS
 
-- **Survey:** Dark Energy Spectroscopic Instrument Data Release 1
-- **Local source products:** explicit BGS, LRG, ELG and/or QSO official LSS clustering files selected during acquisition
+- **Survey:** Dark Energy Spectroscopic Instrument Data Release 1 LSS clustering catalogues
+- **Current local build:** BGS, LRG, ELG and QSO NGC/SGC clustering files; 6,093,818 accepted source rows and 4,205 local spatial tiles
+- **Public browser product:** deterministic 125,000-row overview with an explicit non-scientific-selection flag
 - **Measurement:** spectroscopic redshift
-- **Browser treatment:** observer lightcone; manifest lists source filename, tracer and raw checksum
-- **Citation key:** `DESI2026_DR1`
+- **Browser treatment:** observer lightcone; tracer class retained in the source identifier; separated NGC/SGC regions are footprint and selection geometry
+- **Citation key:** `DESI_DR1`
 
 ## Gaia DR3 local stellar context
 

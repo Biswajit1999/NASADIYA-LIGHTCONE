@@ -3,6 +3,13 @@ import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
 import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js';
 import { hslToRgb } from '../utils/math.js';
 
+const TRACER_COLOURS = Object.freeze({
+  BGS: [0.30, 0.86, 1.0],
+  LRG: [1.0, 0.70, 0.41],
+  ELG: [0.47, 0.93, 0.63],
+  QSO: [0.73, 0.61, 1.0],
+});
+
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
@@ -28,11 +35,23 @@ function observedColour(object, maxRedshift) {
   ];
 }
 
+function tracerColour(object, maxRedshift) {
+  const base = TRACER_COLOURS[object.tracer];
+  if (!base) return observedColour(object, maxRedshift);
+  const distanceFade = clamp01(Number(object.redshift) / Math.max(maxRedshift, 0.001));
+  return base.map((component) => THREE.MathUtils.lerp(component, 0.96, distanceFade * 0.10));
+}
+
 function sliceEdgeAlpha(distanceFromPlane, halfThickness) {
   if (halfThickness <= 0) return 0;
   const edgeStart = halfThickness * 0.7;
   if (distanceFromPlane <= edgeStart) return 1;
   return 1 - clamp01((distanceFromPlane - edgeStart) / Math.max(halfThickness - edgeStart, 0.001));
+}
+
+function isTracerEnabled(object, state) {
+  if (!object.tracer) return true;
+  return state.tracerFilters?.[object.tracer] !== false;
 }
 
 export class SurveyPoints {
@@ -116,7 +135,7 @@ export class SurveyPoints {
       const slabDistance = Math.abs(z - sliceOffset);
       const inSlice = slabDistance <= halfThickness;
       const isSlice = state.spatialMode === 'slice';
-      const visibleCandidate = state.showGalaxies && inRedshiftRange && (!isSlice || inSlice);
+      const visibleCandidate = state.showGalaxies && isTracerEnabled(object, state) && inRedshiftRange && (!isSlice || inSlice);
       if (visibleCandidate) candidates.push(index);
 
       if (isSlice) {
@@ -150,14 +169,16 @@ export class SurveyPoints {
       const radialDistance = Number(object.comoving_distance_mpc) || 0;
       const radialWeight = clamp01(radialDistance / this.maxDatasetDistance);
       const edgeFade = state.spatialMode === 'slice' ? sliceEdgeAlpha(slabDistance, halfThickness) : 1;
-      const baseAlpha = 0.10 + brightness * 0.50 + (1 - radialWeight) * 0.11;
-      alpha.setX(index, visible ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.05, 0.86) : 0);
+      const baseAlpha = 0.13 + brightness * 0.56 + (1 - radialWeight) * 0.15;
+      alpha.setX(index, visible ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.06, 0.92) : 0);
 
       const rgb = state.viewMode === 'time'
         ? timeColour(object, maxRedshift)
         : state.viewMode === 'uncertainty'
           ? PALETTE.violet
-          : observedColour(object, maxRedshift);
+          : state.viewMode === 'tracer'
+            ? tracerColour(object, maxRedshift)
+            : observedColour(object, maxRedshift);
       colour.setXYZ(index, rgb[0], rgb[1], rgb[2]);
 
       const baseSize = magnitude === null
@@ -172,12 +193,16 @@ export class SurveyPoints {
     size.needsUpdate = true;
 
     this.material.uniforms.uMode.value = state.viewMode === 'uncertainty' ? 1 : state.viewMode === 'time' ? 2 : 0;
-    const denseScale = this.objects.length > 75_000 ? 0.82 : 1.0;
+    const denseScale = this.objects.length > 75_000 ? 0.96 : 1.0;
     this.material.uniforms.uPointScale.value = state.spatialMode === 'slice'
-      ? denseScale * (state.pointBudget < 12_000 ? 1.28 : 1.1)
-      : denseScale * (state.pointBudget < 12_000 ? 1.14 : 1.0);
+      ? denseScale * (state.pointBudget < 12_000 ? 1.34 : 1.16)
+      : denseScale * (state.pointBudget < 12_000 ? 1.20 : 1.08);
 
     const candidateObjects = candidates.map((index) => this.objects[index]);
+    const tracerCounts = candidateObjects.reduce((counts, object) => {
+      if (object.tracer) counts[object.tracer] = (counts[object.tracer] || 0) + 1;
+      return counts;
+    }, {});
     return {
       visibleCount: visibleSet.size,
       candidateCount: candidates.length,
@@ -185,6 +210,7 @@ export class SurveyPoints {
       overviewCount: Number(this.meta.overview_count || this.objects.length),
       maxDistance: Math.max(0, ...candidateObjects.map((item) => Number(item.comoving_distance_mpc) || 0)),
       maxLookback: Math.max(0, ...candidateObjects.map((item) => Number(item.lookback_time_gyr) || 0)),
+      tracerCounts,
       sliceThickness: state.spatialMode === 'slice' ? halfThickness * 2 : null,
       sliceOffset: state.spatialMode === 'slice' ? sliceOffset : null,
     };

@@ -1,71 +1,61 @@
 # NĀSADĪYA LIGHTCONE
 
-> **A survey-native browser for exploring measured galaxy structure through distance, redshift, and cosmic time.**
+> **A survey-native browser for navigating measured galaxy catalogues through redshift, distance, and cosmic time.**
 
 Created and developed by **Biswajit Jana**.
 
-NĀSADĪYA LIGHTCONE starts with the real 2MASS Redshift Survey (2MRS) and now has tested local ingestion paths for **2MPZ**, **WISE × SuperCOSMOS**, **DESI DR1 LSS**, and a separate bounded **Gaia DR3 local-star sample**. It does not generate galaxies, reconstruct decorative filaments, or mix Galactic stars into extragalactic counts.
+NĀSADĪYA LIGHTCONE is not a synthetic cosmic-web animation. Each rendered point originates in a published survey product, preserves source provenance, and remains separate from any future derived density or reconstruction layer. The project currently combines a nearby 2MRS anchor with a deep DESI DR1 LSS browser layer.
 
 [![CI](https://github.com/Biswajit1999/NASADIYA-LIGHTCONE/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-8be9fd.svg)](LICENSE)
+[![Data policy](https://img.shields.io/badge/data-provenance--first-efb276.svg)](DATA_POLICY.md)
 
-## Data layers
+## What is live now
 
-| Layer | Measurement | Build status |
+| Layer | Measurement | Current browser status |
 |---|---|---|
-| **2MRS** | Spectroscopic recession velocities | Browser-ready baseline: 43,533 accepted observed rows |
-| **2MPZ** | Photometric redshifts with explicit per-row uncertainty | Discovery download + chunked tile-store builder |
-| **WISE × SuperCOSMOS** | Photometric redshifts with explicit per-row uncertainty | Discovery download + chunked tile-store builder |
-| **DESI DR1 LSS** | Spectroscopic BGS, LRG, ELG and QSO clustering catalogues | Official-file downloader + chunked tile-store builder |
-| **Gaia DR3** | Astrometric local-star sample | Separate bounded Galactic product; not an extragalactic layer |
+| **2MRS Table 3** | Nearby spectroscopic recession velocities | Public local-Universe layer with **43,533** accepted rows |
+| **DESI DR1 LSS** | Deep spectroscopic BGS, LRG, ELG, and QSO clustering catalogues | Public deterministic overview with **125,000 real rows**; a local build retains **6,093,818 accepted rows** across **4,205 spatial tiles** |
+| **2MPZ** | Photometric redshifts | Adapter contract retained; official-source retrieval is paused until a validated published endpoint is wired in |
+| **WISE × SuperCOSMOS** | Photometric redshifts | Adapter contract retained; official-source retrieval is paused until a validated published endpoint is wired in |
+| **Gaia DR3** | Stellar astrometry/parallax | Planned as a separate Milky Way mode; never merged into extragalactic galaxy counts |
+
+The public DESI overview is a browser level of detail, not a scientific subsample. It uses a deterministic object-hash selection so the same public build is reproducible. Raw DESI FITS products and high-resolution tiles remain outside ordinary Git history.
 
 ## Scientific guardrails
 
-- Every browser point must derive from an observed source row with source metadata.
-- Photometric layers are rejected unless their selected source table contains an explicit redshift-uncertainty field.
-- Photo-z catalogues are observer-lightcone layers, not exact Cartesian 3D maps.
-- Gaia remains separate from galaxy statistics and the extragalactic lightcone.
-- Raw survey downloads and multi-million-row tile stores are excluded from Git history.
-- A wide overview is clearly labelled as a deterministic real-row level of detail, **not** a scientific subsample.
+- No generated galaxies, interpolated filaments, or decorative density points are stored as observed catalogue objects.
+- Survey footprint, masking, target selection, and incompleteness are visualised as measurement limits. Empty regions do **not** establish low physical density.
+- 2MRS local placement uses `z ≈ cz / c` and a Planck18 comoving-distance transform only for visual navigation; local peculiar velocities matter.
+- DESI DR1 LSS is a deep spectroscopic footprint, not an all-sky reconstruction. Its separated North/South regions are expected survey geometry.
+- Photometric-redshift layers must carry a published per-object uncertainty and cannot be presented as exact radial positions.
+- Derived products must have a distinct identifier, method description, and citation; they may not silently blend with observed-point layers.
 
 Read [docs/scientific-scope.md](docs/scientific-scope.md) before using the visualisation for scientific interpretation.
 
-## Run the baseline 2MRS layer locally
+## Explore locally
 
 ```cmd
+python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe scripts\verify_browser_catalog.py
+
 .\.venv\Scripts\python.exe -m http.server 8080
 ```
 
-Open `http://localhost:8080/?v=070`. Do not double-click `index.html`; the browser blocks module fetches from `file://` paths.
+Open `http://localhost:8080`. Do not double-click `index.html`: browser module security prevents it from loading local JSON products directly.
 
-## Build additional real survey layers
-
-Print the local plan first:
+For a clean clone that does not yet contain generated data, first build the small 2MRS baseline:
 
 ```cmd
-.\.venv\Scripts\python.exe scripts\survey_manager.py
+.\.venv\Scripts\python.exe scripts\download_2mrs.py
+.\.venv\Scripts\python.exe scripts\build_2mrs_lightcone.py
+.\.venv\Scripts\python.exe scripts\verify_browser_catalog.py
 ```
 
-### 2MPZ
+## Build the deep DESI layer locally
 
-```cmd
-.\.venv\Scripts\python.exe scripts\download_2mpz.py
-.\.venv\Scripts\python.exe scripts\build_2mpz_tile_store.py
-```
-
-### WISE × SuperCOSMOS
-
-```cmd
-.\.venv\Scripts\python.exe scripts\download_wise_sc.py
-.\.venv\Scripts\python.exe scripts\build_wise_sc_tile_store.py
-```
-
-The downloader uses VizieR discovery rather than a brittle guessed table key. It will only save a table after it verifies source identifier, coordinates, photo-z and **per-row** photo-z uncertainty columns. It stops cleanly rather than building a scientifically invalid layer.
-
-### DESI DR1 LSS
+The following build uses the official DESI DR1 LSS clustering products selected by the project. It downloads source FITS files, validates and converts rows, then creates a spatial tile store and deterministic browser overview.
 
 ```cmd
 .\.venv\Scripts\python.exe scripts\download_desi_dr1_lss.py --dry-run
@@ -73,31 +63,41 @@ The downloader uses VizieR discovery rather than a brittle guessed table key. It
 .\.venv\Scripts\python.exe scripts\build_desi_dr1_tile_store.py
 ```
 
-The default selection contains official BGS, LRG, ELG and QSO LSS clustering products. Use `--components bgs,lrg` to begin with a smaller explicit tracer selection.
+The generated products are deliberately excluded from normal Git commits:
 
-### Gaia DR3 local stellar context
-
-```cmd
-.\.venv\Scripts\python.exe scripts\download_gaia_dr3_local.py --yes
-.\.venv\Scripts\python.exe scripts\build_gaia_dr3_local_sample.py
+```text
+data/raw/desi-dr1/                 # official downloaded source FITS files
+data/processed/desi-dr1/tiles/     # full local spatial tile store
+data/processed/desi-dr1/index.json # compact public index
+data/processed/desi-dr1/overview.json # compact public browser overview
 ```
 
-This is a bounded quality-cut stellar sample, not Gaia’s full catalogue and not a galaxy layer.
+## Community entry points
 
-After each completed tile build, restart the local server and select the installed survey from **Data lens → Survey layer**.
+- [Getting started](docs/getting-started.md)
+- [Data access and hosting model](docs/data-access.md)
+- [Community guide](COMMUNITY.md)
+- [Contribution guide](CONTRIBUTING.md)
+- [Scientific scope](docs/scientific-scope.md)
+- [Sources and survey acknowledgement](docs/sources.md)
+- [Project report in LaTeX](report/NASADIYA_LIGHTCONE_Project_Report.tex)
+- [Banner-art direction prompt](docs/banner-prompt.md)
 
 ## Repository layout
 
 ```text
 NASADIYA-LIGHTCONE/
 ├── src/                                # Browser modules and WebGL view
-├── pipeline/nasadiya_lightcone/         # Validation, cosmology, adapters, tile store
-├── scripts/download_*.py                # Source-preserving public acquisition commands
-├── scripts/build_*.py                   # Chunked local spatial tile builders
-├── data/raw/                            # Raw source downloads — ignored by Git
-├── data/processed/                      # Local derived tiles — ignored by Git except 2MRS baseline
-├── docs/                                # Scope, architecture, source policy
-└── tests/                               # Offline parser, cosmology and tile-store checks
+├── pipeline/nasadiya_lightcone/         # Validation, cosmology, tile store
+├── scripts/                             # Download/build commands for each layer
+├── data/registry/                       # Layer registry and public contracts
+├── data/raw/                            # Source downloads - ignored by Git
+├── data/processed/2mrs/                 # Compact 2MRS browser product
+├── data/processed/desi-dr1/             # Public index/overview; full tiles ignored
+├── docs/                                # Scientific scope, quickstart, data access
+├── report/                              # LaTeX technical project report and bibliography
+├── tests/                               # Parser, cosmology, tile-store, UI contracts
+└── .github/                             # CI, issue templates, pull request template
 ```
 
 ## Checks
@@ -108,6 +108,6 @@ NASADIYA-LIGHTCONE/
 npm run check:modules
 ```
 
-## Licence and data acknowledgement
+## Citation and licence
 
-Code is released under the [MIT License](LICENSE). Survey catalogues retain their own licences, reuse terms, citations and acknowledgements. See [docs/sources.md](docs/sources.md).
+Code is released under the [MIT License](LICENSE). Please cite the software using [CITATION.cff](CITATION.cff) **and** cite every survey catalogue used in a visualisation or analysis. Survey data retain their original licences, terms, acknowledgements, and attribution requirements; they are not relicensed by this repository.

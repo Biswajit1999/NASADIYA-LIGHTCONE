@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SURVEY_LAYERS } from './config.js';
+import { DESI_TRACERS, SURVEY_LAYERS } from './config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { LightconeScene } from './core/lightcone-scene.js';
 import { SurveyPoints } from './core/survey-points.js';
@@ -14,6 +14,7 @@ const state = {
   showGalaxies: true,
   spatialMode: SURVEY_LAYERS['2mrs'].defaultSpatialMode,
   viewMode: 'catalog',
+  tracerFilters: Object.fromEntries(DESI_TRACERS.map((tracer) => [tracer, true])),
 };
 
 const canvas = document.querySelector('#lightcone-canvas');
@@ -56,7 +57,7 @@ function loadingText(layer) {
   return {
     title: tiled ? `Opening ${layer.label.split(' · ')[0]}` : 'Opening the observed local Universe',
     copy: tiled
-      ? 'Reading the local tile-store manifest and deterministic overview of real observed source rows…'
+      ? 'Reading the tile-store index and deterministic overview of real observed source rows…'
       : 'Reading the 2MRS browser catalogue and its source provenance…',
   };
 }

@@ -1,13 +1,17 @@
 # Changelog
 
-## 0.7.0 — Multi-survey ingestion foundation
+## 0.9.0 - Explorer and community release
 
-- Replaced the failed hard-coded 2MPZ VizieR retrieval path with official-archive link discovery and VizieR metadata fallback.
-- Added strict photo-z schema validation for 2MPZ and WISE × SuperCOSMOS.
-- Added chunked tile-store builders that retain all accepted real source rows locally while limiting browser overview rows deterministically.
-- Added DESI DR1 LSS acquisition/build commands for selected BGS, LRG, ELG and QSO official products.
-- Added a bounded Gaia DR3 local-star acquisition/build path kept separate from extragalactic layers.
-- Expanded Data Lens with 2MPZ, WISE × SuperCOSMOS and DESI DR1 layer choices.
-- Preserved the 2MRS 43,533-row baseline and Biswajit Jana authorship line.
+- Reframed the browser around a compact explorer-first visual composition, giving the measured point field more of the canvas.
+- Tightened deep-lightcone camera framing and increased point-field legibility without inventing any objects or filament geometry.
+- Added concise active-layer/source telemetry and a DESI survey-footprint indicator.
+- Added public-facing getting-started, data-access, community, roadmap, and banner-art guidance.
+- Added a technical LaTeX project report and bibliography.
+- Added a feature request issue template and pull-request checklist.
+- Corrected public documentation to state that 2MPZ and WISE × SuperCOSMOS ingestion remains paused until validated official source endpoints are implemented.
 
-No raw catalogue, million-row tile store, or synthetic data is included in this source release.
+## 0.8.0 - DESI Explorer
+
+- Added DESI BGS, LRG, ELG, and QSO filters parsed from retained source identifiers.
+- Added tracer colour mode and tracer information in the source inspector.
+- Added explicit North/South footprint caveats for the DESI LSS layer.

@@ -7,7 +7,7 @@
     <meta name="description" content="NĀSADĪYA LIGHTCONE — a survey-native 3D view of measured galaxies from local to wide-area catalogues." />
     <title>NĀSADĪYA LIGHTCONE — Survey-native Universe</title>
     <link rel="icon" href="assets/nasadiya-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles/main.css?v=060" />
+    <link rel="stylesheet" href="styles/main.css?v=090" />
     <script type="importmap">
       {
         "imports": {
@@ -42,11 +42,20 @@
 
       <section class="editorial-intro" aria-live="polite">
         <p id="scene-eyebrow" class="eyebrow">LOCAL UNIVERSE / 2MRS</p>
-        <h1 id="scene-title">A slice through the observed galaxy field.</h1>
-        <p id="scene-description">Real survey rows, arranged in an observer-centred Cartesian slab. Drag to orbit, scroll to move closer, and select a point for its source record.</p>
+        <h1 id="scene-title">Local observed galaxy field.</h1>
+        <p id="scene-description">A compact exploration view of real survey rows. Orbit, zoom, and select a point to inspect the source record and its provenance.</p>
         <div class="intro-rule"><span></span></div>
+        <dl class="context-readout" aria-label="Active survey context">
+          <div><dt>Layer</dt><dd id="summary-layer">2MRS</dd></div>
+          <div><dt>Sources</dt><dd id="summary-count">Preparing</dd></div>
+        </dl>
         <p id="opening-count" class="intro-count">Preparing the catalogue…</p>
       </section>
+
+      <aside id="footprint-indicator" class="footprint-indicator" hidden aria-live="polite">
+        <span class="footprint-pulse" aria-hidden="true"></span>
+        <span><b>Survey footprint visible</b><small id="footprint-indicator-copy">Coverage is set by the active catalogue.</small></span>
+      </aside>
 
       <div class="top-tools">
         <button id="help-button" class="icon-control" type="button" aria-label="Open navigation note">?</button>
@@ -78,12 +87,12 @@
         <section class="drawer-section survey-layer-section">
           <label for="survey-layer"><span>Survey layer</span><output id="survey-layer-status">local</output></label>
           <select id="survey-layer" disabled>
-            <option value="2mrs">2MRS · 43,533 local spectroscopic rows</option>
-            <option value="2mpz">2MPZ · ~1 million photo-z galaxies</option>
-            <option value="wise-sc">WISE × SuperCOSMOS · ~20 million photo-z galaxies</option>
-            <option value="desi-dr1">DESI DR1 LSS · deep spectroscopic survey layer</option>
+            <option value="2mrs">2MRS · local spectroscopic layer</option>
+            <option value="desi-dr1">DESI DR1 LSS · deep spectroscopic survey</option>
+            <option value="2mpz">2MPZ · ~1M photometric-redshift layer</option>
+            <option value="wise-sc">WISE × SuperCOSMOS · ~20M photo-z galaxies</option>
           </select>
-          <p id="survey-layer-note">2MRS is installed. Each additional survey appears only after its real source download and local tile-store build.</p>
+          <p id="survey-layer-note">Choose a local or deep observed survey layer. Uninstalled layers remain explicit rather than being simulated.</p>
         </section>
 
         <section class="drawer-section">
@@ -106,10 +115,25 @@
           <p id="budget-note">This is a browser display budget. It does not alter the underlying catalogue or source provenance.</p>
         </section>
 
+        <section id="desi-tracer-section" class="drawer-section desi-tracer-section" hidden>
+          <div class="tracer-heading">
+            <span class="drawer-label">DESI tracer classes</span>
+            <span class="tracer-heading-note">real target classes</span>
+          </div>
+          <div class="tracer-grid" role="group" aria-label="DESI tracer class filters">
+            <label class="tracer-control tracer-control--bgs"><input type="checkbox" value="BGS" data-desi-tracer checked disabled /><span><b>BGS</b><small>Bright galaxies</small></span><em data-tracer-count="BGS">—</em></label>
+            <label class="tracer-control tracer-control--lrg"><input type="checkbox" value="LRG" data-desi-tracer checked disabled /><span><b>LRG</b><small>Red galaxies</small></span><em data-tracer-count="LRG">—</em></label>
+            <label class="tracer-control tracer-control--elg"><input type="checkbox" value="ELG" data-desi-tracer checked disabled /><span><b>ELG</b><small>Emission-line</small></span><em data-tracer-count="ELG">—</em></label>
+            <label class="tracer-control tracer-control--qso"><input type="checkbox" value="QSO" data-desi-tracer checked disabled /><span><b>QSO</b><small>Quasars</small></span><em data-tracer-count="QSO">—</em></label>
+          </div>
+          <p>Tracer classes are parsed from the real DESI object identifier. Disabling a class changes the rendered view only; it does not alter the source catalogue.</p>
+        </section>
+
         <section class="drawer-section">
           <span class="drawer-label">Colour treatment</span>
-          <div class="mode-switch" role="group" aria-label="Colour representation">
+          <div class="mode-switch mode-switch--four" role="group" aria-label="Colour representation">
             <button class="mode-button is-active" data-view-mode="catalog" type="button" disabled>Observed</button>
+            <button class="mode-button" data-view-mode="tracer" type="button" disabled>Tracer</button>
             <button class="mode-button" data-view-mode="time" type="button" disabled>Look-back</button>
             <button class="mode-button" data-view-mode="uncertainty" type="button" disabled>Uncertainty</button>
           </div>
@@ -158,7 +182,7 @@
             <div><strong>Click</strong><span>Open one rendered catalogue row and its source metadata.</span></div>
             <div><strong>R</strong><span>Return to the intended camera frame for the active layer.</span></div>
           </div>
-          <p class="help-note">Spectroscopic layers use measured redshifts. Photometric layers retain published per-row radial uncertainty and are therefore available only as observer lightcones, not exact Cartesian slices. Gaia is kept separate as a local Milky Way stellar context layer.</p>
+          <p class="help-note">2MRS provides the local spectroscopic anchor. DESI DR1 LSS is a deep but incomplete-sky survey: its separated North/South patterns are real footprint and targeting geometry. In DESI mode, Data Lens can filter BGS, LRG, ELG, and QSO source classes without creating or moving any objects.</p>
         </section>
       </div>
 
@@ -175,6 +199,6 @@
 
       <noscript><div class="noscript">NĀSADĪYA LIGHTCONE requires JavaScript and WebGL.</div></noscript>
     </main>
-    <script type="module" src="src/app.js?v=070"></script>
+    <script type="module" src="src/app.js?v=090"></script>
   </body>
 </html>

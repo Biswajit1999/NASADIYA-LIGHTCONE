@@ -2,15 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const SLICE_CAMERA = new THREE.Vector3(0, 0, 940);
-const LIGHTCONE_CAMERA = new THREE.Vector3(1180, 740, 1400);
+const LIGHTCONE_CAMERA = new THREE.Vector3(1060, 570, 1260);
 
 function scaledFrame(distanceMpc, mode) {
-  const scaledRadius = Math.max(320, Number(distanceMpc || 0) * 3.0);
+  const scaledRadius = Math.max(300, Number(distanceMpc || 0) * 3.0);
   if (mode === 'lightcone') {
-    const distance = Math.max(1400, scaledRadius * 1.65);
-    return { position: new THREE.Vector3(distance * 0.82, distance * 0.52, distance), target: new THREE.Vector3() };
+    // Tighter, still full-footprint framing: the survey is the visual subject, not the surrounding empty canvas.
+    const distance = Math.max(1320, scaledRadius * 1.30);
+    return { position: new THREE.Vector3(distance * 0.72, distance * 0.39, distance * 0.94), target: new THREE.Vector3() };
   }
-  return { position: new THREE.Vector3(0, 0, Math.max(940, scaledRadius * 0.70)), target: new THREE.Vector3() };
+  return { position: new THREE.Vector3(0, 0, Math.max(840, scaledRadius * 0.62)), target: new THREE.Vector3() };
 }
 
 function createObserverMarker() {
@@ -69,9 +70,9 @@ export class LightconeScene {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x020611);
-    this.scene.fog = new THREE.FogExp2(0x020611, 0.00034);
+    this.scene.fog = new THREE.FogExp2(0x020611, 0.00030);
 
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100000);
+    this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100000);
     this.camera.position.copy(SLICE_CAMERA);
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -79,7 +80,7 @@ export class LightconeScene {
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.04;
+    this.renderer.toneMappingExposure = 1.11;
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;

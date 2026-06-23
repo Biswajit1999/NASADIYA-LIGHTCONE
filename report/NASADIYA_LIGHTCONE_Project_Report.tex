@@ -1,0 +1,195 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{amsmath}
+
+\definecolor{NasadiyaBlue}{HTML}{0E5A78}
+\definecolor{NasadiyaCyan}{HTML}{1187A8}
+\definecolor{NasadiyaAmber}{HTML}{A85E1B}
+\hypersetup{colorlinks=true,linkcolor=NasadiyaBlue,citecolor=NasadiyaBlue,urlcolor=NasadiyaBlue,pdftitle={Nasadiya Lightcone Project Report},pdfauthor={Biswajit Jana}}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{N\={A}SAD\={I}YA LIGHTCONE}
+\rhead{Technical project report}
+\cfoot{\thepage\ / \pageref{LastPage}}
+\titleformat{\section}{\Large\bfseries\color{NasadiyaBlue}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{NasadiyaCyan}}{\thesubsection}{0.7em}{}
+
+\title{\textbf{N\={A}SAD\={I}YA LIGHTCONE}\\[4pt]\large A survey-native browser for measured galaxy catalogues}
+\author{Biswajit Jana\\\small Created and developed by Biswajit Jana}
+\date{Version 0.9.0 --- June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+N\={A}SAD\={I}YA LIGHTCONE is an open-source, browser-native visualisation system for exploring observed galaxy catalogues through redshift, comoving distance, and look-back time. Its central design rule is provenance-first rendering: every visible point must be attributable to a published survey product, while catalogue footprint, target selection, uncertainty, and the distinction between observed and derived products remain explicit. The current implementation provides a nearby 2MASS Redshift Survey (2MRS) layer and a deep DESI DR1 Large-Scale Structure (LSS) layer. The local DESI build contains 6,093,818 accepted spectroscopic source rows and 4,205 spatial tiles; a deterministic 125,000-row browser overview supports a public static view without claiming to be a scientific analysis sample. This report documents the scientific scope, data model, processing pipeline, browser architecture, user interface, validation approach, limitations, and community-development plan.
+\end{abstract}
+
+\textbf{Status note.} This document describes research software and a visual-navigation product. It is not a peer-reviewed cosmological analysis, and it does not supersede the original survey catalogues, selection functions, documentation, or citation requirements.
+
+\section{Motivation}
+
+Large public astronomical surveys now contain enough information to make three-dimensional exploratory interfaces genuinely useful, but a compelling visual interface can easily imply more than a catalogue measures. A point cloud can appear to be a complete map of physical structure even when it is shaped by a magnitude limit, an angular footprint, redshift failures, target selection, or radial uncertainty. N\={A}SAD\={I}YA LIGHTCONE is designed around this problem. It aims to make large survey products inspectable without transforming them into an invented, all-sky, filamentary ``cosmic web.''
+
+The project begins with the nearby Universe and extends toward deep spectroscopic survey volumes. The 2MRS catalogue is an appropriate local anchor because it is a wide-area near-infrared redshift survey with a well-defined magnitude-limited selection and substantial sky coverage \cite{Huchra2012}. DESI provides a much deeper spectroscopic layer, but its LSS catalogues have a non-uniform footprint and tracer-dependent target selection. The interface therefore treats DESI as an observed survey field, not as a filled Universe.
+
+\section{Design principles}
+
+\begin{enumerate}[leftmargin=1.4em]
+\item \textbf{Observed rows first.} Points in an observed-object layer are real catalogue rows. No generated galaxies, interpolated filaments, or cosmetic density points are inserted.
+\item \textbf{Provenance survives the browser.} Each accepted object retains an identifier, survey, release, source table, source URL, measurement kind, distance note, and citation key.
+\item \textbf{Footprint is information.} Missing angular coverage, masks, and selection boundaries are not visual defects to be hidden. They are part of the scientific context.
+\item \textbf{Distance placement is declared.} Catalogue redshift is transformed to a Planck18 comoving-distance coordinate for navigation \cite{Planck2018}. This transformation does not turn a redshift catalogue into a peculiar-velocity corrected reconstruction.
+\item \textbf{Display level of detail is not a scientific sample.} A compact deterministic overview may be used for responsive rendering, but it is labelled as a browser product and not used as a substitute for a survey analysis selection.
+\item \textbf{Photometric radial uncertainty must remain visible.} Future photo-$z$ layers are restricted to an observer-lightcone view and require a published per-source uncertainty.
+\end{enumerate}
+
+\section{Current data layers}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.22}
+\begin{tabularx}{\textwidth}{@{}p{0.16\textwidth}X X@{}}
+\toprule
+Layer & Present implementation & Browser interpretation \\
+\midrule
+2MRS Table 3 & Nearby spectroscopic recession-velocity anchor; 43,533 accepted rows. & Local Cartesian slice and observer lightcone. \\
+DESI DR1 LSS & BGS, LRG, ELG, and QSO clustering catalogues; 6,093,818 accepted rows and 4,205 local tiles. & Observer lightcone; 125,000 deterministic public overview rows. \\
+2MPZ & All-sky photometric-redshift catalogue; adapter contract retained while source retrieval is paused. & Future observer lightcone only, with supplied radial uncertainty. \\
+WISE $\times$ SuperCOSMOS & Wide photo-$z$ galaxy catalogue; adapter contract retained while source retrieval is paused. & Future observer lightcone only, with footprint and uncertainty context. \\
+Gaia DR3 & Stellar astrometry and parallax; planned. & Separate Galactic context mode. \\
+\bottomrule
+\end{tabularx}
+\caption{Current and planned survey layers. The local DESI counts are project build outputs from selected official DR1 LSS clustering files.}
+\end{table}
+
+\subsection{2MRS local layer}
+
+The 2MRS pipeline downloads the published Table 3 source product, validates expected columns, and creates a compact browser catalogue. For nearby recession-velocity data, the interface uses the approximate navigation relation $z \simeq cz/c$. A Planck18 transform then supplies a consistent display coordinate and look-back-time field. This is useful for a spatial browser but must not be interpreted as a complete correction for local peculiar velocities or redshift-space distortions.
+
+\subsection{DESI DR1 LSS layer}
+
+The local DESI pipeline downloads selected official DR1 LSS clustering files for Bright Galaxy Survey (BGS), Luminous Red Galaxy (LRG), Emission-Line Galaxy (ELG), and quasar (QSO) tracers. The build reads the FITS products in chunks, standardises the coordinates and redshift fields, prefixes identifiers with the retained tracer class, computes Planck18 navigation coordinates, and writes spatial tiles. In the current build, 6,093,818 rows were accepted. The public browser overview contains 125,000 rows chosen deterministically by object hash and is flagged in metadata as not being a scientific selection.
+
+The separated point-cloud regions in a DESI view should be read as North/South footprint, targeting, and completeness structure. They are not evidence that the Universe is separated into disconnected physical clouds.
+
+\subsection{Future photometric layers}
+
+2MPZ contains approximately one million galaxies and reports a typical photometric-redshift scatter of about $\sigma_z \simeq 0.015$ \cite{Bilicki2014}. WISE $\times$ SuperCOSMOS extends to roughly 20 million galaxies across a large fraction of the sky, with reported photo-$z$ scatter around $0.033$ \cite{Bilicki2016}. Both are scientifically attractive for wide-angle context, but neither should be ingested from a photometry-only table or displayed as exact radial structure. The current code intentionally refuses unvalidated source tables that do not expose a recognised redshift and uncertainty field.
+
+\section{Coordinate model and visual placement}
+
+Each accepted row is represented in an observer-centred Cartesian frame. For right ascension $\alpha$, declination $\delta$, and visual-navigation comoving distance $D_C$, the coordinates are
+\begin{align}
+x &= D_C\cos\delta\cos\alpha,\\
+y &= D_C\cos\delta\sin\alpha,\\
+z &= D_C\sin\delta.
+\end{align}
+
+For non-local survey redshifts, $D_C(z)$ and look-back time are calculated from the Planck18 cosmology through Astropy. To make multi-million-row builds practical, the pipeline uses a dense monotonic interpolation grid rather than evaluating the cosmology integral independently for every object. The manifest records this method so it remains a transparent rendering transform.
+
+The local 2MRS slice is a finite Cartesian selection: objects are shown only when their $z$-coordinate falls within a user-controlled slab. It is a way to make local structure legible, not a reconstructed density field. The DESI layer is observer-lightcone only because a thin Cartesian slice across a strongly footprint-limited deep survey can imply unjustified continuity.
+
+\section{Software architecture}
+
+\subsection{Pipeline}
+
+The Python pipeline is organised around survey adapters and a canonical intermediate schema. An adapter maps source-specific columns onto a common contract containing at least:
+
+\begin{center}
+\small
+\texttt{object\_id, ra\_deg, dec\_deg, redshift, redshift\_error, comoving\_distance\_mpc,}\\
+\texttt{lookback\_time\_gyr, x\_mpc, y\_mpc, z\_mpc, source\_survey, source\_release, source\_table.}
+\end{center}
+
+A chunked tile writer groups accepted rows by radial shell and angular cell, emits a compact index, and produces a deterministic browser overview. Raw downloads and full tile stores are excluded from ordinary Git commits. This supports reproducibility without using a source-code repository as bulk archive storage.
+
+\subsection{Browser}
+
+The browser uses static HTML, CSS, ES modules, and WebGL through Three.js. There is no required package build step for the runtime. The interface has four main responsibilities:
+
+\begin{enumerate}[leftmargin=1.4em]
+\item load a compact catalogue or tile-store overview;
+\item render source rows as points and allow orbit, zoom, and point picking;
+\item expose redshift, display-budget, colour, spatial-mode, and DESI tracer controls;
+\item present a clicked source record with provenance and measurement fields.
+\end{enumerate}
+
+The v0.9 interface deliberately reduces the amount of editorial text placed over the data field. The point cloud is the primary visual object; narrative context is compact, while a Data Lens drawer supplies controls and warnings on demand.
+
+\section{Validation and reproducibility}
+
+The repository includes unit tests for the 2MRS parser, cosmology transforms, tile-store writing, photometric-redshift adapters, and multi-survey contracts. JavaScript module checks protect the browser modules from syntax failures. The expected local validation sequence is:
+
+\begin{verbatim}
+python -m pytest -q
+python -m ruff check pipeline scripts tests
+npm run check:modules
+\end{verbatim}
+
+The data policy separates raw archive files, compact public browser products, and high-resolution tile stores. Source-file checksums are retained in the DESI build manifest. Any future public tile hosting should publish the corresponding manifest, preprocessing version, source release, quality filters, and acknowledgement requirements alongside the assets.
+
+\section{Interface interpretation guide}
+
+\subsection{2MRS}
+
+The local slice is the best way to inspect nearby spatial organisation. The Zone of Avoidance and other selection effects must not be read as physical voids. The source inspector gives the underlying object identifier, position, recession information, navigation distance, and provenance.
+
+\subsection{DESI}
+
+The DESI lightcone is intended for exploratory comparison of deep survey geometry, tracer populations, and redshift extent. BGS, LRG, ELG, and QSO filters are parsed from the retained DESI identifier prefix. Disabling a tracer changes only the rendered display; it does not modify the underlying source catalogue. The tracer-colour view is a categorical visual aid, not a physical-property map.
+
+\section{Limitations}
+
+The present browser is intentionally conservative. It does not implement a survey selection-function correction, peculiar-velocity correction, redshift-space-distortion reconstruction, density reconstruction, cross-match/de-duplication between survey layers, or a scientific query service. It is not a replacement for survey-native analysis software.
+
+The public DESI view renders a deterministic overview instead of the entire local tile store. This is necessary for responsive static hosting but means that the overview alone should not be used for number counts, clustering, or completeness conclusions. The high-resolution local tiles are a data-delivery engineering foundation, not yet a public camera-streaming service.
+
+\section{Roadmap}
+
+The next engineering milestone is tile streaming from external static object storage, allowing camera-aware resolution changes without putting millions of rows into ordinary Git history. The next catalogue milestone is to restore the 2MPZ and WISE $\times$ SuperCOSMOS adapters only after validating the official source locations and per-row uncertainty fields. A separate Gaia mode will then provide Galactic context without mixing stellar counts into an extragalactic lightcone.
+
+The project will also benefit from keyboard navigation, reduced-motion support, high-contrast treatment, a tabular record explorer, reproducible release manifests, and an archival workflow for processed browser products.
+
+\section{Community and citation}
+
+Contributors should begin with the repository community guide, contribution rules, data policy, and source list. A proposed data layer must document release, source table, coordinates, units, quality cuts, uncertainty treatment, visual-distance transform, citation, and redistribution terms. Security concerns should follow the repository security policy rather than an open issue.
+
+When using the software, cite N\={A}SAD\={I}YA LIGHTCONE through the repository \texttt{CITATION.cff} file and also cite every underlying survey catalogue. The project code is MIT licensed; survey data retain their original terms and are not relicensed by the software repository.
+
+\begin{thebibliography}{99}
+
+\bibitem{Huchra2012}
+J. P. Huchra et al., ``The 2MASS Redshift Survey - Description and Data Release,'' \emph{The Astrophysical Journal Supplement Series}, 199(2), 26 (2012). doi: \url{https://doi.org/10.1088/0067-0049/199/2/26}.
+
+\bibitem{DESI_DR1}
+DESI Collaboration, ``DESI Data Release 1 public data products'' (2025). \url{https://data.desi.lbl.gov/public/dr1/}.
+
+\bibitem{Bilicki2014}
+M. Bilicki, T. H. Jarrett, J. A. Peacock, M. E. Cluver, and L. Steward, ``2MASS Photometric Redshift Catalog: A Comprehensive Three-dimensional Census of the Whole Sky,'' \emph{The Astrophysical Journal Supplement Series}, 210(1), 9 (2014). doi: \url{https://doi.org/10.1088/0067-0049/210/1/9}.
+
+\bibitem{Bilicki2016}
+M. Bilicki et al., ``WISE x SuperCOSMOS photometric redshift catalog: 20 million galaxies over 3pi steradians,'' \emph{The Astrophysical Journal Supplement Series}, 225(1), 5 (2016). doi: \url{https://doi.org/10.3847/0067-0049/225/1/5}.
+
+\bibitem{Planck2018}
+Planck Collaboration, ``Planck 2018 results. VI. Cosmological parameters,'' \emph{Astronomy and Astrophysics}, 641, A6 (2020). doi: \url{https://doi.org/10.1051/0004-6361/201833910}.
+
+\end{thebibliography}
+
+\end{document}

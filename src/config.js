@@ -4,6 +4,8 @@ export const LIGHTCONE_CONFIG = Object.freeze({
   defaultSliceOffsetMpc: 0,
 });
 
+export const DESI_TRACERS = Object.freeze(['BGS', 'LRG', 'ELG', 'QSO']);
+
 export const SURVEY_LAYERS = Object.freeze({
   '2mrs': {
     id: '2mrs',
@@ -27,7 +29,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 100_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
-    localBuild: 'scripts\\download_2mpz.py then scripts\\build_2mpz_tile_store.py',
+    localBuild: 'Awaiting a corrected, validated official source endpoint before local ingestion is re-enabled.',
   },
   'wise-sc': {
     id: 'wise-sc',
@@ -39,7 +41,7 @@ export const SURVEY_LAYERS = Object.freeze({
     defaultPointBudget: 125_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
-    localBuild: 'scripts\\download_wise_sc.py then scripts\\build_wise_sc_tile_store.py',
+    localBuild: 'Awaiting a corrected, validated official source endpoint before local ingestion is re-enabled.',
   },
   'desi-dr1': {
     id: 'desi-dr1',

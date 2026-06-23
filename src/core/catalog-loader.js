@@ -2,6 +2,15 @@ function fail(message) {
   throw new Error(message);
 }
 
+export const DESI_TRACERS = Object.freeze(['BGS', 'LRG', 'ELG', 'QSO']);
+
+export function extractDesiTracer(objectId) {
+  const parts = String(objectId ?? '').split(':');
+  if (parts.length < 3 || parts[0].toLowerCase() !== 'desi-dr1') return null;
+  const tracer = String(parts[1] ?? '').toUpperCase();
+  return DESI_TRACERS.includes(tracer) ? tracer : null;
+}
+
 async function fetchJson(url, datasetLabel) {
   const response = await fetch(url, { cache: 'no-cache' });
   if (!response.ok) {
@@ -36,6 +45,7 @@ function objectFromRecord(columns, values, dataset) {
   return {
     ...record,
     name: record.object_id,
+    tracer: record.tracer ?? extractDesiTracer(record.object_id),
     source_survey: dataset.survey,
     source_release: dataset.release,
     source_table: dataset.dataset_id,
@@ -73,6 +83,11 @@ export async function loadTileStoreOverview(indexUrl, datasetLabel = 'the survey
     });
   if (!objects.length) fail(`No observed ${datasetLabel} overview rows passed browser validation.`);
 
+  const tracerCounts = objects.reduce((counts, object) => {
+    if (object.tracer) counts[object.tracer] = (counts[object.tracer] || 0) + 1;
+    return counts;
+  }, {});
+
   return {
     meta: {
       dataset_id: manifest.dataset.dataset_id,
@@ -89,6 +104,7 @@ export async function loadTileStoreOverview(indexUrl, datasetLabel = 'the survey
       radial_uncertainty_required: kind === 'photometric',
       is_synthetic: false,
       overview_selection: overview.selection || null,
+      tracer_counts: tracerCounts,
     },
     objects,
   };
