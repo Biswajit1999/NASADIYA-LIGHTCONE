@@ -11,7 +11,6 @@ import argparse
 from collections import Counter, defaultdict
 from pathlib import Path
 import json
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
