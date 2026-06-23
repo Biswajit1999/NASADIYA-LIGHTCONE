@@ -7,9 +7,16 @@ ordinary laptops and phones. The locally built DESI DR1 LSS store contains
 6,093,818 observed rows across 4,205 spatial tiles; loading every row into one WebGL
 buffer would make the initial site slow and memory-heavy.
 
-Research mode uses Python and Parquet instead. It can scan a larger observed bundle
-for quantitative summaries while drawing only a bounded deterministic subset in 3D.
+Research mode uses Python and Parquet instead. It scans the complete observed bundle
+for quantitative summaries while drawing an exact bounded deterministic subset in 3D.
 The live explorer and the Python workflow are complementary, not competing products.
+
+## Validated full-catalogue bundle
+
+The first validated full-bundle build retained all **6,093,818 observed DESI DR1 LSS
+rows** in a **185.12 MiB** compressed Parquet file, below the 480 MiB release target.
+Read the [release record](desi-dr1-research-bundle-v1.md) for the file checksum,
+tracer counts and release-asset contents.
 
 ## Build a capped research bundle
 
@@ -46,11 +53,15 @@ This creates small, versionable outputs:
 ```text
 figures/desi_dr1_lss_3d_research_view.png
 figures/desi_dr1_lss_redshift_summary.png
+figures/desi_dr1_lss_sky_footprint.png
 figures/desi_dr1_lss_research_summary.json
 ```
 
-The redshift summary scans the complete research bundle. The 3D plot uses a bounded
-deterministic subset to keep rendering practical. Both outputs state this distinction.
+The redshift and sky-footprint figures scan the complete research bundle. The 3D plot
+uses exactly the requested number of rows: it retains the global lowest object-ID
+hashes, with object ID as the deterministic tie-breaker. This is a visual and
+computational level of detail, not a completeness correction or a unique-object
+catalogue.
 
 ## Google Colab
 
@@ -69,7 +80,7 @@ the same reproducible PNG outputs.
 - Rows originate only in the locally built observed DESI DR1 LSS tile store.
 - No synthetic galaxies, reconstructed filaments, interpolation or survey cross-match
   are created.
-- A capped hash sample is a visual and computational level of detail, not a
-  completeness correction or a unique-object catalogue.
+- Survey footprint, targeting and completeness are measurement properties. A dark sky
+  region in the footprint map does not establish a physical underdensity.
 - Cite the relevant DESI DR1 source products alongside this software and its bundle
   manifest when sharing a result.

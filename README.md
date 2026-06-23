@@ -1,6 +1,6 @@
 # NĀSADĪYA LIGHTCONE
 
-> **A survey-native browser and research workflow for navigating measured galaxy catalogues through redshift, distance, and cosmic time.**
+> **A survey-native browser and research workflow for navigating measured galaxy catalogues through redshift, distance and cosmic time.**
 
 Created and developed by **Biswajit Jana**.
 
@@ -9,6 +9,7 @@ Created and developed by **Biswajit Jana**.
 [![Research Mode](https://img.shields.io/badge/research%20mode-Python%20%2B%20Parquet-6f84d8.svg)](docs/research-mode.md)
 [![2MRS](https://img.shields.io/badge/2MRS-43%2C533%20observed%20rows-66d9ef.svg)](docs/sources.md)
 [![DESI DR1 LSS](https://img.shields.io/badge/DESI%20DR1%20LSS-6%2C093%2C818%20observed%20rows-f0b96f.svg)](docs/sources.md)
+[![Validated bundle](https://img.shields.io/badge/full%20DESI%20Parquet-185.12%20MiB-5aa469.svg)](docs/desi-dr1-research-bundle-v1.md)
 [![Browser LOD](https://img.shields.io/badge/public%20DESI%20overview-125%2C000%20real%20rows-a78bfa.svg)](data/processed/desi-dr1/overview.json)
 [![CI](https://github.com/Biswajit1999/NASADIYA-LIGHTCONE/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-8be9fd.svg)](LICENSE)
@@ -22,22 +23,23 @@ Created and developed by **Biswajit Jana**.
 
 ![NĀSADĪYA LIGHTCONE survey visualisation](assets/nasadiya-lightcone-banner.png)
 
-NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point originates in a published survey product, preserves source provenance, and remains separate from any future derived density or reconstruction layer. The project currently connects a nearby 2MRS anchor to a deep DESI DR1 LSS layer, with a separate Python workflow for research-scale DESI analysis.
+NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point originates in a published survey product, retains source provenance, and remains separate from any future derived-density or reconstruction layer. The project currently links a nearby 2MRS anchor to a deep DESI DR1 LSS layer, with a separate Python workflow for research-scale DESI analysis.
 
 ## Two complementary ways to explore the data
 
 | Mode | Intended use | Data behaviour |
 |---|---|---|
-| **[Live Explorer](https://biswajit1999.github.io/NASADIYA-LIGHTCONE/)** | Fast public WebGL exploration | Loads the full 2MRS local layer and a deterministic 125,000-row DESI overview. Local or future remote tile delivery can add camera-relevant DESI detail without a multi-million-row initial download. |
-| **[Research Mode](docs/research-mode.md)** | Colab, Python analysis and publication-quality figures | Builds a compressed Parquet bundle from the local DESI tile store, then scans the complete bundle for statistics while rendering a bounded deterministic subset in 3D. |
+| **[Live Explorer](https://biswajit1999.github.io/NASADIYA-LIGHTCONE/)** | Fast public WebGL exploration | Loads the complete 2MRS local layer plus a deterministic 125,000-row DESI overview. Local or future remote tile delivery can add camera-relevant DESI detail without a multi-million-row initial download. |
+| **[Research Mode](docs/research-mode.md)** | Colab, Python analysis and reproducible figures | Uses a compressed Parquet bundle from the full local DESI tile store. Full-bundle statistics are scanned across every released row; only 3D rendering is bounded. |
 
 ## Current data inventory
 
 | Layer | Measurement | Current status |
 |---|---|---|
 | **2MRS Table 3** | Nearby spectroscopic recession velocities | **43,533 observed rows** in the public local-Universe layer |
-| **DESI DR1 LSS** | Spectroscopic BGS, LRG, ELG and QSO large-scale-structure catalogues | **6,093,818 accepted observed rows** in the local build; **4,205** local spatial tiles; **125,000 deterministic real rows** in the public browser overview |
-| **Available-survey stack** | 2MRS + DESI DR1 comparison view | **168,533 public rendered records**: 43,533 full 2MRS rows plus 125,000 DESI overview rows. This is explicitly non-deduplicated, not a unique-galaxy count. |
+| **DESI DR1 LSS** | Spectroscopic BGS, LRG, ELG and QSO large-scale-structure catalogues | **6,093,818 accepted observed rows** across **4,205** local spatial tiles; **125,000 deterministic real rows** in the public browser overview |
+| **Validated DESI research bundle** | Full DESI DR1 LSS Parquet | **6,093,818 observed rows**, retained without sampling in a **185.12 MiB** compressed Parquet bundle; [release record and checksum](docs/desi-dr1-research-bundle-v1.md) |
+| **Available-survey stack** | 2MRS + DESI DR1 comparison view | **168,533 public rendered records**: 43,533 full 2MRS rows plus 125,000 DESI overview rows. Explicitly non-deduplicated; not a unique-galaxy count. |
 | **2MPZ** | Photometric redshifts | Not ingested. A verified downloadable source table with per-object photo-z uncertainty is required before a tile build. |
 | **WISE × SuperCOSMOS** | Photometric redshifts | Not ingested. It requires the same source-table and uncertainty validation gate. |
 | **Gaia DR3 / GCNS** | Stellar astrometry and parallax | Planned as a separate Milky Way mode. Gaia is never merged into extragalactic galaxy counts. |
@@ -48,7 +50,7 @@ NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point origi
 
 **Website:** [biswajit1999.github.io/NASADIYA-LIGHTCONE](https://biswajit1999.github.io/NASADIYA-LIGHTCONE/)
 
-The map-first explorer provides local 2MRS Cartesian slices, observer-centred radial views, a DESI deep-field layer, DESI tracer controls, point-level source inspection, an available-survey comparison stack and public methods/data documentation.
+The map-first explorer provides local 2MRS Cartesian slices, observer-centred radial views, a DESI deep-field layer, tracer controls, point-level source inspection, an available-survey comparison stack, and public methods/data documentation.
 
 - [About the project](about.html)
 - [Public data ledger](data.html)
@@ -59,7 +61,7 @@ The map-first explorer provides local 2MRS Cartesian slices, observer-centred ra
 
 ## Research-resolution DESI workflow
 
-The browser is intentionally not a 6-million-row download. Build a capped, portable research bundle from your full local DESI tile store:
+The browser is intentionally not a six-million-row initial download. Build a portable research bundle from the full local DESI tile store:
 
 ```cmd
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -69,23 +71,28 @@ The browser is intentionally not a 6-million-row download. Build a capped, porta
 .\.venv\Scripts\python.exe scripts\plot_desi_research_figure.py --input data\research\desi_dr1_lss_research_bundle.parquet --output-dir figures --render-rows 120000
 ```
 
-The builder first attempts a compressed Parquet file containing all observed DESI tile rows. If it exceeds the requested 480 MiB cap, it creates a deterministic object-ID-hash sample and writes an adjacent manifest documenting the exact selection, input count, output count, file hash and tracer counts.
+The builder first attempts a compressed Parquet file containing every observed DESI tile row. If it exceeds the requested cap, it creates a deterministic object-ID-hash sample and writes an adjacent manifest with the exact selection, input count, output count, file hash and tracer counts.
 
-Generated files:
+The current validated build retained the full catalogue: **6,093,818 observed rows in 185.12 MiB**. See the [release record](docs/desi-dr1-research-bundle-v1.md).
+
+Generated research outputs:
 
 ```text
 data/research/desi_dr1_lss_research_bundle.parquet
 data/research/desi_dr1_lss_research_bundle.manifest.json
 figures/desi_dr1_lss_3d_research_view.png
 figures/desi_dr1_lss_redshift_summary.png
+figures/desi_dr1_lss_sky_footprint.png
 figures/desi_dr1_lss_research_summary.json
 ```
 
-The Parquet bundle is ignored by normal Git history and should be published as a versioned GitHub Release asset. The small validated PNG/JSON figure outputs can be committed to `figures/` with the relevant manifest.
+The redshift and sky-footprint figures scan the complete Parquet bundle. The 3D figure always retains exactly the requested number of rows using global lowest object-ID hashes, with object ID as the deterministic tie-breaker. This is a rendering level of detail, not a completeness correction.
+
+The Parquet bundle is ignored by normal Git history and belongs in a versioned GitHub Release asset. The small validated PNG/JSON outputs can be committed to `figures/` with their manifest.
 
 ### Google Colab
 
-Use [DESI DR1 LSS 3D Colab](https://colab.research.google.com/github/Biswajit1999/NASADIYA-LIGHTCONE/blob/main/notebooks/DESI_DR1_LSS_3D_Colab.ipynb) to upload a research bundle or load a future release-asset URL. The notebook produces the same reproducible 3D and redshift-distribution figures.
+Use [DESI DR1 LSS 3D Colab](https://colab.research.google.com/github/Biswajit1999/NASADIYA-LIGHTCONE/blob/main/notebooks/DESI_DR1_LSS_3D_Colab.ipynb) to upload a research bundle or load a future Release-asset URL. The notebook produces the same reproducible 3D, redshift-distribution and sky-footprint figures.
 
 Read [docs/research-mode.md](docs/research-mode.md) for the complete workflow and scientific boundary.
 
@@ -135,12 +142,12 @@ The DESI builder downloads official DR1 LSS source FITS products, validates and 
 ### Data boundary
 
 ```text
-data/raw/desi-dr1/                   # official downloaded source FITS files — local only
-data/processed/desi-dr1/tiles/       # full local spatial tile store — local only
-data/processed/desi-dr1/index.json  # compact public index — committed
+data/raw/desi-dr1/                    # official downloaded source FITS files — local only
+data/processed/desi-dr1/tiles/        # full local spatial tile store — local only
+data/processed/desi-dr1/index.json   # compact public index — committed
 data/processed/desi-dr1/overview.json # 125,000-row public browser overview — committed
-data/research/                       # release-ready Parquet bundles — ignored by Git
-figures/                             # small validated PNG/PDF/JSON outputs may be committed
+data/research/                        # release-ready Parquet bundles — ignored by Git
+figures/                              # small validated PNG/PDF/JSON outputs may be committed
 ```
 
 ## Community and documentation
@@ -148,6 +155,7 @@ figures/                             # small validated PNG/PDF/JSON outputs may 
 - [Getting started](docs/getting-started.md)
 - [Data access and hosting model](docs/data-access.md)
 - [Research-mode guide](docs/research-mode.md)
+- [DESI research-bundle release record](docs/desi-dr1-research-bundle-v1.md)
 - [Next survey build workflow](docs/next-survey-build.md)
 - [Community guide](COMMUNITY.md)
 - [Contribution guide](CONTRIBUTING.md)
