@@ -1,0 +1,1 @@
+# Research Parquet bundles are generated locally and published as release assets, not ordinary Git objects.
