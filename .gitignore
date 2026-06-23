@@ -13,8 +13,9 @@ node_modules/
 data/raw/*
 !data/raw/.gitkeep
 
-# Browser products: permit only the small public 2MRS baseline files.
-# Multi-million-row tile stores and Gaia local products remain local/external assets.
+# Browser products: permit only small public 2MRS and DESI overview files.
+# Multi-million-row tile stores, Gaia local products, and research Parquet bundles
+# remain local or release assets rather than ordinary Git objects.
 data/processed/*
 !data/processed/.gitkeep
 !data/processed/2mrs/
@@ -26,11 +27,13 @@ data/processed/*
 !data/processed/wise-sc/.gitkeep
 !data/processed/desi-dr1/
 !data/processed/desi-dr1/.gitkeep
-# Public deterministic browser overview; full raw FITS and detailed tiles remain excluded.
 !data/processed/desi-dr1/index.json
 !data/processed/desi-dr1/overview.json
 !data/processed/gaia-dr3/
 !data/processed/gaia-dr3/.gitkeep
+
+data/research/*
+!data/research/.gitkeep
 
 # OS/editor
 .DS_Store
