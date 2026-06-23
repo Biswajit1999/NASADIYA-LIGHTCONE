@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Discover a downloadable Gaia Catalogue of Nearby Stars (GCNS) table via VizieR.
+"""Discover downloadable Gaia-nearby-star candidates via VizieR metadata.
 
-This performs metadata and one-row schema checks only. It does not download a source
-catalogue or write derived data. The output identifies whether a VizieR-served GCNS
-candidate exposes the fields needed for a separate Milky-Way layer.
+This is retained as a generic diagnostic probe. It is not sufficient evidence that
+an arbitrary Gaia table is the Gaia Catalogue of Nearby Stars (GCNS); use
+``probe_gcns_strict.py`` for the strict GCNS workflow.
 """
 from __future__ import annotations
 
@@ -28,7 +28,11 @@ PARALLAX_ERROR_ALIASES = {"e_plx", "parallaxerror", "eparallax", "plxerror"}
 
 
 def normalise(name: str) -> str:
-    return "".join(character.lower() for character in str(name) if character.isalnum() or character == "_")
+    return "".join(
+        character.lower()
+        for character in str(name)
+        if character.isalnum() or character == "_"
+    )
 
 
 def matches(columns: list[str], aliases: set[str]) -> str | None:
@@ -49,12 +53,15 @@ def main() -> int:
     try:
         from astroquery.vizier import Vizier
     except ImportError:
-        print("Missing astroquery. Run: .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt")
+        print(
+            "Missing astroquery. Run: "
+            ".\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt"
+        )
         return 2
 
     finder = Vizier(columns=["*"], row_limit=1)
     catalogue_ids: list[str] = []
-    print("GCNS VizieR metadata probe — no survey rows will be downloaded.\n")
+    print("Generic Gaia VizieR metadata probe — no survey rows will be downloaded.\n")
     for term in SEARCH_TERMS:
         try:
             found = finder.find_catalogs(term)
@@ -67,7 +74,10 @@ def main() -> int:
             print(f"Search: {term!r} -> ERROR: {exc}")
 
     if not catalogue_ids:
-        print("\nNo VizieR metadata results were returned. This is a network/source-access result, not a data failure.")
+        print(
+            "\nNo VizieR metadata results were returned. "
+            "This is a network/source-access result, not a data failure."
+        )
         return 3
 
     passed = 0
@@ -96,14 +106,21 @@ def main() -> int:
             status = "PASS" if complete else "REJECT"
             print(f"  {status} {key}")
             print(f"    mapping: {mapping}")
-            print(f"    columns: {', '.join(columns[:40])}{' …' if len(columns) > 40 else ''}")
+            suffix = " …" if len(columns) > 40 else ""
+            print(f"    columns: {', '.join(columns[:40])}{suffix}")
             if complete:
                 passed += 1
 
     if passed:
-        print("\nA GCNS candidate schema is available. Paste this output before any download is implemented.")
+        print(
+            "\nGeneric Gaia candidates passed a schema check. "
+            "Use probe_gcns_strict.py before calling any result GCNS."
+        )
         return 0
-    print("\nNo candidate exposed the required identifier, sky position, parallax and parallax-error fields.")
+    print(
+        "\nNo candidate exposed the required identifier, sky position, "
+        "parallax and parallax-error fields."
+    )
     return 3
 
 
