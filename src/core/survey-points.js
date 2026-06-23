@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
 import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js';
 import { hslToRgb } from '../utils/math.js';
@@ -42,6 +43,17 @@ function tracerColour(object, maxRedshift) {
   return base.map((component) => THREE.MathUtils.lerp(component, 0.96, distanceFade * 0.10));
 }
 
+function surveyColour(object, maxRedshift) {
+  const source = `${object.source_layer || ''}|${object.source_survey || ''}`.toLowerCase();
+  const base = source.includes('2mrs')
+    ? PALETTE.cyan
+    : source.includes('desi')
+      ? PALETTE.amber
+      : PALETTE.green;
+  const distanceFade = clamp01(Number(object.redshift) / Math.max(maxRedshift, 0.001));
+  return base.map((component) => THREE.MathUtils.lerp(component, 0.97, distanceFade * 0.10));
+}
+
 function sliceEdgeAlpha(distanceFromPlane, halfThickness) {
   if (halfThickness <= 0) return 0;
   const edgeStart = halfThickness * 0.7;
@@ -52,6 +64,27 @@ function sliceEdgeAlpha(distanceFromPlane, halfThickness) {
 function isTracerEnabled(object, state) {
   if (!object.tracer) return true;
   return state.tracerFilters?.[object.tracer] !== false;
+}
+
+function evenlySelect(indices, limit) {
+  if (indices.length <= limit) return indices;
+  const selected = [];
+  for (let index = 0; index < limit; index += 1) {
+    selected.push(indices[Math.floor((index * indices.length) / limit)]);
+  }
+  return selected;
+}
+
+function visibleIndicesFor(candidates, objects, budget, isComposite) {
+  if (!isComposite || candidates.length <= budget) return evenlySelect(candidates, budget);
+  // Preserve the full nearby 2MRS anchor first; allocate the remaining browser
+  // budget to a deterministic DESI overview. This is a display policy, not a
+  // completeness correction or cross-survey deduplication.
+  const localAnchor = candidates.filter((index) => objects[index]?.source_layer === '2mrs');
+  if (!localAnchor.length) return evenlySelect(candidates, budget);
+  if (localAnchor.length >= budget) return evenlySelect(localAnchor, budget);
+  const deep = candidates.filter((index) => objects[index]?.source_layer !== '2mrs');
+  return [...localAnchor, ...evenlySelect(deep, budget - localAnchor.length)];
 }
 
 export class SurveyPoints {
@@ -155,8 +188,8 @@ export class SurveyPoints {
       }
     });
 
-    const stride = Math.max(1, Math.ceil(candidates.length / Math.max(1, state.pointBudget)));
-    const visibleSet = new Set(candidates.filter((_, rank) => rank % stride === 0));
+    const selected = visibleIndicesFor(candidates, this.objects, Math.max(1, state.pointBudget), Boolean(this.meta.composite));
+    const visibleSet = new Set(selected);
     this.visibleIndices = visibleSet;
 
     this.objects.forEach((object, index) => {
@@ -178,7 +211,9 @@ export class SurveyPoints {
           ? PALETTE.violet
           : state.viewMode === 'tracer'
             ? tracerColour(object, maxRedshift)
-            : observedColour(object, maxRedshift);
+            : state.viewMode === 'survey'
+              ? surveyColour(object, maxRedshift)
+              : observedColour(object, maxRedshift);
       colour.setXYZ(index, rgb[0], rgb[1], rgb[2]);
 
       const baseSize = magnitude === null
@@ -203,6 +238,11 @@ export class SurveyPoints {
       if (object.tracer) counts[object.tracer] = (counts[object.tracer] || 0) + 1;
       return counts;
     }, {});
+    const sourceCounts = candidateObjects.reduce((counts, object) => {
+      const source = object.source_layer || object.source_survey || 'active-survey';
+      counts[source] = (counts[source] || 0) + 1;
+      return counts;
+    }, {});
     return {
       visibleCount: visibleSet.size,
       candidateCount: candidates.length,
@@ -211,6 +251,7 @@ export class SurveyPoints {
       maxDistance: Math.max(0, ...candidateObjects.map((item) => Number(item.comoving_distance_mpc) || 0)),
       maxLookback: Math.max(0, ...candidateObjects.map((item) => Number(item.lookback_time_gyr) || 0)),
       tracerCounts,
+      sourceCounts,
       sliceThickness: state.spatialMode === 'slice' ? halfThickness * 2 : null,
       sliceOffset: state.spatialMode === 'slice' ? sliceOffset : null,
     };
