@@ -88,6 +88,10 @@ export class LightconeScene {
     this.controls.minDistance = 18;
     this.controls.maxDistance = 70000;
     this.controls.target.set(0, 0, 0);
+    this.cameraChangeListeners = new Set();
+    this.controls.addEventListener('change', () => {
+      this.cameraChangeListeners.forEach((listener) => listener(this.camera, this.controls));
+    });
 
     this.world = new THREE.Group();
     this.scene.add(this.world);
@@ -105,6 +109,11 @@ export class LightconeScene {
     this.timeStart = performance.now();
 
     window.addEventListener('resize', () => this.resize());
+  }
+
+  onCameraChange(listener) {
+    this.cameraChangeListeners.add(listener);
+    return () => this.cameraChangeListeners.delete(listener);
   }
 
   resize() {
