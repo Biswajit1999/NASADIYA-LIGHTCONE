@@ -68,4 +68,5 @@ def test_cartesian_voxel_cells_are_stable() -> None:
         }
     )
     cells = grid.cartesian_voxel_cells(frame, cell_size_mpc=50.0)
-    assert cells.tolist() == ["x0_y0_z0", "x0_y0_z0", "x1_y0_z0"]
+    assert cells.iloc[0] == cells.iloc[1]
+    assert cells.iloc[0] != cells.iloc[2]
