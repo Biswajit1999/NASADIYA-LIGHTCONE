@@ -1,0 +1,113 @@
+/* Research-console composition overrides for the explorer. */
+:root {
+  --console-panel: rgba(4, 17, 31, 0.93);
+  --console-panel-deep: rgba(3, 11, 22, 0.97);
+  --console-edge: rgba(130, 214, 239, 0.2);
+}
+
+.control-drawer {
+  width: min(448px, calc(100vw - 44px));
+  top: 68px;
+  right: 22px;
+  max-height: calc(100vh - 88px);
+  padding: 20px 21px 18px;
+  border-radius: 18px;
+  border-color: var(--console-edge);
+  background:
+    linear-gradient(155deg, rgba(10, 31, 50, 0.98), var(--console-panel-deep) 76%),
+    radial-gradient(circle at top right, rgba(116, 233, 255, 0.08), transparent 34%);
+  box-shadow: 0 30px 95px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(220, 246, 255, 0.06);
+}
+
+.control-drawer::-webkit-scrollbar { width: 8px; }
+.control-drawer::-webkit-scrollbar-thumb { border: 2px solid rgba(4, 17, 31, 0.98); border-radius: 99px; background: rgba(116, 233, 255, 0.34); }
+
+.drawer-heading {
+  position: sticky;
+  top: -20px;
+  z-index: 2;
+  margin: -20px -21px 0;
+  padding: 20px 21px 15px;
+  background: linear-gradient(180deg, rgba(7, 23, 39, 0.99), rgba(7, 23, 39, 0.93) 78%, rgba(7, 23, 39, 0));
+  backdrop-filter: blur(18px);
+}
+
+.drawer-heading h2 { font-size: 33px; }
+.drawer-section { padding: 15px 0; }
+.drawer-section:first-of-type { padding-top: 16px; }
+
+.density-profile {
+  margin-top: 13px;
+  padding: 12px;
+  border: 1px solid rgba(116, 233, 255, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(29, 88, 111, 0.22), rgba(7, 18, 31, 0.3));
+}
+
+.density-profile[hidden] { display: none; }
+.density-profile__heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.density-profile__heading span { color: var(--cyan); font: 800 7.5px/1 var(--mono); letter-spacing: 0.15em; }
+.density-profile__heading strong { color: #eefbff; font: 800 11px/1 var(--mono); letter-spacing: 0.04em; }
+.density-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.density-preset {
+  display: grid;
+  min-height: 52px;
+  align-content: center;
+  gap: 4px;
+  padding: 7px 5px;
+  border: 1px solid rgba(174, 208, 228, 0.12);
+  border-radius: 9px;
+  color: var(--soft);
+  background: rgba(1, 8, 17, 0.5);
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.density-preset:hover { transform: translateY(-1px); border-color: rgba(116, 233, 255, 0.46); background: rgba(28, 85, 109, 0.38); }
+.density-preset small { color: var(--dim); font: 700 7px/1 var(--mono); letter-spacing: 0.025em; }
+.density-preset b { color: #e8f7fc; font: 850 12px/1 var(--mono); }
+.density-preset.is-active { border-color: transparent; color: #021019; background: linear-gradient(135deg, #a6f3ff, #63cde7); box-shadow: 0 8px 22px rgba(53, 189, 220, 0.17); }
+.density-preset.is-active small, .density-preset.is-active b { color: #03111b; }
+.density-status { margin: 10px 0 0 !important; color: #a4c4d2 !important; font: 700 8.5px/1.45 var(--mono) !important; }
+
+@media (min-width: 1100px) {
+  .editorial-intro {
+    top: 126px;
+    left: clamp(30px, 3.1vw, 56px);
+    width: min(406px, calc(100vw - 580px));
+  }
+
+  .editorial-intro h1 { max-width: 390px; }
+  .editorial-intro > p:not(.eyebrow):not(.intro-count), .context-readout, .intro-count { max-width: 372px; }
+
+  .navigator-card {
+    top: clamp(400px, 52vh, 520px);
+    left: clamp(30px, 3.1vw, 56px);
+    width: min(278px, calc(100vw - 550px));
+    transform: none;
+  }
+
+  .view-switcher {
+    left: clamp(30px, 3.1vw, 56px);
+    bottom: 28px;
+    width: min(278px, calc(100vw - 550px));
+  }
+
+  body.lens-open .data-rail {
+    left: max(325px, 25vw);
+    right: 488px;
+    max-width: none;
+  }
+
+  body.lens-open .footprint-indicator { right: 490px; }
+}
+
+@media (max-width: 1099px) {
+  .control-drawer { width: min(410px, calc(100vw - 32px)); right: 16px; }
+}
+
+@media (max-width: 700px) {
+  .control-drawer { top: 58px; right: 10px; width: calc(100vw - 20px); max-height: calc(100vh - 70px); padding: 16px; }
+  .drawer-heading { top: -16px; margin: -16px -16px 0; padding: 16px 16px 13px; }
+  .density-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .navigator-card { top: auto; bottom: 154px; transform: none; }
+}
