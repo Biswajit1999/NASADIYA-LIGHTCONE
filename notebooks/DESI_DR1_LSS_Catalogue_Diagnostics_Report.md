@@ -1,34 +1,28 @@
-# DESI DR1 LSS Catalogue Diagnostics Report
+# DESI DR1 Large-Scale Structure Catalogue Diagnostics
 
 **Project:** NĀSADĪYA-LIGHTCONE  
 **Dataset:** `desi_dr1_lss_research_bundle.parquet`  
-**Analysis type:** Descriptive catalogue diagnostics and deterministic Cartesian slice rendering  
-**Generated:** 24 June 2026  
+**Analysis type:** Descriptive catalogue diagnostics and deterministic Cartesian-slice rendering  
+**Generated:** 24 June 2026
 
 ---
 
-## 1. Executive summary
+## 1. Overview
 
-This report documents a first-pass diagnostic analysis of the local DESI DR1 Large-Scale Structure (LSS) research bundle. The analysis scanned **6,093,818 catalogue rows** and produced:
+This report summarises descriptive diagnostics produced from the local DESI DR1 Large-Scale Structure research bundle. The analysis scanned **6,093,818 catalogue rows** and was designed to inspect:
 
-- a per-tracer redshift summary;
-- an internal coordinate-consistency check between stored Cartesian coordinates and comoving distance;
-- a deterministic Cartesian slice at **Z = 0 Mpc** with a thickness of **300 Mpc**;
-- a redshift-dependent tracer-composition figure.
+- tracer populations across redshift;
+- consistency between Cartesian coordinates and stored comoving distances;
+- the observed geometry of a thin Cartesian slice through the catalogue;
+- reproducible rendering of a representative DESI point sample.
 
-The rendered slice contains **100,000 deterministically selected rows**. It clearly shows nested radial populations and a bilateral survey-footprint geometry. These visible structures should **not** be interpreted directly as cosmological overdensities, voids, or filaments because the view is strongly shaped by the DESI angular footprint and tracer-specific target selection.
+The rendered slice contains **100,000 deterministically selected rows**. It clearly shows nested radial populations and a bilateral survey-footprint geometry.
 
-The coordinate-consistency diagnostic is excellent. For all tracer populations, the maximum difference between the Cartesian radius,
-
-\[
-r = \sqrt{x^2+y^2+z^2},
-\]
-
-and the stored comoving distance \(\chi\) is below **5.75 × 10⁻⁴ Mpc** (about **0.575 kpc**). This confirms that the Cartesian positions in the research bundle are internally consistent with the supplied radial distances to high numerical precision.
+This is a catalogue-diagnostic and visualisation workflow. It does **not** estimate a correlation function, power spectrum, density field, void catalogue, or cosmological parameter constraints.
 
 ---
 
-## 2. Dataset and analysis scope
+## 2. Input data and tracer populations
 
 The analysis used the local Parquet file:
 
@@ -36,73 +30,22 @@ The analysis used the local Parquet file:
 data/research/desi_dr1_lss_research_bundle.parquet
 ```
 
-The catalogue contains four tracer classes:
+The catalogue contains four DESI LSS tracer classes:
 
-- **BGS** — Bright Galaxy Survey targets;
-- **LRG** — Luminous Red Galaxies;
-- **ELG** — Emission Line Galaxies;
-- **QSO** — Quasars.
+- **BGS** — Bright Galaxy Survey targets, primarily nearby galaxies.
+- **LRG** — Luminous Red Galaxies, tracing comparatively massive red galaxies at intermediate redshift.
+- **ELG** — Emission Line Galaxies, extending to higher redshift than BGS and much of the LRG sample.
+- **QSO** — Quasars, reaching the highest redshifts in the displayed catalogue.
 
-The present analysis is deliberately limited to catalogue description and visual diagnostics. It does **not** estimate:
+For every valid row, the diagnostic uses:
 
-- the two-point correlation function;
-- a power spectrum;
-- a density field;
-- void candidates;
-- cosmological parameters;
-- completeness-corrected number densities.
-
-Those analyses require the tracer-specific DESI random catalogues, angular completeness information, survey masks, and a validated estimator.
-
----
-
-## 3. Methodology
-
-### 3.1 Catalogue normalisation
-
-For each row, the analysis retained only finite values of:
-
+- object identifier;
+- tracer classification;
 - spectroscopic redshift;
-- comoving distance;
-- Cartesian coordinates \(x\), \(y\), and \(z\).
+- stored comoving distance;
+- Cartesian comoving coordinates $x$, $y$, and $z$.
 
-Tracer labels were standardised to uppercase.
-
-### 3.2 Redshift diagnostics
-
-For each tracer, the 16th percentile, median, and 84th percentile of the observed redshift distribution were estimated from a binned histogram over \(0 \le z \le 3.6\).
-
-### 3.3 Coordinate-consistency diagnostic
-
-The analysis calculated:
-
-\[
-\Delta r = \sqrt{x^2+y^2+z^2} - \chi,
-\]
-
-where \(\chi\) is the stored comoving distance in Mpc.
-
-For each tracer, the mean, root-mean-square (RMS), mean absolute, and maximum absolute value of \(\Delta r\) were computed across the full catalogue.
-
-### 3.4 Cartesian slice rendering
-
-A thin slab centred at:
-
-\[
-Z = 0 \; \mathrm{Mpc}
-\]
-
-with thickness:
-
-\[
-\Delta Z = 300 \; \mathrm{Mpc}
-\]
-
-was selected. To make the figure reproducible and prevent overplotting, exactly **100,000** rows were retained by selecting the globally lowest stable hashes of object IDs inside the slab. This makes the rendered subset deterministic: identical input data and settings produce identical plotted points.
-
----
-
-## 4. Catalogue composition
+### 2.1 Catalogue composition
 
 | Tracer | Rows | Fraction of catalogue |
 |---|---:|---:|
@@ -116,116 +59,272 @@ The catalogue is dominated by ELG and LRG populations, with QSOs providing the d
 
 ---
 
-## 5. Redshift distribution by tracer
+## 3. Analysis method
 
-| Tracer | z16 | Median z | z84 | Interpretation |
+### 3.1 Data cleaning
+
+Rows are retained only when all of the following values are finite:
+
+- redshift;
+- comoving distance;
+- $x$ coordinate;
+- $y$ coordinate;
+- $z$ coordinate.
+
+Tracer labels are normalised to uppercase, and missing labels are assigned to `UNKNOWN`.
+
+---
+
+### 3.2 Redshift-composition diagnostic
+
+The catalogue is divided into redshift bins from $z=0$ to $z=3.6$.
+
+For each bin, the fractional contribution of each tracer population is calculated:
+
+$$
+f_i(z) = \frac{N_i(z)}{\sum_j N_j(z)}
+$$
+
+where:
+
+- $N_i(z)$ is the number of observed rows belonging to tracer $i$ in a redshift bin;
+- $\sum_j N_j(z)$ is the total number of observed rows in that bin.
+
+This produces a tracer-composition plot rather than a completeness-corrected population fraction.
+
+---
+
+### 3.3 Coordinate-consistency diagnostic
+
+The analysis checks whether the stored Cartesian coordinates are consistent with the catalogue comoving distance.
+
+For every object, the Cartesian radial distance is calculated as:
+
+$$
+r_{\mathrm{Cartesian}} = \sqrt{x^2 + y^2 + z^2}
+$$
+
+The coordinate residual is then defined as:
+
+$$
+\Delta r = r_{\mathrm{Cartesian}} - \chi
+$$
+
+where:
+
+- $x$, $y$, and $z$ are the stored Cartesian comoving coordinates in Mpc;
+- $\chi$ is the stored line-of-sight comoving distance in Mpc;
+- $\Delta r$ should remain close to zero when both representations are internally consistent.
+
+For each DESI tracer population, the following quantities are calculated across the full catalogue:
+
+- mean residual, $\langle \Delta r \rangle$;
+- root-mean-square residual, $\mathrm{RMS}(\Delta r)$;
+- mean absolute residual, $\langle |\Delta r| \rangle$;
+- maximum absolute residual, $\max |\Delta r|$.
+
+This is a catalogue-validation diagnostic only. It does not test the cosmological model or estimate a physical distance-scale uncertainty.
+
+---
+
+### 3.4 Cartesian slice rendering
+
+A thin Cartesian slab is selected around the plane:
+
+$$
+Z = 0\ \mathrm{Mpc}
+$$
+
+with total thickness:
+
+$$
+\Delta Z = 300\ \mathrm{Mpc}
+$$
+
+Therefore, displayed objects satisfy:
+
+$$
+|z_{\mathrm{Cartesian}}| \leq 150\ \mathrm{Mpc}
+$$
+
+The selected objects are projected into the $X$--$Y$ plane.
+
+To keep the rendered figure responsive while preserving reproducibility, the plotted sample is limited to 100,000 objects. The objects are selected using the globally lowest stable hashes of object IDs inside the slice.
+
+This means that the same dataset and the same analysis settings produce the same displayed sample.
+
+---
+
+## 4. Results
+
+### 4.1 Redshift distribution by tracer
+
+| Tracer | $z_{16}$ | Median $z$ | $z_{84}$ | Interpretation |
 |---|---:|---:|---:|---|
 | BGS | 0.2143 | 0.3142 | 0.3754 | Nearby bright-galaxy population |
 | LRG | 0.5463 | 0.7532 | 0.9210 | Intermediate-redshift massive/red galaxy population |
 | ELG | 0.9241 | 1.1601 | 1.4237 | Higher-redshift star-forming galaxy population |
 | QSO | 1.1840 | 1.7417 | 2.4385 | Deepest tracer population in this bundle |
 
-### Interpretation
-
 The tracer-composition plot shows a clear radial/redshift sequence:
 
 1. **BGS** dominates at low redshift.
 2. **LRG** becomes prominent at intermediate redshift.
-3. **ELG** dominates much of the approximately \(0.8 \lesssim z \lesssim 1.6\) interval.
-4. **QSO** becomes the dominant observed tracer beyond approximately \(z \sim 1.6\).
+3. **ELG** dominates much of the approximate range $0.8 \lesssim z \lesssim 1.6$.
+4. **QSO** becomes the dominant observed tracer beyond approximately $z\sim1.6$.
 
-This pattern is expected from the target-selection design of the DESI LSS samples. It is an observed-row composition, not a completeness-corrected estimate of the cosmic population mix.
+This pattern is expected from tracer-target selection. It is an observed-row composition, not a completeness-corrected estimate of the cosmic population mix.
 
 ---
 
-## 6. Coordinate consistency results
+### 4.2 Coordinate consistency
 
-| Tracer | Mean Δr [Mpc] | RMS Δr [Mpc] | Mean |Δr| [Mpc] | Max |Δr| [Mpc] |
+| Tracer | Mean $\Delta r$ [Mpc] | RMS $\Delta r$ [Mpc] | Mean $|\Delta r|$ [Mpc] | Max $|\Delta r|$ [Mpc] |
 |---|---:|---:|---:|---:|
-| BGS | -2.72 × 10⁻⁸ | 4.10 × 10⁻⁵ | 3.30 × 10⁻⁵ | 1.40 × 10⁻⁴ |
-| LRG | +2.94 × 10⁻⁸ | 8.70 × 10⁻⁵ | 7.00 × 10⁻⁵ | 2.92 × 10⁻⁴ |
-| ELG | +6.27 × 10⁻⁸ | 1.22 × 10⁻⁴ | 9.70 × 10⁻⁵ | 4.87 × 10⁻⁴ |
-| QSO | +1.56 × 10⁻⁷ | 1.64 × 10⁻⁴ | 1.31 × 10⁻⁴ | 5.75 × 10⁻⁴ |
+| BGS | $-2.72\times10^{-8}$ | $4.10\times10^{-5}$ | $3.30\times10^{-5}$ | $1.40\times10^{-4}$ |
+| LRG | $+2.94\times10^{-8}$ | $8.70\times10^{-5}$ | $7.00\times10^{-5}$ | $2.92\times10^{-4}$ |
+| ELG | $+6.27\times10^{-8}$ | $1.22\times10^{-4}$ | $9.70\times10^{-5}$ | $4.87\times10^{-4}$ |
+| QSO | $+1.56\times10^{-7}$ | $1.64\times10^{-4}$ | $1.31\times10^{-4}$ | $5.75\times10^{-4}$ |
 
-### Interpretation
+The residuals are extremely small compared with the several-thousand-Mpc scale of the plotted survey volume. The maximum absolute mismatch is below approximately:
 
-The residuals are extremely small compared with the several-thousand-Mpc scale of the plotted survey volume. The largest residual, found for QSO rows, is only about **0.575 kpc**.
+$$
+5.8\times10^{-4}\ \mathrm{Mpc}
+$$
 
-This strongly supports the conclusion that:
+or about:
 
-- the Cartesian coordinates are numerically consistent with the stored comoving distances;
-- the slice geometry is being rendered from internally coherent positional information;
-- any large-scale visual patterns in the slice are not caused by a basic coordinate-conversion mismatch.
+$$
+0.58\ \mathrm{kpc}
+$$
 
----
+This demonstrates that the stored Cartesian coordinates and the catalogue comoving distances are internally consistent to much better than one kiloparsec.
 
-## 7. Cartesian slice interpretation
-
-The Cartesian slice is centred on \(Z=0\) Mpc and includes objects satisfying:
-
-\[
-|Z| \le 150 \; \mathrm{Mpc}.
-\]
-
-The figure shows a pronounced bilateral or “butterfly-like” geometry, with nested regions associated with the tracer populations.
-
-### What the plot shows
-
-- **Blue BGS points** occupy the closest radial region.
-- **Orange LRG points** form a larger intermediate-distance layer.
-- **Green ELG points** extend farther outward.
-- **Pink QSO points** populate the broadest and most distant visible region.
-- The two-sided structure and central gaps arise primarily from the observed DESI sky footprint intersected by a thin Cartesian slab.
-
-### What the plot does not show
-
-The visible arcs, gaps, wedges, and apparent sparse regions are **not sufficient evidence** for physical voids or underdensities. They may arise from:
-
-- DESI’s angular footprint;
-- target-selection boundaries;
-- fibre-assignment and observational completeness;
-- redshift-dependent tracer selection;
-- the chosen slice thickness;
-- the projection of a three-dimensional survey into a two-dimensional plane.
-
-A scientifically defensible density or void analysis must model the selection function using random catalogues and the survey mask.
+For the purpose of interactive visualisation and descriptive analysis, the Cartesian coordinate transformation can therefore be treated as numerically reliable.
 
 ---
 
-## 8. Main conclusions
+### 4.3 Observed Cartesian slice
 
-1. The local research bundle contains **6.09 million** DESI DR1 LSS rows across BGS, LRG, ELG, and QSO tracers.
-2. The tracer populations occupy distinct redshift regimes, producing the nested radial appearance in the Cartesian slice.
-3. The displayed bilateral geometry is dominated by survey footprint and selection effects, not automatically by real cosmic underdensity.
-4. Cartesian coordinates and stored comoving distances are internally consistent to substantially better than 1 kpc.
-5. The current analysis is suitable for a transparent, educational, browser-facing lightcone visualisation and for catalogue-quality checks.
-6. The current products should not be labelled as a density reconstruction, void map, or clustering measurement.
+The Cartesian slice shows a strongly structured bilateral geometry with:
 
----
+- two broad survey lobes;
+- missing central angular regions;
+- nested radial distributions for different tracer classes;
+- sparse high-redshift QSO coverage extending to the largest comoving radii.
 
-## 9. Recommended next steps
+The apparent shell-like structure is primarily caused by the combination of:
 
-### For the interactive NĀSADĪYA-LIGHTCONE website
+- DESI sky footprint;
+- tracer-specific target selection;
+- redshift coverage;
+- radial selection effects;
+- the chosen thin slice around $Z=0$ Mpc.
 
-- Add tracer toggles for BGS, LRG, ELG, and QSO.
-- Display the active selection and redshift range clearly.
-- Add a persistent note: “Observed survey geometry; not completeness-corrected.”
-- Offer the Z-slice thickness as an interactive control.
-- Add an optional radial-distance or redshift colour scale within each tracer.
+The plot should not be interpreted as a direct density map of the Universe.
 
-### For research-grade large-scale structure analysis
-
-1. Obtain the correct DESI random catalogues for each tracer.
-2. Apply the relevant angular mask and completeness weights.
-3. Use a documented estimator, such as Landy–Szalay, for correlation-function work.
-4. Validate redshift cuts and tracer weights against DESI documentation.
-5. Only then attempt density-field reconstruction, void finding, or clustering inference.
+The central gaps are not evidence for cosmic voids. They arise because the catalogue is not a uniform all-sky sample.
 
 ---
 
-## 10. Output files
+## 5. Interpretation of the figures
 
-The notebook creates the following products:
+### Figure 1 — DESI DR1 LSS observed Cartesian slice
+
+The displayed $X$--$Y$ slice contains objects satisfying:
+
+$$
+|Z| \leq 150\ \mathrm{Mpc}
+$$
+
+The bilateral structure reflects the DESI observed footprint and target selection.
+
+The coloured nested distributions show how different tracer populations occupy different redshift and distance regimes:
+
+- BGS objects remain closest to the observer;
+- LRG objects populate larger comoving radii;
+- ELGs extend farther outward;
+- QSOs occupy the broadest and most distant radial range.
+
+The geometry is observational rather than a direct reconstruction of the underlying matter distribution.
+
+### Figure 2 — DESI DR1 LSS tracer composition by redshift
+
+The redshift-composition plot shows the changing mixture of DESI tracers with redshift.
+
+The key conclusion is that:
+
+$$
+P(\mathrm{tracer}\mid z)
+$$
+
+changes strongly with redshift.
+
+Therefore, an apparent increase or decrease in point density with distance cannot be interpreted directly as cosmological structure without modelling the relevant selection function.
+
+---
+
+## 6. Scientific limitations
+
+The current diagnostics are intentionally descriptive.
+
+They do not account for:
+
+- DESI angular completeness;
+- bright-star masks;
+- imaging-systematics masks;
+- tracer-specific selection functions;
+- radial completeness;
+- DESI random catalogues;
+- fibre-assignment effects;
+- survey window functions.
+
+For this reason, the current point distribution cannot be used alone to claim:
+
+- galaxy overdensities;
+- underdensities;
+- voids;
+- filament significance;
+- clustering amplitude;
+- cosmological anisotropy;
+- physical asymmetry between the two visible lobes.
+
+Any such inference requires comparison with an appropriately matched DESI random catalogue and a validated clustering estimator.
+
+---
+
+## 7. Recommended next analysis stage
+
+A rigorous next stage should include:
+
+1. Obtain the DESI random catalogues matched to each tracer population.
+2. Apply the relevant DESI angular mask and completeness information.
+3. Construct weighted number-density fields.
+4. Estimate the two-point correlation function, for example with the Landy--Szalay estimator:
+
+$$
+\xi(s) = \frac{DD(s)-2DR(s)+RR(s)}{RR(s)}
+$$
+
+where:
+
+- $DD(s)$ is the data-data pair count;
+- $DR(s)$ is the data-random pair count;
+- $RR(s)$ is the random-random pair count.
+
+5. Only after selection-function correction, investigate density contrast, void candidates, filamentary structure, baryon acoustic oscillation signatures, or redshift-space distortions.
+
+---
+
+## 8. Suggested wording for the repository
+
+> The DESI DR1 lightcone visualisation uses observed spectroscopic objects with tracer-aware colouring and deterministic sampling. Apparent arcs, wedges, gaps, and bilateral structure reflect the DESI survey footprint and tracer-dependent selection, rather than direct measurements of cosmic density. Quantitative clustering, overdensity, or void inference requires the corresponding DESI random catalogues, angular masks, and survey-selection corrections.
+
+---
+
+## 9. Generated outputs
+
+The analysis produces:
 
 ```text
 figures/desi_dr1_tracer_statistics.csv
@@ -234,12 +333,19 @@ figures/desi_dr1_cartesian_slice.png
 figures/desi_dr1_catalogue_diagnostics.json
 ```
 
+These outputs provide:
+
+- numerical tracer statistics;
+- redshift-distribution diagnostics;
+- deterministic Cartesian slice rendering;
+- machine-readable summary metadata.
+
 ---
 
-## 11. Suggested figure captions
+## 10. Conclusion
 
-**Figure 1 — DESI DR1 LSS observed Cartesian slice.**  
-Observed DESI DR1 LSS objects in a Cartesian slab centred at \(Z=0\) Mpc with a thickness of 300 Mpc. Exactly 100,000 rows were selected deterministically by stable object-ID hash for reproducibility. Colours identify tracer populations. The bilateral footprint and gaps reflect DESI angular coverage and tracer selection; this figure is not a density reconstruction.
+The DESI DR1 research bundle is internally consistent in its Cartesian and radial coordinate representation and produces a visually informative tracer-aware lightcone slice.
 
-**Figure 2 — DESI DR1 LSS tracer composition by redshift.**  
-Fraction of observed catalogue rows in each redshift bin for the BGS, LRG, ELG, and QSO tracer samples. The plot represents the observed sample composition only and is not corrected for selection completeness, angular mask, or survey volume.
+The visible large-scale geometry is dominated by survey footprint and tracer-selection structure. It is therefore valuable for educational visualisation and catalogue exploration, but it should not yet be presented as a reconstructed cosmic density field.
+
+The appropriate next step is to integrate the DESI random catalogues and survey masks, enabling statistically valid large-scale structure analysis.
