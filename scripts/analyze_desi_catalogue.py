@@ -103,17 +103,11 @@ def scan_catalogue(
     residual_sq_sums: Counter[str] = Counter()
     residual_abs_sums: Counter[str] = Counter()
     residual_counts: Counter[str] = Counter()
-    residual_max_abs: defaultdict(float)
+    residual_max_abs = defaultdict(float)
     slice_candidates: pd.DataFrame | None = None
     rows_above_z_max = 0
     columns = [
-        "object_id",
-        "tracer",
-        "redshift",
-        "comoving_distance_mpc",
-        "x_mpc",
-        "y_mpc",
-        "z_mpc",
+        "object_id", "tracer", "redshift", "comoving_distance_mpc", "x_mpc", "y_mpc", "z_mpc",
     ]
     half_thickness = slice_thickness_mpc / 2.0
 
@@ -126,7 +120,6 @@ def scan_catalogue(
             redshift = group["redshift"].to_numpy(dtype=float)
             z_histograms[tracer] += np.histogram(redshift, bins=redshift_edges)[0]
             rows_above_z_max += int(np.count_nonzero(redshift > z_max))
-
             radius = np.sqrt(
                 group["x_mpc"].to_numpy(dtype=float) ** 2
                 + group["y_mpc"].to_numpy(dtype=float) ** 2
@@ -204,15 +197,9 @@ def scan_catalogue(
 
 def write_statistics_csv(summary: dict, output_path: Path) -> None:
     fields = [
-        "tracer",
-        "rows",
-        "redshift_p16",
-        "redshift_median",
-        "redshift_p84",
-        "coordinate_radius_minus_chi_mean_mpc",
-        "coordinate_radius_minus_chi_rms_mpc",
-        "coordinate_radius_minus_chi_mean_abs_mpc",
-        "coordinate_radius_minus_chi_max_abs_mpc",
+        "tracer", "rows", "redshift_p16", "redshift_median", "redshift_p84",
+        "coordinate_radius_minus_chi_mean_mpc", "coordinate_radius_minus_chi_rms_mpc",
+        "coordinate_radius_minus_chi_mean_abs_mpc", "coordinate_radius_minus_chi_max_abs_mpc",
     ]
     with output_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -227,25 +214,16 @@ def plot_tracer_fractions(summary: dict, output_path: Path, dpi: int) -> None:
     centres = 0.5 * (edges[:-1] + edges[1:])
     counts = np.vstack([
         np.asarray(histogram["counts"].get(tracer, np.zeros(histogram["bins"])), dtype=float)
-        for tracer in TRACERS
-        if tracer in histogram["counts"]
+        for tracer in TRACERS if tracer in histogram["counts"]
     ])
     labels = [tracer for tracer in TRACERS if tracer in histogram["counts"]]
     totals = counts.sum(axis=0)
     fractions = np.divide(counts, totals, out=np.zeros_like(counts), where=totals > 0)
-
     figure, axis = plt.subplots(figsize=(10.8, 5.8), dpi=dpi)
     cumulative = np.zeros_like(centres)
     for tracer, fraction in zip(labels, fractions):
-        axis.fill_between(
-            centres,
-            cumulative,
-            cumulative + fraction,
-            step="mid",
-            alpha=0.78,
-            color=TRACER_COLOURS.get(tracer, "#7f8791"),
-            label=tracer,
-        )
+        axis.fill_between(centres, cumulative, cumulative + fraction, step="mid", alpha=0.78,
+                          color=TRACER_COLOURS.get(tracer, "#7f8791"), label=tracer)
         cumulative += fraction
     axis.set_xlim(histogram["z_min"], histogram["z_max"])
     axis.set_ylim(0.0, 1.0)
@@ -255,77 +233,40 @@ def plot_tracer_fractions(summary: dict, output_path: Path, dpi: int) -> None:
     axis.spines[["top", "right"]].set_visible(False)
     axis.grid(axis="y", alpha=0.22)
     axis.legend(frameon=False, title="Tracer", ncol=4, loc="upper center")
-    figure.text(
-        0.125,
-        0.02,
-        "Descriptive observed-row fractions only. This is not a completeness-corrected population fraction.",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-        color="#4f5b66",
-    )
+    figure.text(0.125, 0.02, "Descriptive observed-row fractions only. This is not a completeness-corrected population fraction.",
+                ha="left", va="bottom", fontsize=8, color="#4f5b66")
     figure.subplots_adjust(bottom=0.14, left=0.11, right=0.97, top=0.90)
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 
 
-def plot_cartesian_slice(
-    slice_frame: pd.DataFrame,
-    summary: dict,
-    output_path: Path,
-    dpi: int,
-) -> None:
+def plot_cartesian_slice(slice_frame: pd.DataFrame, summary: dict, output_path: Path, dpi: int) -> None:
     figure, axis = plt.subplots(figsize=(9.5, 8.2), dpi=dpi)
     for tracer in TRACERS:
         group = slice_frame.loc[slice_frame["tracer"] == tracer]
         if group.empty:
             continue
-        axis.scatter(
-            group["x_mpc"],
-            group["y_mpc"],
-            s=1.0,
-            alpha=0.35,
-            marker=".",
-            color=TRACER_COLOURS.get(tracer, "#7f8791"),
-            label=f"{tracer} ({len(group):,})",
-            rasterized=True,
-        )
+        axis.scatter(group["x_mpc"], group["y_mpc"], s=1.0, alpha=0.35, marker=".",
+                     color=TRACER_COLOURS.get(tracer, "#7f8791"), label=f"{tracer} ({len(group):,})", rasterized=True)
     slice_meta = summary["cartesian_slice"]
     axis.set_aspect("equal", adjustable="box")
     axis.set_xlabel("X [Mpc]")
     axis.set_ylabel("Y [Mpc]")
-    axis.set_title(
-        "DESI DR1 LSS — observed Cartesian slice",
-        loc="left",
-        pad=12,
-    )
+    axis.set_title("DESI DR1 LSS — observed Cartesian slice", loc="left", pad=12)
     axis.grid(alpha=0.18)
     axis.spines[["top", "right"]].set_visible(False)
     axis.legend(frameon=False, title="Rendered tracer rows", loc="upper right")
-    figure.text(
-        0.125,
-        0.02,
-        f"Slice: Z = {slice_meta['z_center_mpc']:.0f} Mpc, thickness = "
-        f"{slice_meta['thickness_mpc']:.0f} Mpc  |  "
-        f"Rendered: {slice_meta['rendered_rows']:,} exact deterministic rows. "
-        "Not a density reconstruction.",
-        ha="left",
-        va="bottom",
-        fontsize=8,
-        color="#4f5b66",
-    )
-    figure.subplots_adjust(bottom=0.14, left=0.11, right=0.97, top=0.92)
+    figure.text(0.125, 0.02,
+                f"Slice: Z = {slice_meta['z_center_mpc']:.0f} Mpc, thickness = {slice_meta['thickness_mpc']:.0f} Mpc  |  Rendered: {slice_meta['rendered_rows']:,} exact deterministic rows. Not a density reconstruction.",
+                ha="left", va="bottom", fontsize=8, color="#4f5b66")
+    figure.subplots_adjust(bottom=0.14, left=0.11, right=0.97, top=0.90)
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--input",
-        type=Path,
-        default=PROJECT_ROOT / "data" / "research" / "desi_dr1_lss_research_bundle.parquet",
-    )
+    parser.add_argument("--input", type=Path, default=PROJECT_ROOT / "data" / "research" / "desi_dr1_lss_research_bundle.parquet")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "figures")
     parser.add_argument("--slice-z-mpc", type=float, default=0.0)
     parser.add_argument("--slice-thickness-mpc", type=float, default=300.0)
@@ -334,24 +275,17 @@ def main() -> int:
     parser.add_argument("--z-bins", type=int, default=90)
     parser.add_argument("--dpi", type=int, default=240)
     args = parser.parse_args()
-
     if not args.input.exists():
         print(f"Research bundle not found: {args.input}")
         return 2
     if args.slice_thickness_mpc <= 0 or args.slice_render_rows < 1 or args.z_bins < 5:
         print("Slice thickness/render limit and redshift bins must be positive.")
         return 2
-
     args.output_dir.mkdir(parents=True, exist_ok=True)
     try:
-        slice_frame, summary = scan_catalogue(
-            args.input,
-            slice_z_mpc=args.slice_z_mpc,
-            slice_thickness_mpc=args.slice_thickness_mpc,
-            slice_render_rows=args.slice_render_rows,
-            z_max=args.z_max,
-            z_bins=args.z_bins,
-        )
+        slice_frame, summary = scan_catalogue(args.input, slice_z_mpc=args.slice_z_mpc,
+            slice_thickness_mpc=args.slice_thickness_mpc, slice_render_rows=args.slice_render_rows,
+            z_max=args.z_max, z_bins=args.z_bins)
         summary_path = args.output_dir / "desi_dr1_catalogue_diagnostics.json"
         csv_path = args.output_dir / "desi_dr1_tracer_statistics.csv"
         fraction_path = args.output_dir / "desi_dr1_tracer_composition.png"
@@ -363,7 +297,6 @@ def main() -> int:
     except Exception as exc:
         print(f"DESI catalogue diagnostic build failed: {exc}")
         return 3
-
     print(f"Saved {summary_path}")
     print(f"Saved {csv_path}")
     print(f"Saved {fraction_path}")
