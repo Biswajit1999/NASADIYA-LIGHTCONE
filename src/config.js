@@ -7,17 +7,35 @@ export const LIGHTCONE_CONFIG = Object.freeze({
 export const DESI_TRACERS = Object.freeze(['BGS', 'LRG', 'ELG', 'QSO']);
 
 /**
+ * Static GitHub Pages ships only the 125k-row deterministic overview. The
+ * higher ceiling is available when the same app can reach the local tile store
+ * or a configured object-store endpoint.
+ */
+export const RENDERING_LIMITS = Object.freeze({
+  publicOverviewRows: 125_000,
+  highDensityRows: 1_000_000,
+  highDensityStep: 25_000,
+  highDensityMinimumMemoryGiB: 8,
+  highDensityMinimumHardwareConcurrency: 6,
+});
+
+/**
  * Adaptive tile delivery is intentionally opt-in. The public GitHub Pages build
- * begins from the committed 125k-row overview; full-resolution tiles can stream
- * from a local build or a separately configured object-store endpoint.
+ * begins from the committed 125k-row overview; a local build or configured
+ * object-store endpoint can stream camera-relevant observed rows up to the
+ * declared high-density rendering ceiling.
  */
 export const TILE_STREAMING = Object.freeze({
   'desi-dr1': {
     enabled: true,
     remoteBaseUrl: null,
-    maxTiles: 18,
-    maxCachedTiles: 42,
-    maxLoadedRows: 180_000,
+    maxTiles: 768,
+    maxCachedTiles: 864,
+    maxLoadedRows: RENDERING_LIMITS.highDensityRows,
+    loadConcurrency: 10,
+    overviewReserveRows: RENDERING_LIMITS.publicOverviewRows,
+    overviewReserveFraction: 0.125,
+    minOverviewRows: 25_000,
     refreshDebounceMs: 550,
   },
   'all-live': {
@@ -25,9 +43,13 @@ export const TILE_STREAMING = Object.freeze({
     // Uses the DESI tile store for depth detail while preserving the full 2MRS
     // public layer as the nearby anchor in the composite view.
     remoteBaseUrl: null,
-    maxTiles: 18,
-    maxCachedTiles: 42,
-    maxLoadedRows: 180_000,
+    maxTiles: 768,
+    maxCachedTiles: 864,
+    maxLoadedRows: RENDERING_LIMITS.highDensityRows,
+    loadConcurrency: 10,
+    overviewReserveRows: RENDERING_LIMITS.publicOverviewRows,
+    overviewReserveFraction: 0.125,
+    minOverviewRows: 25_000,
     refreshDebounceMs: 550,
   },
 });
@@ -40,7 +62,7 @@ export const SURVEY_LAYERS = Object.freeze({
     dataKind: 'composite',
     memberLayerIds: ['2mrs', 'desi-dr1'],
     defaultMaxRedshift: 2.5,
-    defaultPointBudget: 125_000,
+    defaultPointBudget: RENDERING_LIMITS.publicOverviewRows,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
     installed: true,
@@ -79,7 +101,7 @@ export const SURVEY_LAYERS = Object.freeze({
     dataUrl: './data/processed/wise-sc/index.json',
     dataKind: 'tile-store',
     defaultMaxRedshift: 0.45,
-    defaultPointBudget: 125_000,
+    defaultPointBudget: RENDERING_LIMITS.publicOverviewRows,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
     installed: false,
@@ -92,7 +114,7 @@ export const SURVEY_LAYERS = Object.freeze({
     dataUrl: './data/processed/desi-dr1/index.json',
     dataKind: 'tile-store',
     defaultMaxRedshift: 2.5,
-    defaultPointBudget: 125_000,
+    defaultPointBudget: RENDERING_LIMITS.publicOverviewRows,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
     installed: true,
