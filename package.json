@@ -5,6 +5,6 @@
   "description": "Survey-native browser and research workflow for measured galaxy catalogues.",
   "type": "module",
   "scripts": {
-    "check:modules": "node --check src/app.js && node --check src/config.js && node --check src/core/catalog-loader.js && node --check src/core/lightcone-scene.js && node --check src/core/survey-points.js && node --check src/core/tile-streamer.js && node --check src/ui/high-density-controls.js && node --check src/ui/lightcone-interface.js && node tests/check_desi_tracer.mjs && node tests/check_composite_layer.mjs && node tests/check_high_density_config.mjs"
+    "check:modules": "node --check src/app.js && node --check src/config.js && node --check src/full-cloud-config.js && node --check src/core/catalog-loader.js && node --check src/core/gpu-cloud-loader.js && node --check src/core/gpu-cloud-binary.js && node --check src/core/gpu-survey-cloud.js && node --check src/core/lightcone-scene.js && node --check src/core/survey-points.js && node --check src/core/tile-streamer.js && node --check src/ui/high-density-controls.js && node --check src/ui/full-cloud-profile-patch.js && node --check src/ui/lightcone-interface.js && node tests/check_desi_tracer.mjs && node tests/check_composite_layer.mjs && node tests/check_high_density_config.mjs"
   }
 }
