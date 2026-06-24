@@ -1,9 +1,12 @@
 import { RENDERING_LIMITS } from '../config.js';
 import { HighDensityControls } from './high-density-controls.js';
+import { LightconeInterface } from './lightcone-interface.js';
 
 const originalInstall = HighDensityControls.prototype.install;
 const originalUpdateVisual = HighDensityControls.prototype.updateVisual;
 const originalUpdateStatus = HighDensityControls.prototype.updateStatus;
+const originalTileStatus = LightconeInterface.prototype.setTileStreamingStatus;
+const originalTelemetry = LightconeInterface.prototype.updateTelemetry;
 
 function compact(value) {
   const number = Number(value) || 0;
@@ -56,4 +59,25 @@ HighDensityControls.prototype.updateStatus = function updateFullProfileStatus() 
     return;
   }
   originalUpdateStatus.call(this);
+};
+
+LightconeInterface.prototype.setTileStreamingStatus = function setFullCloudStatus(status = {}) {
+  if (!status.fullCatalogue) {
+    originalTileStatus.call(this, status);
+    return;
+  }
+  if (!['desi-dr1', 'all-live'].includes(this.currentLayer?.id)) return;
+  this.tileStreamStatus = status;
+  const total = compact(status.streamedRows || 0);
+  this.dom.surveyLayerNote.textContent = `Full observed-row GPU cloud is active: ${total} DESI source rows are resident in GPU buffers. Row-level provenance and point inspection remain available through the separate tile store.`;
+  this.dom.budgetNote.textContent = `Full-cloud mode draws every accepted DESI row from one packed binary. It does not remove survey footprint, targeting, mask, or selection effects.`;
+};
+
+LightconeInterface.prototype.updateTelemetry = function updateFullCloudTelemetry(metrics, state) {
+  originalTelemetry.call(this, metrics, state);
+  if (!metrics?.fullCatalogue) return;
+  const total = compact(metrics.visibleCount);
+  this.dom.visibleCount.textContent = `${total} GPU`;
+  this.dom.summaryCount.textContent = `${total} full cloud`;
+  this.dom.railDetail.textContent = `Full observed DESI GPU cloud · z ≤ ${Number(state.maxRedshift).toFixed(4)} · GPU filters change visibility without changing source rows`;
 };
