@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Build a packed full-catalogue DESI rendering cloud from Parquet."""
+"""Build a packed full-catalogue DESI rendering cloud from Parquet.
+
+The output is a local or object-storage rendering product. It is not a row-level
+research table: individual source inspection remains a provenance-tile task.
+"""
 
 from __future__ import annotations
 
 import argparse
 from collections import Counter
 import hashlib
+import json
 from pathlib import Path
 
 import numpy as np
@@ -56,3 +61,54 @@ def write_cloud(input_path: Path, binary_path: Path, batch_rows: int) -> tuple[i
             records += len(packed)
             tracers.update(batch_counts)
     return records, rejected, tracers
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=PROJECT_ROOT / "data" / "research" / "desi_dr1_lss_research_bundle.parquet")
+    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data" / "processed" / "desi-dr1" / "full-cloud")
+    parser.add_argument("--batch-rows", type=int, default=250_000)
+    parser.add_argument("--overwrite", action="store_true")
+    args = parser.parse_args()
+
+    binary_path = args.output_dir / "desi-dr1-full-cloud.f32"
+    manifest_path = args.output_dir / "full-cloud.json"
+    if (binary_path.exists() or manifest_path.exists()) and not args.overwrite:
+        print(f"Output already exists: {args.output_dir}; use --overwrite to replace it.")
+        return 2
+    records, rejected, tracers = write_cloud(args.input, binary_path, args.batch_rows)
+    expected_bytes = records * STRIDE_FLOATS * 4
+    if binary_path.stat().st_size != expected_bytes:
+        raise RuntimeError("GPU cloud byte-length validation failed.")
+    manifest = {
+        "format": "nasadiya-gpu-cloud/v1",
+        "dataset_id": "desi-dr1-lss-full-observed-cloud",
+        "record_count": records,
+        "rejected_rows": rejected,
+        "binary": {
+            "path": binary_path.name,
+            "encoding": "little-endian-float32-interleaved",
+            "fields": ["x_mpc", "y_mpc", "z_mpc", "redshift", "tracer_code"],
+            "stride_floats": STRIDE_FLOATS,
+            "stride_bytes": STRIDE_FLOATS * 4,
+            "byte_length": expected_bytes,
+            "sha256": file_sha256(binary_path),
+        },
+        "tracer_codes": TRACER_CODES,
+        "tracer_counts": dict(sorted(tracers.items())),
+        "source": {"input_file": args.input.name, "survey": "DESI DR1 LSS", "release": "DESI DR1", "measurement_kind": "spectroscopic"},
+        "rendering_scope": {
+            "point_inspection_available": False,
+            "tile_store_required_for_row_inspection": True,
+            "note": "Full GPU cloud contains real observed rows for rendering only; it is not a completeness-corrected density field or a clustering-ready catalogue.",
+        },
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"Wrote {records:,} observed rows to {binary_path}")
+    print(f"GPU payload: {expected_bytes / (1024 ** 2):.1f} MiB")
+    print(f"Manifest: {manifest_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
