@@ -20,6 +20,37 @@ from fidelity_grid import equal_area_sky_cells  # noqa: E402
 from nasadiya_lightcone.sampling import select_lowest_hash, select_seeded_random, select_stratified_lowest_hash  # noqa: E402
 
 
+def build_samples(parent: pd.DataFrame, args: argparse.Namespace) -> dict[str, pd.DataFrame]:
+    """Construct the declared browser-representation policies."""
+
+    working = parent.copy()
+    working["sky_cell"] = equal_area_sky_cells(
+        working["ra_deg"],
+        working["dec_deg"],
+        ra_bins=args.sky_ra_bins,
+        sin_dec_bins=args.sky_sin_dec_bins,
+    )
+    working["redshift_bin"] = redshift_bin_labels(
+        working["redshift"],
+        z_max=args.z_max,
+        z_bins=args.z_bins,
+    )
+    return {
+        "lowest_hash": select_lowest_hash(working, args.point_budget),
+        "seeded_random": select_seeded_random(working, args.point_budget, seed=args.random_seed),
+        "tracer_hash": select_stratified_lowest_hash(
+            working,
+            args.point_budget,
+            group_columns=("tracer",),
+        ),
+        "spatial_redshift_hash": select_stratified_lowest_hash(
+            working,
+            args.point_budget,
+            group_columns=("tracer", "sky_cell", "redshift_bin"),
+        ),
+    }
+
+
 def main() -> int:
     return 0
 
