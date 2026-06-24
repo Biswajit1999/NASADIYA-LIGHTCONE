@@ -5,6 +5,7 @@ import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { LightconeScene } from './core/lightcone-scene.js';
 import { SurveyPoints } from './core/survey-points.js';
 import { TileStreamer } from './core/tile-streamer.js';
+import { HighDensityControls } from './ui/high-density-controls.js';
 import { LightconeInterface } from './ui/lightcone-interface.js';
 
 const state = {
@@ -23,6 +24,7 @@ const state = {
 const canvas = document.querySelector('#lightcone-canvas');
 const scene = new LightconeScene(canvas);
 const ui = new LightconeInterface();
+const highDensityControls = new HighDensityControls();
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -59,6 +61,7 @@ function replacePoints(objects, meta) {
 function applyState({ scheduleTiles = true } = {}) {
   if (!points) return;
   ui.updateTelemetry(points.applyState(state), state);
+  highDensityControls.updateState(state);
   if (scheduleTiles) scheduleAdaptiveTileRefresh();
 }
 
@@ -86,9 +89,12 @@ async function refreshAdaptiveTiles() {
       applyState({ scheduleTiles: false });
     }
     ui.setTileStreamingStatus({ available: true, active: true, ...result });
+    highDensityControls.setDelivery({ available: true, active: true, ...result });
   } catch (error) {
     state.tileStreaming = false;
-    ui.setTileStreamingStatus({ available: false, active: false, reason: error?.message || 'Adaptive tile loading failed.' });
+    const delivery = { available: false, active: false, reason: error?.message || 'Adaptive tile loading failed.' };
+    ui.setTileStreamingStatus(delivery);
+    highDensityControls.setDelivery(delivery);
     replacePoints(overviewObjects, activeMeta);
     applyState({ scheduleTiles: false });
   } finally {
@@ -161,8 +167,6 @@ async function loadCompositeLayer(layer) {
         note: 'This is a survey-comparison stack, not a unified or completeness-corrected catalogue.',
       },
       tracer_counts: tracerCounts,
-      // DESI remains the only high-resolution tile source in the composite. 2MRS is
-      // retained fully in the browser baseline while DESI detail streams around it.
       tile_count: Number(desi?.meta?.tile_count || 0),
       tile_manifest: desi?.meta?.tile_manifest || null,
       tile_index_url: desi?.meta?.tile_index_url || null,
@@ -196,7 +200,9 @@ async function configureAdaptiveTiles(layer, meta, requestId) {
   state.tileStreaming = false;
   const config = TILE_STREAMING[layer.id];
   if (!config?.enabled || !meta.tile_manifest || !meta.tile_index_url || !meta.tile_count) {
-    ui.setTileStreamingStatus({ available: false, active: false, reason: 'This layer has no adaptive tile store.' });
+    const delivery = { available: false, active: false, reason: 'This layer has no adaptive tile store.' };
+    ui.setTileStreamingStatus(delivery);
+    highDensityControls.setDelivery(delivery);
     return;
   }
 
@@ -208,12 +214,17 @@ async function configureAdaptiveTiles(layer, meta, requestId) {
     maxTiles: config.maxTiles,
     maxCachedTiles: config.maxCachedTiles,
     maxLoadedRows: config.maxLoadedRows,
+    loadConcurrency: config.loadConcurrency,
+    overviewReserveRows: config.overviewReserveRows,
+    overviewReserveFraction: config.overviewReserveFraction,
+    minOverviewRows: config.minOverviewRows,
   });
   const delivery = await streamer.probeDelivery();
   if (requestId !== loadSequence || state.layerId !== layer.id) return;
   tileStreamer = streamer;
   state.tileStreaming = delivery.available;
   ui.setTileStreamingStatus({ available: delivery.available, active: delivery.available, totalTiles: meta.tile_count, delivery: delivery.delivery, reason: delivery.reason });
+  highDensityControls.setDelivery(delivery);
   if (delivery.available) scheduleAdaptiveTileRefresh(0);
 }
 
@@ -257,6 +268,7 @@ async function activateLayer(layerId, { initial = false } = {}) {
     replacePoints(overviewObjects, meta);
     scene.setSpatialMode(state.spatialMode, { immediate: true });
     ui.setDataReady(meta, maxField(objects, 'redshift'), state, requestedLayer);
+    highDensityControls.configure({ layer: requestedLayer, state });
     applyState({ scheduleTiles: false });
     document.title = `NĀSADĪYA LIGHTCONE — ${meta.source_survey || requestedLayer.id}`;
     await configureAdaptiveTiles(requestedLayer, meta, requestId);
