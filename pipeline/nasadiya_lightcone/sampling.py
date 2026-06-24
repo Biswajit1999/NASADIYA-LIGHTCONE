@@ -92,6 +92,32 @@ def stable_object_hashes(values: Iterable[object]) -> np.ndarray:
     )
 
 
+def _lowest_hash_positions(hashes: np.ndarray, object_ids: pd.Series, n_rows: int) -> np.ndarray:
+    """Return exact lowest-hash positions without sorting every object ID.
+
+    ``argpartition`` identifies the threshold in linear time. Object-ID sorting is
+    used only if a theoretical 64-bit hash tie occurs at the retained boundary.
+    This keeps the selection practical for multi-million-row parent catalogues.
+    """
+
+    if n_rows == len(hashes):
+        return np.arange(len(hashes), dtype=np.int64)
+    candidate = np.argpartition(hashes, n_rows - 1)[:n_rows]
+    cutoff = hashes[candidate].max()
+    strict = np.flatnonzero(hashes < cutoff)
+    remaining = n_rows - len(strict)
+    boundary = np.flatnonzero(hashes == cutoff)
+    if remaining:
+        boundary_ids = object_ids.iloc[boundary].astype(str)
+        chosen_boundary = boundary[
+            np.argsort(boundary_ids.to_numpy(dtype=str), kind="mergesort")[:remaining]
+        ]
+        selected = np.concatenate([strict, chosen_boundary])
+    else:
+        selected = strict
+    return selected.astype(np.int64, copy=False)
+
+
 def select_lowest_hash(
     frame: pd.DataFrame,
     n_rows: int,
@@ -110,9 +136,8 @@ def select_lowest_hash(
         return frame.sort_values(object_id_column, kind="mergesort").reset_index(drop=True)
 
     hashes = stable_object_hashes(object_ids)
-    positions = np.arange(len(frame))
-    order = np.lexsort((positions, object_ids.to_numpy(dtype=str), hashes))
-    selected = frame.iloc[order[:n_rows]].copy()
+    positions = _lowest_hash_positions(hashes, object_ids, n_rows)
+    selected = frame.iloc[positions].copy()
     return selected.sort_values(object_id_column, kind="mergesort").reset_index(drop=True)
 
 
@@ -183,13 +208,10 @@ def select_stratified_lowest_hash(
     if frame.loc[:, list(columns)].isna().any(axis=None):
         raise ValueError("Stratified selection requires explicit non-null stratum labels.")
 
-    groups = list(frame.groupby(list(columns), sort=False, observed=True, dropna=False))
-    labels = [key if isinstance(key, tuple) else (key,) for key, _ in groups]
-    counts = pd.Series([len(group) for _, group in groups], index=pd.Index(labels, dtype=object))
-    quotas = largest_remainder_quotas(counts, n_rows)
-
+    grouped = frame.groupby(list(columns), sort=False, observed=True, dropna=False)
+    quotas = largest_remainder_quotas(grouped.size(), n_rows)
     selected_groups: list[pd.DataFrame] = []
-    for label, (_, group) in zip(labels, groups):
+    for label, group in grouped:
         quota = int(quotas.loc[label])
         if quota:
             selected_groups.append(
