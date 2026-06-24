@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -35,6 +36,15 @@ def test_lowest_hash_is_independent_of_parent_order() -> None:
     shuffled = sampling.select_lowest_hash(frame.sample(frac=1.0, random_state=19), 8)
     assert original["object_id"].tolist() == shuffled["object_id"].tolist()
     assert original["object_id"].tolist() == sorted(original["object_id"].tolist())
+
+
+def test_lowest_hash_matches_full_sort_reference() -> None:
+    frame = catalogue()
+    hashes = sampling.stable_object_hashes(frame["object_id"])
+    order = np.lexsort((frame["object_id"].to_numpy(dtype=str), hashes))
+    expected = sorted(frame.iloc[order[:7]]["object_id"].tolist())
+    selected = sampling.select_lowest_hash(frame, 7)
+    assert selected["object_id"].tolist() == expected
 
 
 def test_seeded_random_is_reproducible() -> None:
