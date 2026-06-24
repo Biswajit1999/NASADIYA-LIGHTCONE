@@ -11,9 +11,7 @@ const TRACER_COLOURS = Object.freeze({
   QSO: [0.73, 0.61, 1.0],
 });
 
-function clamp01(value) {
-  return Math.min(1, Math.max(0, value));
-}
+function clamp01(value) { return Math.min(1, Math.max(0, value)); }
 
 function magnitudeOf(object) {
   const candidate = Number(object.magnitude ?? object.ks_mag);
@@ -45,11 +43,7 @@ function tracerColour(object, maxRedshift) {
 
 function surveyColour(object, maxRedshift) {
   const source = `${object.source_layer || ''}|${object.source_survey || ''}`.toLowerCase();
-  const base = source.includes('2mrs')
-    ? PALETTE.cyan
-    : source.includes('desi')
-      ? PALETTE.amber
-      : PALETTE.green;
+  const base = source.includes('2mrs') ? PALETTE.cyan : source.includes('desi') ? PALETTE.amber : PALETTE.green;
   const distanceFade = clamp01(Number(object.redshift) / Math.max(maxRedshift, 0.001));
   return base.map((component) => THREE.MathUtils.lerp(component, 0.97, distanceFade * 0.10));
 }
@@ -62,29 +56,27 @@ function sliceEdgeAlpha(distanceFromPlane, halfThickness) {
 }
 
 function isTracerEnabled(object, state) {
-  if (!object.tracer) return true;
-  return state.tracerFilters?.[object.tracer] !== false;
+  return !object.tracer || state.tracerFilters?.[object.tracer] !== false;
 }
 
 function evenlySelect(indices, limit) {
   if (indices.length <= limit) return indices;
-  const selected = [];
-  for (let index = 0; index < limit; index += 1) {
-    selected.push(indices[Math.floor((index * indices.length) / limit)]);
-  }
+  const selected = new Array(limit);
+  for (let index = 0; index < limit; index += 1) selected[index] = indices[Math.floor((index * indices.length) / limit)];
   return selected;
 }
 
 function visibleIndicesFor(candidates, objects, budget, isComposite) {
   if (!isComposite || candidates.length <= budget) return evenlySelect(candidates, budget);
-  // Preserve the full nearby 2MRS anchor first; allocate the remaining browser
-  // budget to a deterministic DESI overview. This is a display policy, not a
-  // completeness correction or cross-survey deduplication.
-  const localAnchor = candidates.filter((index) => objects[index]?.source_layer === '2mrs');
+  const localAnchor = [];
+  const deep = [];
+  for (const index of candidates) {
+    if (objects[index]?.source_layer === '2mrs') localAnchor.push(index);
+    else deep.push(index);
+  }
   if (!localAnchor.length) return evenlySelect(candidates, budget);
   if (localAnchor.length >= budget) return evenlySelect(localAnchor, budget);
-  const deep = candidates.filter((index) => objects[index]?.source_layer !== '2mrs');
-  return [...localAnchor, ...evenlySelect(deep, budget - localAnchor.length)];
+  return localAnchor.concat(evenlySelect(deep, budget - localAnchor.length));
 }
 
 export class SurveyPoints {
@@ -94,7 +86,6 @@ export class SurveyPoints {
     this.visibleIndices = new Set();
     this.geometry = new THREE.BufferGeometry();
     const count = objects.length;
-
     this.rawPositions = new Float32Array(count * 3);
     const displayPositions = new Float32Array(count * 3);
     const colours = new Float32Array(count * 3);
@@ -104,7 +95,8 @@ export class SurveyPoints {
     const twinkles = new Float32Array(count);
 
     this.maxDatasetDistance = 1;
-    objects.forEach((object, index) => {
+    for (let index = 0; index < count; index += 1) {
+      const object = objects[index];
       const offset = index * 3;
       this.rawPositions[offset] = Number(object.x_mpc);
       this.rawPositions[offset + 1] = Number(object.y_mpc);
@@ -113,15 +105,12 @@ export class SurveyPoints {
       displayPositions[offset + 1] = this.rawPositions[offset + 1] * LIGHTCONE_CONFIG.displayScale;
       displayPositions[offset + 2] = this.rawPositions[offset + 2] * LIGHTCONE_CONFIG.displayScale;
       colours.set(PALETTE.cyan, offset);
-      alphas[index] = 0;
       const magnitude = magnitudeOf(object);
-      sizes[index] = magnitude === null
-        ? 1.75
-        : THREE.MathUtils.clamp(4.8 - magnitude * 0.18, 1.45, 4.4);
+      sizes[index] = magnitude === null ? 1.75 : THREE.MathUtils.clamp(4.8 - magnitude * 0.18, 1.45, 4.4);
       uncertainties[index] = Math.max(0, Number(object.redshift_error) || 0);
       twinkles[index] = ((index * 73) % 97) / 97;
       this.maxDatasetDistance = Math.max(this.maxDatasetDistance, Number(object.comoving_distance_mpc) || 0);
-    });
+    }
 
     this.geometry.setAttribute('position', new THREE.BufferAttribute(displayPositions, 3));
     this.geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
@@ -136,11 +125,7 @@ export class SurveyPoints {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: {
-        uPointScale: { value: 1.0 },
-        uMode: { value: 0 },
-        uTime: { value: 0 },
-      },
+      uniforms: { uPointScale: { value: 1.0 }, uMode: { value: 0 }, uTime: { value: 0 } },
     });
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.name = `observed-${meta.dataset_id || 'survey'}-points`;
@@ -153,58 +138,54 @@ export class SurveyPoints {
     const colour = this.geometry.getAttribute('color');
     const size = this.geometry.getAttribute('aSize');
     const candidates = [];
-
+    const tracerCounts = {};
+    const sourceCounts = {};
+    let maxDistance = 0;
+    let maxLookback = 0;
     const maxRedshift = Math.max(0.001, Number(state.maxRedshift));
     const halfThickness = Math.max(1, Number(state.sliceThickness) / 2);
     const sliceOffset = Number(state.sliceOffset);
+    const isSlice = state.spatialMode === 'slice';
 
-    this.objects.forEach((object, index) => {
+    for (let index = 0; index < this.objects.length; index += 1) {
+      const object = this.objects[index];
       const offset = index * 3;
       const x = this.rawPositions[offset];
       const y = this.rawPositions[offset + 1];
       const z = this.rawPositions[offset + 2];
       const redshift = Number(object.redshift) || 0;
-      const inRedshiftRange = redshift <= maxRedshift;
       const slabDistance = Math.abs(z - sliceOffset);
-      const inSlice = slabDistance <= halfThickness;
-      const isSlice = state.spatialMode === 'slice';
-      const visibleCandidate = state.showGalaxies && isTracerEnabled(object, state) && inRedshiftRange && (!isSlice || inSlice);
-      if (visibleCandidate) candidates.push(index);
-
-      if (isSlice) {
-        position.setXYZ(
-          index,
-          x * LIGHTCONE_CONFIG.displayScale,
-          y * LIGHTCONE_CONFIG.displayScale,
-          (z - sliceOffset) * LIGHTCONE_CONFIG.displayScale * 0.12,
-        );
-      } else {
-        position.setXYZ(
-          index,
-          x * LIGHTCONE_CONFIG.displayScale,
-          y * LIGHTCONE_CONFIG.displayScale,
-          z * LIGHTCONE_CONFIG.displayScale,
-        );
+      const visibleCandidate = state.showGalaxies && isTracerEnabled(object, state) && redshift <= maxRedshift && (!isSlice || slabDistance <= halfThickness);
+      if (visibleCandidate) {
+        candidates.push(index);
+        if (object.tracer) tracerCounts[object.tracer] = (tracerCounts[object.tracer] || 0) + 1;
+        const source = object.source_layer || object.source_survey || 'active-survey';
+        sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+        maxDistance = Math.max(maxDistance, Number(object.comoving_distance_mpc) || 0);
+        maxLookback = Math.max(maxLookback, Number(object.lookback_time_gyr) || 0);
       }
-    });
+      position.setXYZ(
+        index,
+        x * LIGHTCONE_CONFIG.displayScale,
+        y * LIGHTCONE_CONFIG.displayScale,
+        isSlice ? (z - sliceOffset) * LIGHTCONE_CONFIG.displayScale * 0.12 : z * LIGHTCONE_CONFIG.displayScale,
+      );
+    }
 
     const selected = visibleIndicesFor(candidates, this.objects, Math.max(1, state.pointBudget), Boolean(this.meta.composite));
     const visibleSet = new Set(selected);
     this.visibleIndices = visibleSet;
 
-    this.objects.forEach((object, index) => {
-      const visible = visibleSet.has(index);
+    for (let index = 0; index < this.objects.length; index += 1) {
+      const object = this.objects[index];
       const offset = index * 3;
-      const zCoordinate = this.rawPositions[offset + 2];
-      const slabDistance = Math.abs(zCoordinate - sliceOffset);
+      const slabDistance = Math.abs(this.rawPositions[offset + 2] - sliceOffset);
       const magnitude = magnitudeOf(object);
       const brightness = magnitude === null ? 0.18 : clamp01((14.2 - magnitude) / 10.2);
-      const radialDistance = Number(object.comoving_distance_mpc) || 0;
-      const radialWeight = clamp01(radialDistance / this.maxDatasetDistance);
-      const edgeFade = state.spatialMode === 'slice' ? sliceEdgeAlpha(slabDistance, halfThickness) : 1;
+      const radialWeight = clamp01((Number(object.comoving_distance_mpc) || 0) / this.maxDatasetDistance);
+      const edgeFade = isSlice ? sliceEdgeAlpha(slabDistance, halfThickness) : 1;
       const baseAlpha = 0.13 + brightness * 0.56 + (1 - radialWeight) * 0.15;
-      alpha.setX(index, visible ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.06, 0.92) : 0);
-
+      alpha.setX(index, visibleSet.has(index) ? THREE.MathUtils.clamp(baseAlpha * edgeFade, 0.06, 0.92) : 0);
       const rgb = state.viewMode === 'time'
         ? timeColour(object, maxRedshift)
         : state.viewMode === 'uncertainty'
@@ -215,51 +196,35 @@ export class SurveyPoints {
               ? surveyColour(object, maxRedshift)
               : observedColour(object, maxRedshift);
       colour.setXYZ(index, rgb[0], rgb[1], rgb[2]);
-
-      const baseSize = magnitude === null
-        ? 1.85
-        : THREE.MathUtils.clamp(4.9 - magnitude * 0.19, 1.45, 4.7);
-      size.setX(index, state.spatialMode === 'slice' ? baseSize * 1.25 : baseSize);
-    });
+      const baseSize = magnitude === null ? 1.85 : THREE.MathUtils.clamp(4.9 - magnitude * 0.19, 1.45, 4.7);
+      size.setX(index, isSlice ? baseSize * 1.25 : baseSize);
+    }
 
     position.needsUpdate = true;
     alpha.needsUpdate = true;
     colour.needsUpdate = true;
     size.needsUpdate = true;
-
     this.material.uniforms.uMode.value = state.viewMode === 'uncertainty' ? 1 : state.viewMode === 'time' ? 2 : 0;
     const denseScale = this.objects.length > 75_000 ? 0.96 : 1.0;
-    this.material.uniforms.uPointScale.value = state.spatialMode === 'slice'
+    this.material.uniforms.uPointScale.value = isSlice
       ? denseScale * (state.pointBudget < 12_000 ? 1.34 : 1.16)
       : denseScale * (state.pointBudget < 12_000 ? 1.20 : 1.08);
 
-    const candidateObjects = candidates.map((index) => this.objects[index]);
-    const tracerCounts = candidateObjects.reduce((counts, object) => {
-      if (object.tracer) counts[object.tracer] = (counts[object.tracer] || 0) + 1;
-      return counts;
-    }, {});
-    const sourceCounts = candidateObjects.reduce((counts, object) => {
-      const source = object.source_layer || object.source_survey || 'active-survey';
-      counts[source] = (counts[source] || 0) + 1;
-      return counts;
-    }, {});
     return {
       visibleCount: visibleSet.size,
       candidateCount: candidates.length,
       underlyingCount: Number(this.meta.object_count || this.objects.length),
       overviewCount: Number(this.meta.overview_count || this.objects.length),
-      maxDistance: Math.max(0, ...candidateObjects.map((item) => Number(item.comoving_distance_mpc) || 0)),
-      maxLookback: Math.max(0, ...candidateObjects.map((item) => Number(item.lookback_time_gyr) || 0)),
+      maxDistance,
+      maxLookback,
       tracerCounts,
       sourceCounts,
-      sliceThickness: state.spatialMode === 'slice' ? halfThickness * 2 : null,
-      sliceOffset: state.spatialMode === 'slice' ? sliceOffset : null,
+      sliceThickness: isSlice ? halfThickness * 2 : null,
+      sliceOffset: isSlice ? sliceOffset : null,
     };
   }
 
-  updateTime(seconds) {
-    this.material.uniforms.uTime.value = seconds;
-  }
+  updateTime(seconds) { this.material.uniforms.uTime.value = seconds; }
 
   dispose() {
     this.geometry.dispose();
