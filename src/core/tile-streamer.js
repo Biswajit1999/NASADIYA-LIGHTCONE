@@ -18,20 +18,42 @@ function tileRedshiftMin(entry) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function stableStride(objects, limit) {
-  if (objects.length <= limit) return objects;
-  const stride = Math.ceil(objects.length / Math.max(1, limit));
-  return objects.filter((_, index) => index % stride === 0).slice(0, limit);
+function selectStableStride(objects, limit) {
+  if (limit <= 0 || !objects.length) return [];
+  if (objects.length <= limit) return objects.slice();
+  const selected = new Array(limit);
+  for (let index = 0; index < limit; index += 1) {
+    selected[index] = objects[Math.floor((index * objects.length) / limit)];
+  }
+  return selected;
+}
+
+function appendObjects(target, source) {
+  for (let index = 0; index < source.length; index += 1) target.push(source[index]);
 }
 
 /**
- * Streams only a camera-relevant subset of an observed tile store. It never invents
- * rows or merges records into a deduplicated master catalogue. When tiles are
- * unavailable (the normal GitHub Pages case), the deterministic browser overview
- * remains the active display layer.
+ * Streams camera-relevant observed tiles while retaining a deterministic global
+ * overview. It never invents rows or creates a cross-survey master catalogue.
+ *
+ * The public GitHub Pages deployment normally falls back to the committed 125k
+ * overview. A local tile build or configured object-store endpoint can request
+ * up to the configured high-density rendering ceiling.
  */
 export class TileStreamer {
-  constructor({ manifest, indexUrl, overviewObjects, remoteBaseUrl = null, maxTiles = 18, maxCachedTiles = 42, maxLoadedRows = 180_000 }) {
+  constructor({
+    manifest,
+    indexUrl,
+    overviewObjects,
+    remoteBaseUrl = null,
+    maxTiles = 18,
+    maxCachedTiles = 42,
+    maxLoadedRows = 180_000,
+    loadConcurrency = 6,
+    overviewReserveRows = 25_000,
+    overviewReserveFraction = 0.15,
+    minOverviewRows = 10_000,
+  }) {
     this.manifest = manifest;
     this.indexUrl = indexUrl;
     this.overviewObjects = overviewObjects;
@@ -39,10 +61,15 @@ export class TileStreamer {
     this.maxTiles = maxTiles;
     this.maxCachedTiles = maxCachedTiles;
     this.maxLoadedRows = maxLoadedRows;
+    this.loadConcurrency = Math.max(1, loadConcurrency);
+    this.overviewReserveRows = overviewReserveRows;
+    this.overviewReserveFraction = overviewReserveFraction;
+    this.minOverviewRows = minOverviewRows;
     this.cache = new Map();
     this.activeIds = new Set();
     this.lastSignature = '';
     this.delivery = null;
+    this.activeRowLimit = Math.min(maxLoadedRows, overviewObjects.length);
   }
 
   async probeDelivery() {
@@ -50,7 +77,18 @@ export class TileStreamer {
     return this.delivery;
   }
 
-  selectEntries(camera, maxRedshift) {
+  targetRowsFor(state) {
+    const requested = Math.max(1, Math.floor(Number(state?.pointBudget) || 1));
+    return Math.min(this.maxLoadedRows, requested);
+  }
+
+  overviewBudgetFor(targetRows) {
+    const proportional = Math.round(targetRows * this.overviewReserveFraction);
+    const desired = Math.max(this.minOverviewRows, proportional);
+    return Math.min(this.overviewObjects.length, targetRows, this.overviewReserveRows, desired);
+  }
+
+  selectEntries(camera, maxRedshift, targetRows) {
     camera.updateMatrixWorld();
     const projection = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const frustum = new THREE.Frustum().setFromProjectionMatrix(projection);
@@ -66,69 +104,110 @@ export class TileStreamer {
 
     candidates.sort((left, right) => left.distance - right.distance || tileRedshiftMin(left.entry) - tileRedshiftMin(right.entry));
     const selected = [];
+    const detailBudget = Math.max(0, targetRows - this.overviewBudgetFor(targetRows));
     let estimatedRows = 0;
     for (const candidate of candidates) {
-      const count = Math.max(1, Number(candidate.entry.count) || 1);
       if (selected.length >= this.maxTiles) break;
-      if (selected.length && estimatedRows + count > this.maxLoadedRows) continue;
+      if (selected.length && estimatedRows >= detailBudget) break;
       selected.push(candidate.entry);
-      estimatedRows += count;
+      estimatedRows += Math.max(1, Number(candidate.entry.count) || 1);
     }
-    return selected;
+    return { entries: selected, detailBudget, estimatedRows };
+  }
+
+  async loadEntries(entries) {
+    const pending = entries.filter((entry) => !this.cache.has(entry.id));
+    const failed = [];
+    let nextIndex = 0;
+    const workerCount = Math.min(this.loadConcurrency, pending.length);
+
+    const worker = async () => {
+      while (nextIndex < pending.length) {
+        const entry = pending[nextIndex];
+        nextIndex += 1;
+        try {
+          const objects = await loadTileRecords(entry, this.manifest, this.indexUrl, { remoteBaseUrl: this.remoteBaseUrl });
+          this.cache.set(entry.id, { objects, lastUsed: performance.now() });
+        } catch (error) {
+          failed.push({ id: entry.id, error: error?.message || 'unknown tile error' });
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return failed;
   }
 
   async update(camera, state) {
     if (!this.delivery?.available) return { changed: false, available: false, reason: this.delivery?.reason || 'Tile endpoint is unavailable.' };
-    const entries = this.selectEntries(camera, state.maxRedshift);
-    const signature = entries.map((entry) => entry.id).join('|');
+    const targetRows = this.targetRowsFor(state);
+    const selection = this.selectEntries(camera, state.maxRedshift, targetRows);
+    const signature = `${targetRows}|${selection.entries.map((entry) => entry.id).join('|')}`;
     if (signature === this.lastSignature) {
-      return { changed: false, available: true, ...this.status(entries) };
+      return { changed: false, available: true, targetRows, ...this.status(selection.entries) };
     }
 
-    const failed = [];
-    for (const entry of entries) {
-      const cached = this.cache.get(entry.id);
-      if (cached) {
-        cached.lastUsed = performance.now();
-        continue;
-      }
-      try {
-        const objects = await loadTileRecords(entry, this.manifest, this.indexUrl, { remoteBaseUrl: this.remoteBaseUrl });
-        this.cache.set(entry.id, { objects, lastUsed: performance.now() });
-      } catch (error) {
-        failed.push({ id: entry.id, error: error?.message || 'unknown tile error' });
-      }
-    }
-
-    this.activeIds = new Set(entries.filter((entry) => this.cache.has(entry.id)).map((entry) => entry.id));
+    const failed = await this.loadEntries(selection.entries);
+    this.activeIds = new Set(selection.entries.filter((entry) => this.cache.has(entry.id)).map((entry) => entry.id));
+    this.activeRowLimit = targetRows;
     this.lastSignature = signature;
     this.pruneCache();
-    return { changed: true, available: true, failed, objects: this.composeObjects(), ...this.status(entries) };
+    const objects = this.composeObjects();
+    return {
+      changed: true,
+      available: true,
+      failed,
+      objects,
+      targetRows,
+      renderedRows: objects.length,
+      estimatedDetailRows: selection.estimatedRows,
+      ...this.status(selection.entries),
+    };
   }
 
   composeObjects() {
     const streamed = [];
-    for (const id of this.activeIds) streamed.push(...(this.cache.get(id)?.objects || []));
-    const streamedIds = new Set(streamed.map((object) => object.object_id));
+    for (const id of this.activeIds) appendObjects(streamed, this.cache.get(id)?.objects || []);
+    const streamedIds = new Set();
+    for (const object of streamed) streamedIds.add(object.object_id);
 
-    // Keep a deterministic global overview fraction visible even when nearby high-
-    // resolution tiles are loaded. The detailed set receives 78% of the budget;
-    // the remaining 22% anchors the full survey footprint and any other live layer.
-    const detailBudget = Math.max(1, Math.floor(this.maxLoadedRows * 0.78));
-    const local = stableStride(streamed, detailBudget);
-    const remaining = Math.max(0, this.maxLoadedRows - local.length);
-    const overviewRemainder = this.overviewObjects.filter((object) => !streamedIds.has(object.object_id));
-    return [...stableStride(overviewRemainder, remaining), ...local];
+    const localAnchor = [];
+    const overviewRemainder = [];
+    for (const object of this.overviewObjects) {
+      if (streamedIds.has(object.object_id)) continue;
+      if (object.source_layer === '2mrs') localAnchor.push(object);
+      else overviewRemainder.push(object);
+    }
+
+    const combined = [];
+    appendObjects(combined, selectStableStride(localAnchor, Math.min(this.activeRowLimit, localAnchor.length)));
+
+    const overviewBudget = Math.max(0, this.overviewBudgetFor(this.activeRowLimit) - combined.length);
+    const selectedOverview = selectStableStride(overviewRemainder, overviewBudget);
+    appendObjects(combined, selectedOverview);
+
+    const detailBudget = Math.max(0, this.activeRowLimit - combined.length);
+    appendObjects(combined, selectStableStride(streamed, detailBudget));
+
+    if (combined.length < this.activeRowLimit) {
+      const selectedOverviewIds = new Set();
+      for (const object of selectedOverview) selectedOverviewIds.add(object.object_id);
+      const supplementalOverview = overviewRemainder.filter((object) => !selectedOverviewIds.has(object.object_id));
+      appendObjects(combined, selectStableStride(supplementalOverview, this.activeRowLimit - combined.length));
+    }
+    return combined;
   }
 
   status(entries = []) {
-    const streamedRows = [...this.activeIds].reduce((total, id) => total + (this.cache.get(id)?.objects.length || 0), 0);
+    let streamedRows = 0;
+    for (const id of this.activeIds) streamedRows += this.cache.get(id)?.objects.length || 0;
     return {
       requestedTiles: entries.length,
       loadedTiles: this.activeIds.size,
       streamedRows,
       cachedTiles: this.cache.size,
       totalTiles: Number(this.manifest.tile_count || this.manifest.tiles?.length || 0),
+      highDensityCap: this.maxLoadedRows,
     };
   }
 
