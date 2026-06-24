@@ -16,7 +16,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from assess_desi_common import load_parent  # noqa: E402
 from desi_strata import redshift_bin_labels  # noqa: E402
-from fidelity_grid import equal_area_sky_cells  # noqa: E402
+from fidelity_grid import cartesian_voxel_cells, equal_area_sky_cells, occupancy_metrics  # noqa: E402
+from fidelity_helpers import categorical_table, scalar_metrics  # noqa: E402
 from nasadiya_lightcone.sampling import select_lowest_hash, select_seeded_random, select_stratified_lowest_hash  # noqa: E402
 
 
