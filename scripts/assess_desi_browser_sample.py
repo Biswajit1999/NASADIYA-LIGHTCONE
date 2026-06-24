@@ -52,7 +52,24 @@ def build_samples(parent: pd.DataFrame, args: argparse.Namespace) -> dict[str, p
     }
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=PROJECT_ROOT / "data" / "research" / "desi_dr1_lss_research_bundle.parquet")
+    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "figures" / "browser_fidelity")
+    parser.add_argument("--point-budget", type=int, default=125_000)
+    parser.add_argument("--random-repeats", type=int, default=5)
+    parser.add_argument("--random-seed", type=int, default=20260624)
+    parser.add_argument("--z-max", type=float, default=3.6)
+    parser.add_argument("--z-bins", type=int, default=24)
+    parser.add_argument("--sky-ra-bins", type=int, default=24)
+    parser.add_argument("--sky-sin-dec-bins", type=int, default=12)
+    parser.add_argument("--voxel-size-mpc", type=float, default=250.0)
+    parser.add_argument("--dpi", type=int, default=240)
+    return parser.parse_args()
+
+
 def main() -> int:
+    parse_args()
     return 0
 
 
