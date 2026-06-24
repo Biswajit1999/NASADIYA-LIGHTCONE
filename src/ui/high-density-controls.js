@@ -5,6 +5,7 @@ const PROFILES = Object.freeze([
   { rows: 250_000, label: 'Dense', detail: '250K' },
   { rows: 500_000, label: 'Deep', detail: '500K' },
   { rows: 1_000_000, label: 'Max detail', detail: '1M' },
+  { rows: 6_093_818, label: 'Full DESI', detail: '6M+' },
 ]);
 
 function compactNumber(value) {
