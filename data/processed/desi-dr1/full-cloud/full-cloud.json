@@ -4,7 +4,6 @@
   "record_count": 6093818,
   "rejected_rows": 0,
   "binary": {
-    "path": "desi-dr1-full-cloud.f32",
     "encoding": "little-endian-float32-interleaved",
     "fields": [
       "x_mpc",
@@ -16,7 +15,23 @@
     "stride_floats": 5,
     "stride_bytes": 20,
     "byte_length": 121876360,
-    "sha256": "9841f8a3b5576f0e111e0773702f9ab9b218201d2295200f364977d43acac795"
+    "parts": [
+      {
+        "path": "desi-dr1-full-cloud.part-000.f32",
+        "byte_length": 41943040,
+        "sha256": "b87a70169d61b6c402efd3fdc35654edac247ddeae8661ea6427f96fe643a57e"
+      },
+      {
+        "path": "desi-dr1-full-cloud.part-001.f32",
+        "byte_length": 41943040,
+        "sha256": "c686d78746633b23b5c3caa817ddfbac43ac9da36079e179bb679c023afc1668"
+      },
+      {
+        "path": "desi-dr1-full-cloud.part-002.f32",
+        "byte_length": 37990280,
+        "sha256": "d4522e629848010f45ecebd9157f89a5df47f7ba5d1cde34a25fc7138d57b381"
+      }
+    ]
   },
   "tracer_codes": {
     "UNKNOWN": 0,
@@ -41,5 +56,10 @@
     "point_inspection_available": false,
     "tile_store_required_for_row_inspection": true,
     "note": "Full GPU cloud contains real observed rows for rendering only; it is not a completeness-corrected density field or a clustering-ready catalogue."
+  },
+  "delivery": {
+    "mode": "github-pages-static-chunks",
+    "chunk_mib": 40,
+    "part_count": 3
   }
 }
