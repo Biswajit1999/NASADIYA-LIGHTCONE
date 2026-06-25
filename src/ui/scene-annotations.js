@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 import { LIGHTCONE_CONFIG } from '../config.js';
 
+const STYLE_ID = 'nasadiya-projected-annotation-style';
+
 const LABELS = Object.freeze([
   { key: 'axis-x-plus', selector: '.axis--x-plus', position: (radius) => new THREE.Vector3(radius, 0, 0), offset: [12, 0] },
   { key: 'axis-x-minus', selector: '.axis--x-minus', position: (radius) => new THREE.Vector3(-radius, 0, 0), offset: [-12, 0] },
@@ -15,6 +17,15 @@ const LABELS = Object.freeze([
   { key: 'radial-3', selector: '.radial-tick--3', position: (radius) => new THREE.Vector3(radius * 0.54, 0, -radius * 0.54), offset: [8, -4] },
 ]);
 
+function ensureStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const link = document.createElement('link');
+  link.id = STYLE_ID;
+  link.rel = 'stylesheet';
+  link.href = './styles/dashboard-integrity.css?v=20260625';
+  document.head.append(link);
+}
+
 function withinClipVolume(vector) {
   return vector.z >= -1 && vector.z <= 1 && Math.abs(vector.x) <= 1.08 && Math.abs(vector.y) <= 1.08;
 }
@@ -27,6 +38,7 @@ function withinClipVolume(vector) {
  */
 export class SceneAnnotations {
   constructor(host, canvas) {
+    ensureStyles();
     this.host = host;
     this.canvas = canvas;
     this.nodes = new Map();
@@ -38,6 +50,11 @@ export class SceneAnnotations {
       const node = host.querySelector(label.selector);
       if (node) this.nodes.set(label.key, node);
     });
+    const plusZ = this.nodes.get('axis-z-plus');
+    const minusZ = this.nodes.get('axis-z-minus');
+    if (plusZ) plusZ.innerHTML = '+Z<small>display coordinate</small>';
+    if (minusZ) minusZ.innerHTML = '−Z<small>display coordinate</small>';
+    host.querySelector('.anchor-label')?.remove();
   }
 
   setVisible(visible) {
