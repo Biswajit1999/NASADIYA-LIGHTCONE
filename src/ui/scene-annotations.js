@@ -3,16 +3,16 @@ import * as THREE from 'three';
 import { LIGHTCONE_CONFIG } from '../config.js';
 
 const LABELS = Object.freeze([
-  { key: 'axis-x-plus', position: (radius) => new THREE.Vector3(radius, 0, 0), offset: [12, 0] },
-  { key: 'axis-x-minus', position: (radius) => new THREE.Vector3(-radius, 0, 0), offset: [-12, 0] },
-  { key: 'axis-y-plus', position: (radius) => new THREE.Vector3(0, radius * 0.55, 0), offset: [10, -8] },
-  { key: 'axis-y-minus', position: (radius) => new THREE.Vector3(0, -radius * 0.55, 0), offset: [10, 8] },
-  { key: 'axis-z-plus', position: (radius) => new THREE.Vector3(0, 0, radius), offset: [0, -10] },
-  { key: 'axis-z-minus', position: (radius) => new THREE.Vector3(0, 0, -radius), offset: [0, 10] },
-  { key: 'observer', position: () => new THREE.Vector3(), offset: [14, -10] },
-  { key: 'radial-1', position: (radius) => new THREE.Vector3(radius * 0.18, 0, -radius * 0.18), offset: [8, -4] },
-  { key: 'radial-2', position: (radius) => new THREE.Vector3(radius * 0.36, 0, -radius * 0.36), offset: [8, -4] },
-  { key: 'radial-3', position: (radius) => new THREE.Vector3(radius * 0.54, 0, -radius * 0.54), offset: [8, -4] },
+  { key: 'axis-x-plus', selector: '.axis--x-plus', position: (radius) => new THREE.Vector3(radius, 0, 0), offset: [12, 0] },
+  { key: 'axis-x-minus', selector: '.axis--x-minus', position: (radius) => new THREE.Vector3(-radius, 0, 0), offset: [-12, 0] },
+  { key: 'axis-y-plus', selector: '.axis--y-plus', position: (radius) => new THREE.Vector3(0, radius * 0.55, 0), offset: [10, -8] },
+  { key: 'axis-y-minus', selector: '.axis--y-minus', position: (radius) => new THREE.Vector3(0, -radius * 0.55, 0), offset: [10, 8] },
+  { key: 'axis-z-plus', selector: '.axis--z-plus', position: (radius) => new THREE.Vector3(0, 0, radius), offset: [0, -10] },
+  { key: 'axis-z-minus', selector: '.axis--z-minus', position: (radius) => new THREE.Vector3(0, 0, -radius), offset: [0, 10] },
+  { key: 'observer', selector: '.observer-label', position: () => new THREE.Vector3(), offset: [14, -10] },
+  { key: 'radial-1', selector: '.radial-tick--1', position: (radius) => new THREE.Vector3(radius * 0.18, 0, -radius * 0.18), offset: [8, -4] },
+  { key: 'radial-2', selector: '.radial-tick--2', position: (radius) => new THREE.Vector3(radius * 0.36, 0, -radius * 0.36), offset: [8, -4] },
+  { key: 'radial-3', selector: '.radial-tick--3', position: (radius) => new THREE.Vector3(radius * 0.54, 0, -radius * 0.54), offset: [8, -4] },
 ]);
 
 function withinClipVolume(vector) {
@@ -34,7 +34,10 @@ export class SceneAnnotations {
     this.mode = 'lightcone';
     this.extentMpc = 1;
     this.scratch = new THREE.Vector3();
-    host.querySelectorAll('[data-scene-label]').forEach((node) => this.nodes.set(node.dataset.sceneLabel, node));
+    LABELS.forEach((label) => {
+      const node = host.querySelector(label.selector);
+      if (node) this.nodes.set(label.key, node);
+    });
   }
 
   setVisible(visible) {
@@ -60,7 +63,6 @@ export class SceneAnnotations {
     const hostRect = this.host.getBoundingClientRect();
     const radius = Math.max(330, this.extentMpc * LIGHTCONE_CONFIG.displayScale);
     camera.updateMatrixWorld();
-
     LABELS.forEach((label) => {
       const node = this.nodes.get(label.key);
       if (!node) return;
