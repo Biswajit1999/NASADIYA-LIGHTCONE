@@ -1,0 +1,1 @@
+export const VISUAL_CALIBRATION_VERSION = 1;
