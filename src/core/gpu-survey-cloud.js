@@ -6,8 +6,10 @@ import { lookbackTimeGyr } from '../utils/cosmology.js';
 const VERTEX_SHADER = /* glsl */ `
   attribute float aRedshift;
   attribute float aTracer;
+  attribute float aSample;
   uniform float uDisplayScale;
   uniform float uMaxRedshift;
+  uniform float uDisplayFraction;
   uniform float uShowGalaxies;
   uniform float uTracerBGS;
   uniform float uTracerLRG;
@@ -39,8 +41,15 @@ const VERTEX_SHADER = /* glsl */ `
     return mix(vec3(0.32, 0.84, 1.0), vec3(1.0, 0.58, 0.26), t);
   }
 
+  vec3 colourForMode() {
+    if (uViewMode < 0.5) return vec3(0.40, 0.86, 1.0);
+    if (uViewMode < 1.5) return tracerColour();
+    if (uViewMode < 2.5) return timeColour(aRedshift);
+    return vec3(1.0, 0.70, 0.41);
+  }
+
   void main() {
-    bool visible = uShowGalaxies > 0.5 && aRedshift <= uMaxRedshift && tracerEnabled();
+    bool visible = uShowGalaxies > 0.5 && aRedshift <= uMaxRedshift && tracerEnabled() && aSample <= uDisplayFraction;
     vec4 mvPosition = modelViewMatrix * vec4(position * uDisplayScale, 1.0);
     if (!visible) {
       gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -54,7 +63,7 @@ const VERTEX_SHADER = /* glsl */ `
     gl_Position = projectionMatrix * mvPosition;
     float depthFade = mix(1.0, 0.62, clamp(aRedshift / max(0.001, uMaxRedshift), 0.0, 1.0));
     vAlpha = 0.115 * depthFade;
-    vColor = uViewMode < 0.5 ? vec3(0.40, 0.86, 1.0) : uViewMode < 1.5 ? tracerColour() : timeColour(aRedshift);
+    vColor = colourForMode();
   }
 `;
 
@@ -71,84 +80,55 @@ const FRAGMENT_SHADER = /* glsl */ `
   }
 `;
 
-function enabled(state, tracer) {
-  return state.tracerFilters?.[tracer] !== false ? 1.0 : 0.0;
-}
-
-function modeCode(mode) {
-  if (mode === 'tracer') return 1.0;
-  if (mode === 'time') return 2.0;
-  return 0.0;
-}
+function enabled(state, tracer) { return state.tracerFilters?.[tracer] !== false ? 1.0 : 0.0; }
+function modeCode(mode) { return mode === 'tracer' ? 1.0 : mode === 'time' ? 2.0 : mode === 'survey' ? 3.0 : 0.0; }
 
 function summarizeCloud(values, stride) {
-  let maxDistance = 0;
-  let maxRedshift = 0;
+  let maxDistance = 0; let maxRedshift = 0;
   for (let offset = 0; offset < values.length; offset += stride) {
-    const x = values[offset];
-    const y = values[offset + 1];
-    const z = values[offset + 2];
-    const redshift = values[offset + 3];
-    const radial = Math.sqrt(x * x + y * y + z * z);
-    if (radial > maxDistance) maxDistance = radial;
-    if (redshift > maxRedshift) maxRedshift = redshift;
+    const x = values[offset]; const y = values[offset + 1]; const z = values[offset + 2]; const redshift = values[offset + 3];
+    maxDistance = Math.max(maxDistance, Math.hypot(x, y, z));
+    maxRedshift = Math.max(maxRedshift, redshift);
   }
   return { maxDistanceMpc: maxDistance, maxRedshift };
 }
 
-/**
- * GPU-backed full DESI cloud. The ArrayBuffer is interleaved as x, y, z,
- * redshift and tracer-code float32 values. It has no object IDs, so source
- * inspection remains deliberately tile-based.
- */
+function deterministicSamples(count) {
+  const values = new Float32Array(count);
+  const ratio = 0.618033988749895;
+  for (let index = 0; index < count; index += 1) values[index] = (index * ratio) % 1;
+  return values;
+}
+
+/** GPU-backed DESI cloud; every source is resident and density is shader-sampled. */
 export class GpuSurveyCloud {
   constructor(buffer, manifest, meta = {}) {
     const binary = manifest?.binary || {};
     const records = Number(manifest?.record_count);
     const stride = Number(binary.stride_floats);
     const expectedBytes = Number(binary.byte_length);
-    if (!(buffer instanceof ArrayBuffer) || !Number.isInteger(records) || records < 1 || stride !== 5) {
-      throw new Error('Full GPU cloud metadata is incomplete or invalid.');
-    }
-    if (buffer.byteLength !== expectedBytes || buffer.byteLength !== records * stride * 4) {
-      throw new Error('Full GPU cloud binary length does not match its manifest.');
-    }
+    if (!(buffer instanceof ArrayBuffer) || !Number.isInteger(records) || records < 1 || stride !== 5) throw new Error('Full GPU cloud metadata is incomplete or invalid.');
+    if (buffer.byteLength !== expectedBytes || buffer.byteLength !== records * stride * 4) throw new Error('Full GPU cloud binary length does not match its manifest.');
 
-    this.meta = meta;
-    this.manifest = manifest;
-    this.recordCount = records;
-    this.objects = [];
-    this.visibleIndices = new Set();
-    this.geometry = new THREE.BufferGeometry();
+    this.meta = meta; this.manifest = manifest; this.recordCount = records;
+    this.objects = []; this.visibleIndices = new Set(); this.geometry = new THREE.BufferGeometry();
     const values = new Float32Array(buffer);
     this.stats = summarizeCloud(values, stride);
     this.buffer = new THREE.InterleavedBuffer(values, stride);
     this.geometry.setAttribute('position', new THREE.InterleavedBufferAttribute(this.buffer, 3, 0, false));
     this.geometry.setAttribute('aRedshift', new THREE.InterleavedBufferAttribute(this.buffer, 1, 3, false));
     this.geometry.setAttribute('aTracer', new THREE.InterleavedBufferAttribute(this.buffer, 1, 4, false));
+    this.geometry.setAttribute('aSample', new THREE.BufferAttribute(deterministicSamples(records), 1));
     this.geometry.setDrawRange(0, records);
     this.material = new THREE.ShaderMaterial({
-      vertexShader: VERTEX_SHADER,
-      fragmentShader: FRAGMENT_SHADER,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: THREE.NormalBlending,
+      vertexShader: VERTEX_SHADER, fragmentShader: FRAGMENT_SHADER, transparent: true, depthWrite: false, depthTest: true, blending: THREE.NormalBlending,
       uniforms: {
-        uDisplayScale: { value: LIGHTCONE_CONFIG.displayScale },
-        uMaxRedshift: { value: this.stats.maxRedshift },
-        uShowGalaxies: { value: 1.0 },
-        uTracerBGS: { value: 1.0 },
-        uTracerLRG: { value: 1.0 },
-        uTracerELG: { value: 1.0 },
-        uTracerQSO: { value: 1.0 },
-        uViewMode: { value: 0.0 },
-        uPointScale: { value: 0.82 },
+        uDisplayScale: { value: LIGHTCONE_CONFIG.displayScale }, uMaxRedshift: { value: this.stats.maxRedshift }, uDisplayFraction: { value: 1.0 }, uShowGalaxies: { value: 1.0 },
+        uTracerBGS: { value: 1.0 }, uTracerLRG: { value: 1.0 }, uTracerELG: { value: 1.0 }, uTracerQSO: { value: 1.0 }, uViewMode: { value: 0.0 }, uPointScale: { value: 0.82 },
       },
     });
     this.points = new THREE.Points(this.geometry, this.material);
-    this.points.name = 'desi-dr1-full-gpu-cloud';
-    this.points.frustumCulled = false;
+    this.points.name = 'desi-dr1-full-gpu-cloud'; this.points.frustumCulled = false;
   }
 
   get maxDistanceMpc() { return this.stats.maxDistanceMpc; }
@@ -156,42 +136,24 @@ export class GpuSurveyCloud {
   applyState(state) {
     const uniforms = this.material.uniforms;
     const activeRedshift = Math.min(this.stats.maxRedshift, Math.max(0.001, Number(state.maxRedshift) || 0.001));
+    const drawBudget = Math.min(this.recordCount, Math.max(1_000, Number(state.pointBudget) || this.recordCount));
     uniforms.uMaxRedshift.value = activeRedshift;
+    uniforms.uDisplayFraction.value = drawBudget / this.recordCount;
     uniforms.uShowGalaxies.value = state.showGalaxies ? 1.0 : 0.0;
-    uniforms.uTracerBGS.value = enabled(state, 'BGS');
-    uniforms.uTracerLRG.value = enabled(state, 'LRG');
-    uniforms.uTracerELG.value = enabled(state, 'ELG');
-    uniforms.uTracerQSO.value = enabled(state, 'QSO');
+    uniforms.uTracerBGS.value = enabled(state, 'BGS'); uniforms.uTracerLRG.value = enabled(state, 'LRG');
+    uniforms.uTracerELG.value = enabled(state, 'ELG'); uniforms.uTracerQSO.value = enabled(state, 'QSO');
     uniforms.uViewMode.value = modeCode(state.viewMode);
     uniforms.uPointScale.value = state.viewMode === 'uncertainty' ? 0.92 : 0.82;
     return {
-      visibleCount: this.recordCount,
-      gpuResidentCount: this.recordCount,
-      candidateCount: this.recordCount,
-      underlyingCount: this.recordCount,
-      overviewCount: Number(this.meta.overview_count || 0),
-      maxDistance: this.stats.maxDistanceMpc,
-      maxLookback: lookbackTimeGyr(activeRedshift),
-      tracerCounts: this.manifest.tracer_counts || {},
-      sourceCounts: { 'desi-dr1': this.recordCount },
-      gpuFiltered: true,
-      fullCatalogue: true,
-      sliceThickness: null,
-      sliceOffset: null,
+      visibleCount: drawBudget, drawBudget, gpuResidentCount: this.recordCount, candidateCount: this.recordCount, underlyingCount: this.recordCount,
+      overviewCount: Number(this.meta.overview_count || 0), maxDistance: this.stats.maxDistanceMpc, maxLookback: lookbackTimeGyr(activeRedshift),
+      tracerCounts: this.manifest.tracer_counts || {}, sourceCounts: { 'desi-dr1': this.recordCount }, gpuFiltered: true, fullCatalogue: true, sliceThickness: null, sliceOffset: null,
     };
   }
 
   updateTime() {}
-
-  dispose() {
-    this.geometry.dispose();
-    this.material.dispose();
-    this.buffer = null;
-  }
-
+  dispose() { this.geometry.dispose(); this.material.dispose(); this.buffer = null; }
   getObject() { return null; }
-
   getDisplayPosition() { return new THREE.Vector3(); }
-
   selectFromRaycaster() { return null; }
 }

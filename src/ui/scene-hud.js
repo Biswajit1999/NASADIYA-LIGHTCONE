@@ -5,7 +5,7 @@ function ensureStyles() {
   const link = document.createElement('link');
   link.id = STYLE_ID;
   link.rel = 'stylesheet';
-  link.href = './styles/full-cloud-experience.css?v=1';
+  link.href = './styles/full-cloud-experience.css?v=2';
   document.head.append(link);
 }
 
@@ -32,26 +32,21 @@ export class SceneHud {
     this.reference = document.createElement('aside');
     this.reference.className = 'scene-hud__reference';
     this.reference.innerHTML = '<span class="scene-hud__kicker">● SPATIAL REFERENCE</span><b data-frame>Observer-centred Cartesian view</b><dl><div><dt>Origin</dt><dd>Observer · z = 0</dd></div><div><dt>Radial extent</dt><dd data-scale>—</dd></div><div><dt>Redshift window</dt><dd data-redshift>—</dd></div><div><dt>Look-back ceiling</dt><dd data-lookback>—</dd></div></dl><p data-note>X / Y / Z are comoving visual coordinates in Mpc.</p>';
-    this.flybyWrap = document.createElement('div');
-    this.flybyWrap.className = 'scene-hud__flyby-wrap';
+    this.element.append(this.reference);
+    host?.append(this.element);
+
     this.flyby = document.createElement('button');
     this.flyby.type = 'button';
-    this.flyby.className = 'scene-hud__flyby';
-    this.flyby.innerHTML = '<span>GUIDED NAVIGATION</span><b data-flyby-label>Start flyby</b><em data-flyby-state>OFF</em>';
-    this.flybyCopy = document.createElement('p');
-    this.flybyCopy.className = 'scene-hud__flyby-copy';
-    this.flybyCopy.textContent = 'Outer footprint → interior passage → full overview';
-    this.flybyWrap.append(this.flyby, this.flybyCopy);
-    this.element.append(this.reference, this.flybyWrap);
-    host?.append(this.element);
+    this.flyby.id = 'guided-flyby-toggle';
+    this.flyby.className = 'lens-button lens-button--flyby';
+    this.flyby.innerHTML = '<span data-flyby-label>Flythrough</span><b data-flyby-state>▷</b>';
+    this.flyby.title = 'Start a guided route through the observed survey footprint.';
+    const dataLens = document.querySelector('#control-toggle');
+    dataLens?.parentElement?.insertBefore(this.flyby, dataLens);
+
     this.dom = {
-      frame: this.reference.querySelector('[data-frame]'),
-      scale: this.reference.querySelector('[data-scale]'),
-      redshift: this.reference.querySelector('[data-redshift]'),
-      lookback: this.reference.querySelector('[data-lookback]'),
-      note: this.reference.querySelector('[data-note]'),
-      flybyLabel: this.flyby.querySelector('[data-flyby-label]'),
-      flybyState: this.flyby.querySelector('[data-flyby-state]'),
+      frame: this.reference.querySelector('[data-frame]'), scale: this.reference.querySelector('[data-scale]'), redshift: this.reference.querySelector('[data-redshift]'), lookback: this.reference.querySelector('[data-lookback]'), note: this.reference.querySelector('[data-note]'),
+      flybyLabel: this.flyby.querySelector('[data-flyby-label]'), flybyState: this.flyby.querySelector('[data-flyby-state]'),
     };
     this.flyby.addEventListener('click', () => this.onFlybyToggle?.());
   }
@@ -61,23 +56,24 @@ export class SceneHud {
   update({ metrics = {}, state = {}, layer = null } = {}) {
     const full = Boolean(metrics.fullCatalogue);
     const rows = Number(metrics.gpuResidentCount || metrics.visibleCount || 0);
+    const stack = full && layer?.id === 'all-live';
     this.reference.hidden = state.spatialMode !== 'lightcone';
-    this.dom.frame.textContent = full ? `Full DESI GPU cloud · ${compactRows(rows)} resident rows` : `${layer?.label || 'Observed survey'} · observer-centred view`;
+    this.dom.frame.textContent = full
+      ? `${stack ? '2MRS + full DESI stack' : 'Full DESI GPU cloud'} · ${compactRows(rows)} resident rows`
+      : `${layer?.label || 'Observed survey'} · observer-centred view`;
     this.dom.scale.textContent = metrics.maxDistance ? `0–${formatDistance(metrics.maxDistance)}` : 'Loading scale…';
     this.dom.redshift.textContent = `z = 0–${Number(state.maxRedshift || 0).toFixed(4)}`;
     this.dom.lookback.textContent = metrics.maxLookback ? formatLookback(metrics.maxLookback) : '—';
     this.dom.note.textContent = full
-      ? 'All accepted DESI rows are resident in GPU buffers. Redshift and tracer filters change visibility without changing the catalogue.'
+      ? 'Display density changes a deterministic GPU sample. Redshift and tracer filters change visibility, never the catalogue.'
       : 'X / Y / Z are comoving visual coordinates in Mpc. Survey footprint is measurement geometry, not a reconstructed density field.';
   }
 
   setFlyby({ active = false, phase = 'overview', progress = 0, reason = null } = {}) {
-    this.element.classList.toggle('is-flying', active);
+    this.flyby.classList.toggle('is-active', active);
     this.flyby.setAttribute('aria-pressed', String(active));
-    this.dom.flybyLabel.textContent = active ? 'Stop flyby' : 'Start flyby';
-    this.dom.flybyState.textContent = active ? 'ON' : 'OFF';
-    if (active) this.flybyCopy.textContent = `${phase} · ${Math.round(progress * 100)}% · drag or scroll to take control`;
-    else if (reason === 'manual') this.flybyCopy.textContent = 'Manual navigation restored. Use the switch to restart the guided route.';
-    else this.flybyCopy.textContent = 'Outer footprint → interior passage → full overview';
+    this.dom.flybyLabel.textContent = active ? `${phase} ${Math.round(progress * 100)}%` : 'Flythrough';
+    this.dom.flybyState.textContent = active ? '■' : '▷';
+    this.flyby.title = active ? 'Stop guided flythrough. Drag, scroll, or click to take manual control.' : (reason === 'manual' ? 'Manual controls restored. Restart the guided route.' : 'Start a guided route through the observed survey footprint.');
   }
 }
