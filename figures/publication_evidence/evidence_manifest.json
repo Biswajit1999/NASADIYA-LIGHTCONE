@@ -1,0 +1,45 @@
+{
+  "format": "nasadiya-publication-evidence/v1",
+  "input": {
+    "filename": "desi_dr1_lss_research_bundle.parquet",
+    "sha256": "aba7c9236e516459e914d079e4b38bf1e75823ef0707e90da066914a5bda942e",
+    "validated_parent_rows": 6093818
+  },
+  "gpu_render_contract": {
+    "manifest_checked": true,
+    "manifest_path": "data\\processed\\desi-dr1\\full-cloud\\full-cloud.json",
+    "manifest_record_count": 6093818,
+    "parent_rows_match_manifest": true,
+    "manifest_binary_sha256": null
+  },
+  "configuration": {
+    "budgets": [125000, 250000, 500000, 1000000],
+    "poster_budget": 125000,
+    "redshift_range": [0.0, 3.6],
+    "redshift_bins": 48,
+    "sky_grid": {"ra_bins": 24, "sin_dec_bins": 12},
+    "voxel_size_mpc": 250.0,
+    "slice_thickness_mpc": 300.0
+  },
+  "policies": {
+    "gpu_index": "Exact full-cloud shader aSample threshold; depends on packed source-row order.",
+    "lowest_hash": "Stable BLAKE2b-64 object-ID selection.",
+    "tracer_sky_redshift_hash": "Stable proportional selection within tracer × equal-area sky × redshift strata."
+  },
+  "scientific_boundary": {
+    "observed_rows_only": true,
+    "survey_weights_applied": false,
+    "random_catalogue_used": false,
+    "clustering_estimator": false,
+    "density_reconstruction": false,
+    "statement": "These figures validate browser representation of observed rows, not cosmological clustering or physical density."
+  },
+  "figure_files": [
+    "fig_01_parent_tracer_redshift",
+    "fig_02_redshift_residuals",
+    "fig_03_redshift_fidelity_convergence",
+    "fig_04_voxel_fidelity_convergence",
+    "fig_05_sky_cell_residuals",
+    "fig_06_cartesian_slice_comparison"
+  ]
+}
