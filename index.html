@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#030813" />
+    <meta name="theme-color" content="#020914" />
     <meta name="robots" content="index,follow" />
     <meta name="description" content="NĀSADĪYA LIGHTCONE is a survey-native 3D browser for exploring measured galaxy catalogues from the nearby Universe to deep spectroscopic survey fields." />
     <meta name="keywords" content="galaxy survey, DESI DR1, 2MRS, astronomy visualisation, cosmology, interactive lightcone, 3D Universe map" />
@@ -22,42 +22,134 @@
     <link rel="icon" href="assets/nasadiya-mark.svg" type="image/svg+xml" />
     <link rel="manifest" href="site.webmanifest" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link rel="stylesheet" href="styles/main.css?v=101" />
+    <link rel="stylesheet" href="styles/main.css?v=20260625-dashboard" />
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {"@type": "WebSite", "name": "NĀSADĪYA LIGHTCONE", "url": "https://biswajit1999.github.io/NASADIYA-LIGHTCONE/", "description": "A survey-native 3D browser for measured galaxy catalogues.", "publisher": {"@type": "Person", "name": "Biswajit Jana"}},
-          {"@type": "SoftwareApplication", "name": "NĀSADĪYA LIGHTCONE", "applicationCategory": "EducationalApplication", "operatingSystem": "Web", "browserRequirements": "JavaScript and WebGL", "author": {"@type": "Person", "name": "Biswajit Jana"}, "url": "https://biswajit1999.github.io/NASADIYA-LIGHTCONE/"}
-        ]
-      }
+      {"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"NĀSADĪYA LIGHTCONE","url":"https://biswajit1999.github.io/NASADIYA-LIGHTCONE/","description":"A survey-native 3D browser for measured galaxy catalogues.","publisher":{"@type":"Person","name":"Biswajit Jana"}},{"@type":"SoftwareApplication","name":"NĀSADĪYA LIGHTCONE","applicationCategory":"EducationalApplication","operatingSystem":"Web","browserRequirements":"JavaScript and WebGL","author":{"@type":"Person","name":"Biswajit Jana"},"url":"https://biswajit1999.github.io/NASADIYA-LIGHTCONE/"}]}
     </script>
     <script type="importmap">
       {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
     </script>
   </head>
   <body>
-    <main class="stage" id="explorer">
+    <main class="app-shell" id="explorer">
       <canvas id="lightcone-canvas" aria-label="Interactive three-dimensional map of observed survey galaxies"></canvas>
-      <div class="atmosphere atmosphere--north" aria-hidden="true"></div><div class="atmosphere atmosphere--south" aria-hidden="true"></div><div class="map-vignette" aria-hidden="true"></div><div class="film-grain" aria-hidden="true"></div>
-      <header class="masthead">
-        <a class="identity" href="index.html" aria-label="NĀSADĪYA LIGHTCONE home"><img src="assets/nasadiya-mark.svg" class="identity-mark" alt="" /><span class="identity-copy"><span class="identity-title"><strong>NĀSADĪYA</strong><em>LIGHTCONE</em></span><small class="author-line">Created and developed by Biswajit Jana</small></span></a>
-        <nav class="primary-nav" aria-label="Project navigation"><a class="nav-link is-active" href="#explorer">Explorer</a><a class="nav-link" href="data.html">Data</a><a class="nav-link" href="methods.html">Methods</a><a class="nav-link" href="community.html">Community</a></nav>
-        <div class="survey-chip" aria-label="Active data source"><i id="dataset-dot" class="status-dot status-dot--pending"></i><span id="dataset-status">2MRS layer loading</span><span class="chip-separator"></span><span id="survey-mode-status">measured galaxies</span></div>
+      <div class="viewport-atmosphere" aria-hidden="true"></div>
+
+      <header class="command-bar">
+        <a class="brand-lockup" href="index.html" aria-label="NĀSADĪYA LIGHTCONE home">
+          <img src="assets/nasadiya-mark.svg" alt="" class="brand-mark" />
+          <span><strong>NĀSADĪYA</strong><em>LIGHTCONE</em><small>Created and developed by Biswajit Jana</small></span>
+        </a>
+        <div class="command-context" aria-label="Active catalogue summary">
+          <span class="command-divider"></span>
+          <span id="dataset-status">2MRS layer loading</span>
+          <span class="context-dot">•</span>
+          <span id="observed-rows-status">Preparing observed rows</span>
+          <span class="context-dot">•</span>
+          <span id="header-depth-status">Radial extent pending</span>
+          <span class="context-dot">•</span>
+          <span id="header-lookback-status">Look-back pending</span>
+        </div>
+        <nav class="command-nav" aria-label="Project navigation">
+          <a class="nav-link is-active" href="#explorer">Explorer</a>
+          <a class="nav-link" href="data.html">Data</a>
+          <a class="nav-link" href="methods.html">Methods</a>
+          <a class="nav-link" href="community.html">Community</a>
+        </nav>
+        <div class="command-actions">
+          <button id="tour-toggle" class="command-button command-button--tour" type="button" aria-pressed="false"><span class="play-symbol">▷</span><span>Flythrough</span></button>
+          <button id="help-button" class="icon-button" type="button" aria-label="Open explorer guide">?</button>
+          <button id="control-toggle" class="command-button" type="button" aria-expanded="true" aria-controls="control-drawer"><span>Data Lens</span><b>+</b></button>
+        </div>
       </header>
-      <section class="editorial-intro" aria-live="polite" aria-label="Active survey briefing"><p id="scene-eyebrow" class="eyebrow">LOCAL UNIVERSE / 2MRS</p><h1 id="scene-title">The nearby observed Universe.</h1><p id="scene-description">A finite Cartesian slice through real spectroscopic rows. Orbit the field, isolate a volume and inspect the source record behind any rendered point.</p><div class="intro-rule"><span></span></div><dl class="context-readout" aria-label="Active survey context"><div><dt>Layer</dt><dd id="summary-layer">2MRS</dd></div><div><dt>Rendered</dt><dd id="summary-count">Preparing</dd></div></dl><p id="opening-count" class="intro-count">Preparing the catalogue…</p><div class="briefing-actions" aria-label="Explorer actions"><button class="briefing-button briefing-button--primary" type="button" data-layer-shortcut="2mrs">Enter local field</button><button class="briefing-button" type="button" data-layer-shortcut="desi-dr1">Open DESI depth</button></div></section>
-      <aside id="footprint-indicator" class="footprint-indicator" hidden aria-live="polite"><span class="footprint-pulse" aria-hidden="true"></span><span><b>Observed footprint</b><small id="footprint-indicator-copy">Coverage is set by the active catalogue.</small></span></aside>
-      <div class="top-tools"><button id="help-button" class="icon-control" type="button" aria-label="Open explorer guide">?</button><button id="control-toggle" class="lens-button" type="button" aria-expanded="false" aria-controls="control-drawer"><span>Data lens</span><b>+</b></button></div>
-      <aside class="navigator-card" aria-label="Survey navigator"><div class="navigator-heading"><span>OBSERVATION PATH</span><small>survey-native</small></div><div class="navigator-layers"><button class="layer-card is-active" type="button" data-layer-shortcut="2mrs"><span class="layer-index">01</span><span><b>Local Universe</b><small>2MRS / all-sky anchor</small></span><em>43k</em></button><button class="layer-card" type="button" data-layer-shortcut="desi-dr1"><span class="layer-index">02</span><span><b>Deep field</b><small>DESI DR1 / spectroscopic</small></span><em>6.09M</em></button></div><p>Each layer remains tied to its real survey footprint, targeting and source provenance.</p></aside>
-      <section class="view-switcher" aria-label="Spatial view mode"><span class="dock-label">SPATIAL LENS</span><button class="view-button is-active" type="button" data-spatial-mode="slice"><span class="view-index">A</span><span><strong>Field slice</strong><small>Finite nearby structure</small></span></button><button class="view-button" type="button" data-spatial-mode="lightcone"><span class="view-index">B</span><span><strong>Radial volume</strong><small>Distance outward from observer</small></span></button></section>
-      <aside id="control-drawer" class="control-drawer" hidden aria-label="Data lens controls"><div class="drawer-heading"><div><p class="eyebrow">DATA LENS</p><h2>Tune the evidence.</h2><p class="drawer-subtitle">Change the visual selection, never the underlying provenance.</p></div><button id="close-controls" class="dismiss-button" type="button" aria-label="Close data lens">×</button></div><section class="drawer-section survey-layer-section"><label for="survey-layer"><span>Survey layer</span><output id="survey-layer-status">local</output></label><select id="survey-layer" disabled><option value="2mrs">2MRS · local spectroscopic layer</option><option value="desi-dr1">DESI DR1 LSS · deep spectroscopic survey</option><option value="2mpz">2MPZ · ~1M photometric-redshift layer</option><option value="wise-sc">WISE × SuperCOSMOS · ~20M photo-z galaxies</option></select><p id="survey-layer-note">Choose a local or deep observed survey layer. Uninstalled layers remain explicit rather than being simulated.</p></section><section class="drawer-section"><label for="max-redshift"><span>Redshift ceiling</span><output id="max-redshift-output">0.0250</output></label><input id="max-redshift" type="range" min="0.003" max="0.15" step="0.0025" value="0.025" disabled /><p id="redshift-note">2MRS provides recession velocity. The display uses z ≈ cz / c only as a spatial navigation convention.</p></section><section id="slice-controls" class="drawer-section"><label for="slice-thickness"><span>Slice thickness</span><output id="slice-thickness-output">24 Mpc</output></label><input id="slice-thickness" type="range" min="6" max="90" step="2" value="24" disabled /><label for="slice-offset"><span>Slice offset (Cartesian Z)</span><output id="slice-offset-output">0 Mpc</output></label><input id="slice-offset" type="range" min="-120" max="120" step="2" value="0" disabled /><p>The local slice keeps only observed rows inside a finite Cartesian slab. It is not a reconstructed filament model.</p></section><section class="drawer-section"><label for="point-budget"><span>Rendered rows</span><output id="point-budget-output">44,500</output></label><input id="point-budget" type="range" min="1000" max="1000000" step="500" value="44500" disabled /><p id="budget-note">The public deployment begins with the 125,000-row overview. Up to 1,000,000 camera-relevant observed rows are available from a local tile build or configured object-store endpoint.</p></section><section id="desi-tracer-section" class="drawer-section desi-tracer-section" hidden><div class="tracer-heading"><span class="drawer-label">DESI tracer classes</span><span class="tracer-heading-note">measured targets</span></div><div class="tracer-grid" role="group" aria-label="DESI tracer class filters"><label class="tracer-control tracer-control--bgs"><input type="checkbox" value="BGS" data-desi-tracer checked disabled /><span><b>BGS</b><small>Bright galaxies</small></span><em data-tracer-count="BGS">—</em></label><label class="tracer-control tracer-control--lrg"><input type="checkbox" value="LRG" data-desi-tracer checked disabled /><span><b>LRG</b><small>Red galaxies</small></span><em data-tracer-count="LRG">—</em></label><label class="tracer-control tracer-control--elg"><input type="checkbox" value="ELG" data-desi-tracer checked disabled /><span><b>ELG</b><small>Emission-line</small></span><em data-tracer-count="ELG">—</em></label><label class="tracer-control tracer-control--qso"><input type="checkbox" value="QSO" data-desi-tracer checked disabled /><span><b>QSO</b><small>Quasars</small></span><em data-tracer-count="QSO">—</em></label></div><p>Tracer labels are parsed from the real DESI object identifier. Changing a filter changes the view, never the catalogue.</p></section><section class="drawer-section"><span class="drawer-label">Colour treatment</span><div class="mode-switch mode-switch--four" role="group" aria-label="Colour representation"><button class="mode-button is-active" data-view-mode="catalog" type="button" disabled>Observed</button><button class="mode-button" data-view-mode="tracer" type="button" disabled>Tracer</button><button class="mode-button" data-view-mode="time" type="button" disabled>Look-back</button><button class="mode-button" data-view-mode="uncertainty" type="button" disabled>Uncertainty</button></div></section><section class="drawer-section drawer-section--last"><label class="switch-line"><span><i></i>Measured catalogue rows</span><input id="toggle-galaxies" type="checkbox" checked disabled /><b></b></label><p id="footprint-note" class="footprint-note">2MRS is magnitude-limited and does not observe the full sky uniformly. Its Zone of Avoidance is a selection effect, not physical empty space.</p></section><div class="drawer-actions"><button id="reset-view" class="quiet-button" type="button">Reset frame <kbd>R</kbd></button><button id="focus-local" class="solid-button" type="button" disabled>Return to local field</button></div></aside>
+
+      <aside class="left-rail" aria-label="Explorer overview">
+        <nav class="rail-nav" aria-label="Explorer sections">
+          <button class="rail-nav-button is-active" type="button" data-rail-section="overview"><span>◉</span><small>Overview</small></button>
+          <button class="rail-nav-button" type="button" data-rail-section="data"><span>▤</span><small>Data</small></button>
+          <button class="rail-nav-button" type="button" data-rail-section="filters"><span>▽</span><small>Filters</small></button>
+          <button class="rail-nav-button" type="button" data-rail-section="analysis"><span>⌁</span><small>Analysis</small></button>
+          <button class="rail-nav-button" type="button" data-rail-section="compare"><span>⌘</span><small>Compare</small></button>
+          <a class="rail-nav-button" href="data.html"><span>⇧</span><small>Export</small></a>
+        </nav>
+        <section class="overview-panel">
+          <div class="panel-heading"><span>OVERVIEW</span><span id="survey-mode-status">spectroscopic</span></div>
+          <p id="scene-eyebrow" class="eyebrow">LOCAL UNIVERSE / 2MRS</p>
+          <h1 id="scene-title">The nearby observed Universe.</h1>
+          <p id="scene-description">A finite Cartesian slice through real spectroscopic rows. Orbit the field, isolate a volume and inspect the source record behind any rendered point.</p>
+          <div class="overview-separator"></div>
+          <section class="what-you-see" aria-labelledby="what-you-see-title">
+            <h2 id="what-you-see-title">What you are seeing</h2>
+            <div class="explanation-row"><i class="explanation-icon">◎</i><div><b>Observer-centred view</b><span>Distance increases radially from the observer through the active survey layer.</span></div></div>
+            <div class="explanation-row"><i class="explanation-icon explanation-icon--amber">✣</i><div><b>2MRS local anchor</b><span>Nearby galaxies provide the low-redshift context for the deep survey field.</span></div></div>
+            <div class="explanation-row"><i class="explanation-icon">⌁</i><div><b>DESI footprint</b><span>Separated regions follow observed North and South survey geometry.</span></div></div>
+            <div class="explanation-row"><i class="explanation-icon explanation-icon--violet">◌</i><div><b>Tracer classes</b><span>BGS, LRG, ELG and QSO selections can be filtered independently.</span></div></div>
+          </section>
+          <section class="quick-facts" aria-labelledby="quick-facts-title">
+            <h2 id="quick-facts-title">Quick facts</h2>
+            <dl><div><dt>Survey</dt><dd id="left-survey-name">2MRS</dd></div><div><dt>Observed rows</dt><dd id="left-row-count">—</dd></div><div><dt>Radial extent</dt><dd id="left-depth">—</dd></div><div><dt>Look-back time</dt><dd id="left-lookback">—</dd></div><div><dt>Redshift range</dt><dd id="left-redshift">—</dd></div><div><dt>Sky coverage</dt><dd id="left-coverage">survey-defined</dd></div></dl>
+          </section>
+          <a id="source-link" class="left-source-link" href="docs/sources.md">Open survey source ledger ↗</a>
+        </section>
+      </aside>
+
+      <section class="viewport-shell" aria-label="Three-dimensional survey viewport">
+        <div class="viewport-toolbar" aria-label="Viewport navigation controls">
+          <span class="toolbar-label">View</span>
+          <select id="viewport-view-select" aria-label="Spatial reference"><option value="observer">Observer-centred</option><option value="slice">Field slice</option></select>
+          <button id="viewport-help" class="toolbar-help" type="button" aria-label="Explain viewport controls">?</button>
+          <div class="toolbar-spacer"></div>
+          <button class="viewport-tool is-active" data-viewport-tool="orbit" type="button" title="Orbit: left mouse drag">↖</button>
+          <button class="viewport-tool" data-viewport-tool="pan" type="button" title="Pan: right mouse drag">✋</button>
+          <button class="viewport-tool" data-viewport-tool="zoom" type="button" title="Zoom: mouse wheel">⌕</button>
+          <button id="fullscreen-toggle" class="viewport-tool" type="button" title="Fullscreen viewport">⛶</button>
+        </div>
+        <div id="spatial-annotation" class="spatial-annotation" aria-hidden="true">
+          <span class="axis axis--x-plus">+X</span><span class="axis axis--x-minus">−X</span><span class="axis axis--y-plus">+Y</span><span class="axis axis--y-minus">−Y</span><span class="axis axis--z-plus">+Z<br><small>North Galactic Cap</small></span><span class="axis axis--z-minus">−Z<br><small>South Galactic Cap</small></span>
+          <span class="observer-label">◉ <b>Observer</b><small>z = 0</small></span>
+          <span class="anchor-label">✣ <b>2MRS Anchor</b><small>z &lt; 0.05</small></span>
+          <span class="radial-tick radial-tick--1" data-radial-tick="1">2.0 Gpc</span>
+          <span class="radial-tick radial-tick--2" data-radial-tick="2">4.0 Gpc</span>
+          <span class="radial-tick radial-tick--3" data-radial-tick="3">6.0 Gpc</span>
+        </div>
+        <aside class="legend-card" aria-label="Tracer class legend">
+          <span>Tracer class</span>
+          <ul><li class="legend-bgs">BGS</li><li class="legend-lrg">LRG</li><li class="legend-elg">ELG</li><li class="legend-qso">QSO</li></ul>
+        </aside>
+        <aside class="spatial-card" aria-label="Spatial reference">
+          <div class="card-title"><span>Spatial Reference</span><button id="toggle-reference-card" type="button" aria-label="Toggle spatial reference">◉</button></div>
+          <dl><div><dt>Origin</dt><dd id="spatial-origin">Observer (0, 0, 0)</dd></div><div><dt>Redshift window</dt><dd id="spatial-redshift">—</dd></div><div><dt>Radial extent</dt><dd id="spatial-depth">—</dd></div><div><dt>Look-back time</dt><dd id="spatial-lookback">—</dd></div><div><dt>Cosmology</dt><dd>Planck 2018</dd></div></dl>
+        </aside>
+      </section>
+
+      <aside id="control-drawer" class="control-drawer" aria-label="Data Lens controls">
+        <div class="drawer-heading"><div><p class="eyebrow">DATA LENS</p><h2>Dataset controls</h2><p class="drawer-subtitle">Adjust the display while preserving catalogue provenance.</p></div><button id="close-controls" class="dismiss-button" type="button" aria-label="Close Data Lens">×</button></div>
+        <section class="drawer-section survey-layer-section"><label for="survey-layer"><span>Survey</span><output id="survey-layer-status">local</output></label><select id="survey-layer" disabled><option value="all-live">2MRS + DESI DR1 comparison stack</option><option value="2mrs">2MRS nearby spectroscopic layer</option><option value="desi-dr1">DESI DR1 LSS spectroscopic survey</option><option value="2mpz">2MPZ photometric-redshift layer</option><option value="wise-sc">WISE × SuperCOSMOS photo-z layer</option></select><p id="survey-layer-note">Choose an observed survey layer. Uninstalled layers are not simulated.</p></section>
+        <section class="drawer-section density-section"><div class="drawer-label-row"><span class="drawer-label">Display density</span><output id="density-readout">—</output></div><div id="density-profiles" class="density-profiles" role="group" aria-label="Display density"><button type="button" data-density-rows="125000"><small>Overview</small><b>125K</b></button><button type="button" data-density-rows="250000"><small>Dense</small><b>250K</b></button><button type="button" data-density-rows="500000"><small>Deep</small><b>500K</b></button><button type="button" data-density-rows="1000000"><small>Max detail</small><b>1M</b></button><button type="button" data-density-rows="6093818"><small>Full DESI</small><b>6.09M</b></button></div><label class="range-label" for="point-budget"><span>Displayed rows</span><output id="point-budget-output">—</output></label><input id="point-budget" type="range" min="1000" max="1000000" step="500" value="125000" disabled /><p id="budget-note">The display density controls rendered rows. The underlying catalogue remains unchanged.</p></section>
+        <section class="drawer-section"><label for="max-redshift"><span>Redshift range</span><output id="max-redshift-output">0.0250</output></label><input id="max-redshift" type="range" min="0.003" max="0.15" step="0.0025" value="0.025" disabled /><div class="range-scale"><span>0</span><span>0.5</span><span>1.0</span><span>1.5</span><span>2.0</span><span>2.5</span></div><p id="redshift-note">Measured spectroscopic redshift is used for radial visual navigation.</p></section>
+        <section id="slice-controls" class="drawer-section"><label for="slice-thickness"><span>Slice thickness</span><output id="slice-thickness-output">24 Mpc</output></label><input id="slice-thickness" type="range" min="6" max="90" step="2" value="24" disabled /><label for="slice-offset"><span>Slice offset</span><output id="slice-offset-output">0 Mpc</output></label><input id="slice-offset" type="range" min="-120" max="120" step="2" value="0" disabled /></section>
+        <section id="desi-tracer-section" class="drawer-section desi-tracer-section" hidden><div class="tracer-heading"><span class="drawer-label">Tracer class filters</span><button id="select-all-tracers" type="button">Select all</button></div><div class="tracer-grid" role="group" aria-label="DESI tracer class filters"><label class="tracer-control tracer-control--bgs"><input type="checkbox" value="BGS" data-desi-tracer checked disabled /><span class="tracer-dot"></span><span><b>BGS</b><small>Bright Galaxy Sample</small></span><em data-tracer-count="BGS">—</em></label><label class="tracer-control tracer-control--lrg"><input type="checkbox" value="LRG" data-desi-tracer checked disabled /><span class="tracer-dot"></span><span><b>LRG</b><small>Luminous Red Galaxies</small></span><em data-tracer-count="LRG">—</em></label><label class="tracer-control tracer-control--elg"><input type="checkbox" value="ELG" data-desi-tracer checked disabled /><span class="tracer-dot"></span><span><b>ELG</b><small>Emission Line Galaxies</small></span><em data-tracer-count="ELG">—</em></label><label class="tracer-control tracer-control--qso"><input type="checkbox" value="QSO" data-desi-tracer checked disabled /><span class="tracer-dot"></span><span><b>QSO</b><small>Quasars</small></span><em data-tracer-count="QSO">—</em></label></div><p>Filters change visibility; the catalogue records and source labels remain unchanged.</p></section>
+        <section class="drawer-section"><span class="drawer-label">Colour treatment</span><div class="mode-switch mode-switch--five" role="group" aria-label="Colour representation"><button class="mode-button is-active" data-view-mode="catalog" type="button" disabled>Observed</button><button class="mode-button" data-view-mode="tracer" type="button" disabled>Tracer</button><button class="mode-button" data-view-mode="time" type="button" disabled>Look-back</button><button class="mode-button" data-view-mode="uncertainty" type="button" disabled>Uncertainty</button><button class="mode-button" data-view-mode="survey" type="button" disabled>Source</button></div><div class="colour-ramp" aria-hidden="true"><span></span><span></span><span></span><span></span></div></section>
+        <section class="drawer-section drawer-section--last"><span class="drawer-label">Additional options</span><label class="switch-line"><span>Show measured rows</span><input id="toggle-galaxies" type="checkbox" checked disabled /><b></b></label><label class="switch-line"><span>Show spatial reference</span><input id="toggle-reference" type="checkbox" checked /><b></b></label><label class="switch-line"><span>Show legend</span><input id="toggle-legend" type="checkbox" checked /><b></b></label><p id="footprint-note" class="footprint-note">Survey footprint, targeting and completeness affect the rendered geometry.</p></section>
+        <div class="drawer-actions"><button id="reset-view" class="quiet-button" type="button">Reset frame</button><button id="focus-local" class="solid-button" type="button" disabled>Return to local field</button></div>
+      </aside>
+
       <aside id="object-inspector" class="object-inspector" hidden aria-live="polite"><button id="close-inspector" class="dismiss-button" type="button" aria-label="Close selected object">×</button><div id="inspector-content"></div></aside>
-      <section class="data-rail" aria-label="Current spatial selection"><div class="rail-copy"><span class="rail-label">ACTIVE VIEW</span><strong id="rail-mode">Local Cartesian slice</strong><p id="rail-detail">24 Mpc thickness · Z = 0 Mpc</p></div><div class="rail-metrics"><span><b id="visible-count">—</b><small>visible rows</small></span><span><b id="depth-readout">—</b><small>radial depth</small></span><span><b id="lookback-readout">—</b><small>look-back window</small></span></div><a id="source-link" href="data.html" class="source-link">Open data ledger ↗</a></section>
-      <p id="corner-note" class="corner-note">Measured rows · survey footprint retained · source provenance available on selection</p>
-      <div id="help-modal" class="modal-backdrop" hidden><section class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title"><button id="close-help" class="dismiss-button" type="button" aria-label="Close explorer guide">×</button><p class="eyebrow">EXPLORER GUIDE</p><h2 id="help-title">Read the survey before reading the shape.</h2><div class="help-pairs"><div><strong>Drag</strong><span>Orbit around the selected spatial frame.</span></div><div><strong>Scroll</strong><span>Move closer to or farther from observed rows.</span></div><div><strong>Click</strong><span>Inspect one rendered catalogue row and its provenance.</span></div><div><strong>R</strong><span>Return to the intended camera frame.</span></div></div><p class="help-note">2MRS anchors the nearby all-sky field. DESI DR1 is deeper but incomplete-sky: separated regions reflect North/South footprint, targeting and masks. NĀSADĪYA never fills gaps with synthetic galaxies or inferred filaments.</p></section></div>
+
+      <section class="telemetry-deck" aria-label="Current survey telemetry">
+        <div class="telemetry-cell"><span class="telemetry-icon">◌</span><div><small>Visible (displayed)</small><b id="visible-count">—</b><em id="display-count-note">display sample</em></div></div>
+        <div class="telemetry-cell"><span class="telemetry-icon">▤</span><div><small>GPU-resident rows</small><b id="gpu-count">—</b><em id="gpu-count-note">catalogue memory</em></div></div>
+        <div class="telemetry-cell"><span class="telemetry-icon">⌁</span><div><small>Radial extent</small><b id="depth-readout">—</b><em>comoving distance</em></div></div>
+        <div class="telemetry-cell"><span class="telemetry-icon">◷</span><div><small>Look-back time</small><b id="lookback-readout">—</b><em>at z ceiling</em></div></div>
+        <div class="telemetry-cell"><span class="telemetry-icon">↕</span><div><small>Redshift range</small><b id="redshift-readout">—</b><em>user selected</em></div></div>
+        <div class="telemetry-cell"><span class="telemetry-icon">◎</span><div><small>Sky coverage</small><b id="coverage-readout">Survey-defined</b><em id="coverage-note">selection footprint</em></div></div>
+      </section>
+      <section class="status-strip" aria-label="System and source status"><span><i class="system-dot"></i><b>System status</b> <em id="system-status">Loading observed catalogue</em></span><span><b>Data source</b> <em id="footer-data-source">—</em></span><span><b>Cosmology</b> <em>Planck 2018 (Ωm=0.315, ΩΛ=0.685, H₀=67.4)</em></span><span><b>Software</b> <em>Python · Three.js · WebGL</em></span><span><b>Version</b> <em>v1.1.0</em></span></section>
+
+      <div id="help-modal" class="modal-backdrop" hidden><section class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title"><button id="close-help" class="dismiss-button" type="button" aria-label="Close explorer guide">×</button><p class="eyebrow">EXPLORER GUIDE</p><h2 id="help-title">Survey navigation controls</h2><div class="help-pairs"><div><strong>Left drag</strong><span>Orbit around the observer-centred frame.</span></div><div><strong>Right drag</strong><span>Pan across the current view.</span></div><div><strong>Scroll</strong><span>Zoom toward or away from observed rows.</span></div><div><strong>Flythrough</strong><span>Run a guided route; any manual interaction stops it.</span></div></div><p class="help-note">The DESI North/South footprint is measurement geometry. It should not be interpreted as a reconstructed all-sky density field or as physically disconnected structure.</p></section></div>
       <div id="loading-screen" class="loading-screen" aria-live="polite"><div class="loading-content"><img src="assets/nasadiya-mark.svg" class="loading-mark" alt="" /><p class="eyebrow">NĀSADĪYA LIGHTCONE</p><h2 id="loading-title">Opening the observed local Universe</h2><p id="loading-copy">Reading the 2MRS browser catalogue and its source provenance…</p><div class="loading-line"><span id="loading-meter-bar"></span></div><div class="loading-meta"><span id="loading-dataset">2MRS Table 3</span><span id="loading-count">Preparing data layer</span></div></div></div>
       <noscript><section class="noscript"><h1>NĀSADĪYA LIGHTCONE</h1><p>This survey-native 3D browser requires JavaScript and WebGL. Read the <a href="methods.html">methods</a>, <a href="data.html">data ledger</a> and <a href="community.html">community guide</a>.</p></section></noscript>
     </main>
-    <script type="module" src="src/app.js?v=101"></script>
+    <script type="module" src="src/app.js?v=20260625-dashboard"></script>
   </body>
 </html>
