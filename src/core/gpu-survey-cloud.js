@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { LIGHTCONE_CONFIG } from '../config.js';
+import { lookbackTimeGyr } from '../utils/cosmology.js';
 
 const VERTEX_SHADER = /* glsl */ `
   attribute float aRedshift;
@@ -48,10 +49,11 @@ const VERTEX_SHADER = /* glsl */ `
       vColor = vec3(0.0);
       return;
     }
-    float perspective = clamp(900.0 / max(1.0, -mvPosition.z), 0.18, 4.0);
-    gl_PointSize = clamp(uPointScale * perspective, 0.55, 4.2);
+    float perspective = clamp(760.0 / max(1.0, -mvPosition.z), 0.14, 3.0);
+    gl_PointSize = clamp(uPointScale * perspective, 0.42, 2.45);
     gl_Position = projectionMatrix * mvPosition;
-    vAlpha = 0.43;
+    float depthFade = mix(1.0, 0.62, clamp(aRedshift / max(0.001, uMaxRedshift), 0.0, 1.0));
+    vAlpha = 0.115 * depthFade;
     vColor = uViewMode < 0.5 ? vec3(0.40, 0.86, 1.0) : uViewMode < 1.5 ? tracerColour() : timeColour(aRedshift);
   }
 `;
@@ -62,10 +64,10 @@ const FRAGMENT_SHADER = /* glsl */ `
   void main() {
     vec2 uv = gl_PointCoord - vec2(0.5);
     float radius = length(uv);
-    float body = 1.0 - smoothstep(0.14, 0.50, radius);
+    float body = 1.0 - smoothstep(0.18, 0.50, radius);
     float alpha = body * vAlpha;
-    if (alpha < 0.014) discard;
-    gl_FragColor = vec4(mix(vColor * 0.58, vec3(1.0), body * 0.42), alpha);
+    if (alpha < 0.008) discard;
+    gl_FragColor = vec4(vColor, alpha);
   }
 `;
 
@@ -79,10 +81,25 @@ function modeCode(mode) {
   return 0.0;
 }
 
+function summarizeCloud(values, stride) {
+  let maxDistance = 0;
+  let maxRedshift = 0;
+  for (let offset = 0; offset < values.length; offset += stride) {
+    const x = values[offset];
+    const y = values[offset + 1];
+    const z = values[offset + 2];
+    const redshift = values[offset + 3];
+    const radial = Math.sqrt(x * x + y * y + z * z);
+    if (radial > maxDistance) maxDistance = radial;
+    if (redshift > maxRedshift) maxRedshift = redshift;
+  }
+  return { maxDistanceMpc: maxDistance, maxRedshift };
+}
+
 /**
  * GPU-backed full DESI cloud. The ArrayBuffer is interleaved as x, y, z,
- * redshift and tracer-code float32 values. It intentionally has no object IDs,
- * so full-cloud rendering cannot be used for per-row source inspection.
+ * redshift and tracer-code float32 values. It has no object IDs, so source
+ * inspection remains deliberately tile-based.
  */
 export class GpuSurveyCloud {
   constructor(buffer, manifest, meta = {}) {
@@ -103,7 +120,9 @@ export class GpuSurveyCloud {
     this.objects = [];
     this.visibleIndices = new Set();
     this.geometry = new THREE.BufferGeometry();
-    this.buffer = new THREE.InterleavedBuffer(new Float32Array(buffer), stride);
+    const values = new Float32Array(buffer);
+    this.stats = summarizeCloud(values, stride);
+    this.buffer = new THREE.InterleavedBuffer(values, stride);
     this.geometry.setAttribute('position', new THREE.InterleavedBufferAttribute(this.buffer, 3, 0, false));
     this.geometry.setAttribute('aRedshift', new THREE.InterleavedBufferAttribute(this.buffer, 1, 3, false));
     this.geometry.setAttribute('aTracer', new THREE.InterleavedBufferAttribute(this.buffer, 1, 4, false));
@@ -113,17 +132,18 @@ export class GpuSurveyCloud {
       fragmentShader: FRAGMENT_SHADER,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      depthTest: true,
+      blending: THREE.NormalBlending,
       uniforms: {
         uDisplayScale: { value: LIGHTCONE_CONFIG.displayScale },
-        uMaxRedshift: { value: 3.5 },
+        uMaxRedshift: { value: this.stats.maxRedshift },
         uShowGalaxies: { value: 1.0 },
         uTracerBGS: { value: 1.0 },
         uTracerLRG: { value: 1.0 },
         uTracerELG: { value: 1.0 },
         uTracerQSO: { value: 1.0 },
         uViewMode: { value: 0.0 },
-        uPointScale: { value: 1.15 },
+        uPointScale: { value: 0.82 },
       },
     });
     this.points = new THREE.Points(this.geometry, this.material);
@@ -131,23 +151,27 @@ export class GpuSurveyCloud {
     this.points.frustumCulled = false;
   }
 
+  get maxDistanceMpc() { return this.stats.maxDistanceMpc; }
+
   applyState(state) {
     const uniforms = this.material.uniforms;
-    uniforms.uMaxRedshift.value = Math.max(0.001, Number(state.maxRedshift) || 0.001);
+    const activeRedshift = Math.min(this.stats.maxRedshift, Math.max(0.001, Number(state.maxRedshift) || 0.001));
+    uniforms.uMaxRedshift.value = activeRedshift;
     uniforms.uShowGalaxies.value = state.showGalaxies ? 1.0 : 0.0;
     uniforms.uTracerBGS.value = enabled(state, 'BGS');
     uniforms.uTracerLRG.value = enabled(state, 'LRG');
     uniforms.uTracerELG.value = enabled(state, 'ELG');
     uniforms.uTracerQSO.value = enabled(state, 'QSO');
     uniforms.uViewMode.value = modeCode(state.viewMode);
-    uniforms.uPointScale.value = state.viewMode === 'uncertainty' ? 1.35 : 1.15;
+    uniforms.uPointScale.value = state.viewMode === 'uncertainty' ? 0.92 : 0.82;
     return {
       visibleCount: this.recordCount,
+      gpuResidentCount: this.recordCount,
       candidateCount: this.recordCount,
       underlyingCount: this.recordCount,
       overviewCount: Number(this.meta.overview_count || 0),
-      maxDistance: Number(this.meta.full_cloud_max_distance_mpc || 0),
-      maxLookback: Number(this.meta.full_cloud_max_lookback_gyr || 0),
+      maxDistance: this.stats.maxDistanceMpc,
+      maxLookback: lookbackTimeGyr(activeRedshift),
       tracerCounts: this.manifest.tracer_counts || {},
       sourceCounts: { 'desi-dr1': this.recordCount },
       gpuFiltered: true,
