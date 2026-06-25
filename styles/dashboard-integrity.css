@@ -1,0 +1,37 @@
+/* Camera-projected spatial annotations. Values are positioned by SceneAnnotations. */
+.spatial-annotation .axis,
+.spatial-annotation .observer-label,
+.spatial-annotation .radial-tick {
+  top: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms linear;
+  will-change: transform, opacity;
+}
+
+.spatial-annotation .axis.is-projected,
+.spatial-annotation .observer-label.is-projected,
+.spatial-annotation .radial-tick.is-projected {
+  opacity: 1;
+}
+
+/* A 2MRS catalogue is a local survey layer, not a single spatial object. */
+.spatial-annotation .anchor-label { display: none !important; }
+
+.spatial-annotation .axis {
+  color: #89e7f8;
+  font-size: 10px;
+}
+
+.spatial-annotation .observer-label {
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.spatial-annotation .radial-tick {
+  color: #8ca6b5;
+  font-size: 8.5px;
+}
