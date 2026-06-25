@@ -145,8 +145,8 @@ def main() -> int:
     footer.text(0.0, 0.40, "Input SHA-256: aba7c9236e516459e914d079e4b38bf1e75823ef0707e90da066914a5bda942e", fontsize=8.2, color=MUTED)
     footer.text(1.0, 0.40, "Reproducible scripts and data ledger: github.com/Biswajit1999/NASADIYA-LIGHTCONE", fontsize=8.2, color=MUTED, ha="right")
 
-    figure.savefig(output_stem.with_suffix(".pdf"), bbox_inches="tight")
-    figure.savefig(output_stem.with_suffix(".png"), dpi=options.dpi, bbox_inches="tight")
+    figure.savefig(output_stem.with_suffix(".pdf"), facecolor="white")
+    figure.savefig(output_stem.with_suffix(".png"), dpi=options.dpi, facecolor="white")
     plt.close(figure)
     print(f"Wrote {output_stem.with_suffix('.pdf')}")
     print(f"Wrote {output_stem.with_suffix('.png')}")
