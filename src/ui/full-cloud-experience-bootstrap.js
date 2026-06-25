@@ -4,6 +4,8 @@ import { SurveyReferenceFrame } from '../core/reference-frame.js';
 import { LightconeInterface } from './lightcone-interface.js';
 import { SceneHud } from './scene-hud.js';
 
+let latestTelemetry = null;
+
 function ensureExperience(scene) {
   if (scene.fullCloudExperience) return scene.fullCloudExperience;
   const reference = new SurveyReferenceFrame(scene.world);
@@ -19,6 +21,7 @@ function ensureExperience(scene) {
   });
   flyby.onChange((status) => hud.setFlyby(status));
   scene.fullCloudExperience = { reference, hud, flyby };
+  if (latestTelemetry) hud.update(latestTelemetry);
   return scene.fullCloudExperience;
 }
 
@@ -46,10 +49,11 @@ LightconeScene.prototype.setSpatialMode = function calibratedSpatialMode(mode, o
 const originalTelemetry = LightconeInterface.prototype.updateTelemetry;
 LightconeInterface.prototype.updateTelemetry = function calibratedTelemetry(metrics, state) {
   originalTelemetry.call(this, metrics, state);
+  latestTelemetry = { metrics, state, layer: this.currentLayer };
   const scene = window.__nasadiyaScene;
   if (!scene) return;
   const experience = ensureExperience(scene);
-  experience.hud.update({ metrics, state, layer: this.currentLayer });
+  experience.hud.update(latestTelemetry);
   scene.renderer.toneMappingExposure = metrics?.fullCatalogue ? 0.93 : 1.08;
   scene.scene.fog.density = metrics?.fullCatalogue ? 0.00023 : 0.00030;
 };
