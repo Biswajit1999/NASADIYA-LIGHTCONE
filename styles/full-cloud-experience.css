@@ -1,6 +1,8 @@
 /* Full-cloud interaction and research-console hierarchy. */
 :root { --hud-panel: rgba(5, 18, 32, .90); --hud-edge: rgba(118, 227, 251, .26); }
 
+#lightcone-canvas { cursor: grab; touch-action: none; }
+#lightcone-canvas:active { cursor: grabbing; }
 .scene-hud { position: fixed; z-index: 8; pointer-events: none; inset: 0; }
 .scene-hud__reference { position: absolute; top: 112px; right: 30px; width: 300px; padding: 17px 18px 15px; pointer-events: auto; border: 1px solid var(--hud-edge); border-radius: 14px; background: linear-gradient(135deg, rgba(12, 35, 53, .94), var(--hud-panel)); box-shadow: 0 16px 42px rgba(0, 0, 0, .28); backdrop-filter: blur(12px); }
 .scene-hud__kicker { display: block; margin-bottom: 9px; color: #76e3fb; font: 800 9px/1.2 var(--mono); letter-spacing: .16em; }
