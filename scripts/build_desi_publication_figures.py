@@ -22,7 +22,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
-from typing import Callable
+from typing import Any, Callable
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
@@ -44,24 +44,10 @@ from nasadiya_lightcone.sampling import (  # noqa: E402
 )
 
 TRACERS = ("BGS", "LRG", "ELG", "QSO", "UNKNOWN")
-TRACER_COLOURS = {
-    "BGS": "#35b8d4",
-    "LRG": "#e6a243",
-    "ELG": "#65c987",
-    "QSO": "#b58bf3",
-    "UNKNOWN": "#8999a7",
-}
+TRACER_COLOURS = {"BGS": "#35b8d4", "LRG": "#e6a243", "ELG": "#65c987", "QSO": "#b58bf3", "UNKNOWN": "#8999a7"}
 POLICIES = ("gpu_index", "lowest_hash", "tracer_sky_redshift_hash")
-POLICY_LABELS = {
-    "gpu_index": "Current GPU index threshold",
-    "lowest_hash": "Object-ID lowest hash",
-    "tracer_sky_redshift_hash": "Tracer + sky + redshift hash",
-}
-POLICY_COLOURS = {
-    "gpu_index": "#e6a243",
-    "lowest_hash": "#35b8d4",
-    "tracer_sky_redshift_hash": "#65c987",
-}
+POLICY_LABELS = {"gpu_index": "Current GPU index threshold", "lowest_hash": "Object-ID lowest hash", "tracer_sky_redshift_hash": "Tracer + sky + redshift hash"}
+POLICY_COLOURS = {"gpu_index": "#e6a243", "lowest_hash": "#35b8d4", "tracer_sky_redshift_hash": "#65c987"}
 
 
 def parse_budgets(raw: str) -> list[int]:
@@ -72,11 +58,8 @@ def parse_budgets(raw: str) -> list[int]:
 
 
 def make_parent(path: Path, args: argparse.Namespace) -> pd.DataFrame:
-    parent = load_parent(path)
-    parent = parent.copy()
-    parent["sky_cell"] = equal_area_sky_cells(
-        parent["ra_deg"], parent["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins
-    )
+    parent = load_parent(path).copy()
+    parent["sky_cell"] = equal_area_sky_cells(parent["ra_deg"], parent["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins)
     parent["redshift_bin"] = redshift_bin_labels(parent["redshift"], z_max=args.z_max, z_bins=args.z_bins)
     return parent
 
@@ -87,48 +70,25 @@ def select_policy(parent: pd.DataFrame, policy: str, budget: int) -> pd.DataFram
     if policy == "lowest_hash":
         return select_lowest_hash(parent, budget)
     if policy == "tracer_sky_redshift_hash":
-        return select_stratified_lowest_hash(
-            parent,
-            budget,
-            group_columns=("tracer", "sky_cell", "redshift_bin"),
-        )
+        return select_stratified_lowest_hash(parent, budget, group_columns=("tracer", "sky_cell", "redshift_bin"))
     raise ValueError(f"Unknown policy: {policy}")
 
 
-def evaluate_sample(
-    parent: pd.DataFrame,
-    sample: pd.DataFrame,
-    *,
-    parent_sky: pd.Series,
-    parent_voxels: pd.Series,
-    redshift_edges: np.ndarray,
-    args: argparse.Namespace,
-) -> tuple[dict[str, float], pd.DataFrame]:
+def evaluate_sample(parent: pd.DataFrame, sample: pd.DataFrame, *, parent_sky: pd.Series, parent_voxels: pd.Series, redshift_edges: np.ndarray, args: argparse.Namespace) -> tuple[dict[str, float], pd.DataFrame]:
     fraction = len(sample) / len(parent)
-    sample_sky = equal_area_sky_cells(
-        sample["ra_deg"], sample["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins
-    )
+    sample_sky = equal_area_sky_cells(sample["ra_deg"], sample["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins)
     sample_voxels = cartesian_voxel_cells(sample, cell_size_mpc=args.voxel_size_mpc)
     tracer = categorical_table(parent["tracer"], sample["tracer"], name="tracer")
     redshift = scalar_metrics(parent["redshift"], sample["redshift"], bins=redshift_edges)
     sky = occupancy_metrics(parent_sky, sample_sky, sampling_fraction=fraction)
     voxel = occupancy_metrics(parent_voxels, sample_voxels, sampling_fraction=fraction)
-    metrics = {
-        "requested_rows": float("nan"),
-        "selected_rows": float(len(sample)),
-        "sampling_fraction": fraction,
-        "redshift_ks_distance": redshift["ks_distance"],
-        "redshift_normalized_wasserstein": redshift["normalized_wasserstein_distance"],
-        "redshift_js_bits": redshift["jensen_shannon_divergence_bits"],
+    return {
+        "requested_rows": float("nan"), "selected_rows": float(len(sample)), "sampling_fraction": fraction,
+        "redshift_ks_distance": redshift["ks_distance"], "redshift_normalized_wasserstein": redshift["normalized_wasserstein_distance"], "redshift_js_bits": redshift["jensen_shannon_divergence_bits"],
         "tracer_total_variation_distance": float(0.5 * np.abs(tracer["fraction_residual"]).sum()),
-        "sky_occupancy_correlation": sky["occupancy_correlation"],
-        "sky_occupancy_nrmse": sky["occupancy_nrmse"],
-        "sky_occupied_cell_recall": sky["occupied_cell_recall"],
-        "voxel_occupancy_correlation": voxel["occupancy_correlation"],
-        "voxel_occupancy_nrmse": voxel["occupancy_nrmse"],
-        "voxel_occupied_cell_recall": voxel["occupied_cell_recall"],
-    }
-    return metrics, tracer
+        "sky_occupancy_correlation": sky["occupancy_correlation"], "sky_occupancy_nrmse": sky["occupancy_nrmse"], "sky_occupied_cell_recall": sky["occupied_cell_recall"],
+        "voxel_occupancy_correlation": voxel["occupancy_correlation"], "voxel_occupancy_nrmse": voxel["occupancy_nrmse"], "voxel_occupied_cell_recall": voxel["occupied_cell_recall"],
+    }, tracer
 
 
 def configure_axis(axis) -> None:
@@ -144,10 +104,9 @@ def figure_parent_tracer_redshift(parent: pd.DataFrame, edges: np.ndarray, outpu
     figure, axis = plt.subplots(figsize=(9.8, 5.3), dpi=dpi)
     lower = np.zeros_like(centres)
     for tracer, values in zip(TRACERS, fraction):
-        if not np.any(values):
-            continue
-        axis.fill_between(centres, lower, lower + values, step="mid", alpha=0.86, color=TRACER_COLOURS[tracer], label=tracer)
-        lower += values
+        if np.any(values):
+            axis.fill_between(centres, lower, lower + values, step="mid", alpha=0.86, color=TRACER_COLOURS[tracer], label=tracer)
+            lower += values
     axis.set(xlabel="Spectroscopic redshift, z", ylabel="Fraction of observed rows per redshift bin", ylim=(0.0, 1.0))
     axis.set_title("DESI DR1 LSS observed tracer composition", loc="left", pad=12, fontweight="bold")
     axis.legend(title="DESI tracer", ncol=5, frameon=False, loc="upper center")
@@ -158,21 +117,14 @@ def figure_parent_tracer_redshift(parent: pd.DataFrame, edges: np.ndarray, outpu
     plt.close(figure)
 
 
-def figure_redshift_residuals(
-    parent: pd.DataFrame,
-    samples: dict[str, pd.DataFrame],
-    edges: np.ndarray,
-    output: Path,
-    dpi: int,
-) -> None:
+def figure_redshift_residuals(parent: pd.DataFrame, samples: dict[str, pd.DataFrame], edges: np.ndarray, output: Path, dpi: int) -> None:
     centres = 0.5 * (edges[:-1] + edges[1:])
     parent_fraction = np.histogram(parent["redshift"], bins=edges)[0] / len(parent)
     figure, axis = plt.subplots(figsize=(9.8, 5.3), dpi=dpi)
     axis.axhline(0.0, color="#253b4a", linewidth=1.0)
     for policy, sample in samples.items():
         sample_fraction = np.histogram(sample["redshift"], bins=edges)[0] / len(sample)
-        residual = 100.0 * (sample_fraction - parent_fraction)
-        axis.step(centres, residual, where="mid", linewidth=1.5, color=POLICY_COLOURS[policy], label=POLICY_LABELS[policy])
+        axis.step(centres, 100.0 * (sample_fraction - parent_fraction), where="mid", linewidth=1.5, color=POLICY_COLOURS[policy], label=POLICY_LABELS[policy])
     axis.set(xlabel="Spectroscopic redshift, z", ylabel="Sample − parent fraction [percentage points]")
     axis.set_title("Browser representation redshift residuals", loc="left", pad=12, fontweight="bold")
     axis.legend(frameon=False, fontsize=8)
@@ -208,20 +160,13 @@ def occupancy_fraction_grid(cells: pd.Series, *, ra_bins: int, sin_dec_bins: int
     return (values / values.sum()).reshape(ra_bins, sin_dec_bins).T
 
 
-def figure_sky_residuals(
-    parent_sky: pd.Series,
-    samples: dict[str, pd.DataFrame],
-    args: argparse.Namespace,
-    output: Path,
-    dpi: int,
-) -> None:
+def figure_sky_residuals(parent_sky: pd.Series, samples: dict[str, pd.DataFrame], args: argparse.Namespace, output: Path, dpi: int) -> None:
     parent_grid = occupancy_fraction_grid(parent_sky, ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins)
-    residuals = []
+    residuals: list[np.ndarray] = []
     for policy in POLICIES:
         sample_sky = equal_area_sky_cells(samples[policy]["ra_deg"], samples[policy]["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins)
         residuals.append(100.0 * (occupancy_fraction_grid(sample_sky, ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins) - parent_grid))
-    limit = max(float(np.max(np.abs(values))) for values in residuals)
-    limit = max(limit, 0.01)
+    limit = max(max(float(np.max(np.abs(values))) for values in residuals), 0.01)
     figure, axes = plt.subplots(1, 3, figsize=(12.2, 3.8), dpi=dpi, sharex=True, sharey=True, constrained_layout=True)
     image = None
     for axis, policy, residual in zip(axes, POLICIES, residuals):
@@ -237,13 +182,7 @@ def figure_sky_residuals(
     plt.close(figure)
 
 
-def figure_slice_comparison(
-    parent: pd.DataFrame,
-    samples: dict[str, pd.DataFrame],
-    args: argparse.Namespace,
-    output: Path,
-    dpi: int,
-) -> None:
+def figure_slice_comparison(parent: pd.DataFrame, samples: dict[str, pd.DataFrame], args: argparse.Namespace, output: Path, dpi: int) -> None:
     half = args.slice_thickness_mpc / 2.0
     parent_slice = parent.loc[parent["z_mpc"].abs() <= half]
     figure, axes = plt.subplots(1, 3, figsize=(12.2, 4.1), dpi=dpi, sharex=True, sharey=True, constrained_layout=True)
@@ -251,9 +190,8 @@ def figure_slice_comparison(
         sample_slice = samples[policy].loc[samples[policy]["z_mpc"].abs() <= half]
         for tracer in TRACERS:
             group = sample_slice.loc[sample_slice["tracer"] == tracer]
-            if group.empty:
-                continue
-            axis.scatter(group["x_mpc"], group["y_mpc"], s=0.55, marker=".", alpha=0.38, color=TRACER_COLOURS[tracer], rasterized=True)
+            if not group.empty:
+                axis.scatter(group["x_mpc"], group["y_mpc"], s=0.55, marker=".", alpha=0.38, color=TRACER_COLOURS[tracer], rasterized=True)
         axis.set_title(f"{POLICY_LABELS[policy]}\n{len(sample_slice):,} slice rows", fontsize=8.5, fontweight="bold")
         axis.set_xlabel("X [Mpc]")
         axis.spines[["top", "right"]].set_visible(False)
@@ -266,9 +204,9 @@ def figure_slice_comparison(
     plt.close(figure)
 
 
-def save_figure_pair(generator: Callable[..., None], *args, output_stem: Path, dpi: int) -> None:
-    generator(*args, output_stem.with_suffix(".png"), dpi)
-    generator(*args, output_stem.with_suffix(".pdf"), dpi)
+def save_figure_pair(generator: Callable[..., None], *args: Any, output_stem: Path, dpi: int, **kwargs: Any) -> None:
+    generator(*args, output_stem.with_suffix(".png"), dpi, **kwargs)
+    generator(*args, output_stem.with_suffix(".pdf"), dpi, **kwargs)
 
 
 def parse_args() -> argparse.Namespace:
@@ -289,7 +227,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def validate_gpu_contract(parent: pd.DataFrame, manifest_path: Path, allow_mismatch: bool) -> dict:
+def validate_gpu_contract(parent: pd.DataFrame, manifest_path: Path, allow_mismatch: bool) -> dict[str, Any]:
     if not manifest_path.exists():
         return {"manifest_checked": False, "note": "No full-cloud manifest was found; GPU-index validation was not cross-checked."}
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -299,13 +237,7 @@ def validate_gpu_contract(parent: pd.DataFrame, manifest_path: Path, allow_misma
             f"Parent validation rows ({len(parent):,}) do not equal full-cloud records ({record_count:,}). "
             "Use --allow-gpu-row-count-mismatch only after documenting why the GPU row order cannot be reproduced."
         )
-    return {
-        "manifest_checked": True,
-        "manifest_path": str(manifest_path),
-        "manifest_record_count": record_count,
-        "parent_rows_match_manifest": len(parent) == record_count,
-        "manifest_binary_sha256": manifest.get("binary", {}).get("sha256"),
-    }
+    return {"manifest_checked": True, "manifest_path": str(manifest_path), "manifest_record_count": record_count, "parent_rows_match_manifest": len(parent) == record_count, "manifest_binary_sha256": manifest.get("binary", {}).get("sha256")}
 
 
 def main() -> int:
@@ -315,7 +247,6 @@ def main() -> int:
     if args.poster_budget not in args.budgets:
         raise ValueError("poster-budget must be one of the declared budgets.")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-
     parent = make_parent(args.input, args)
     if max(args.budgets) > len(parent):
         raise ValueError("A declared display budget exceeds the valid observed parent rows.")
@@ -323,7 +254,6 @@ def main() -> int:
     redshift_edges = np.linspace(0.0, args.z_max, args.z_bins + 1)
     parent_sky = equal_area_sky_cells(parent["ra_deg"], parent["dec_deg"], ra_bins=args.sky_ra_bins, sin_dec_bins=args.sky_sin_dec_bins)
     parent_voxels = cartesian_voxel_cells(parent, cell_size_mpc=args.voxel_size_mpc)
-
     summary_rows: list[dict[str, float | str]] = []
     tracer_rows: list[pd.DataFrame] = []
     poster_samples: dict[str, pd.DataFrame] = {}
@@ -338,49 +268,24 @@ def main() -> int:
             tracer_rows.append(tracer)
             if budget == args.poster_budget:
                 poster_samples[policy] = sample
-
     metrics = pd.DataFrame(summary_rows).sort_values(["policy", "requested_rows"], ignore_index=True)
     tracer_residuals = pd.concat(tracer_rows, ignore_index=True)
     metrics.to_csv(args.output_dir / "representation_fidelity_metrics.csv", index=False)
     tracer_residuals.to_csv(args.output_dir / "tracer_fraction_residuals.csv", index=False)
-
     save_figure_pair(figure_parent_tracer_redshift, parent, redshift_edges, output_stem=args.output_dir / "fig_01_parent_tracer_redshift", dpi=args.dpi)
     save_figure_pair(figure_redshift_residuals, parent, poster_samples, redshift_edges, output_stem=args.output_dir / "fig_02_redshift_residuals", dpi=args.dpi)
     save_figure_pair(figure_metric_convergence, metrics, "redshift_js_bits", "Redshift Jensen–Shannon divergence [bits]", output_stem=args.output_dir / "fig_03_redshift_fidelity_convergence", dpi=args.dpi)
     save_figure_pair(figure_metric_convergence, metrics, "voxel_occupancy_correlation", "Scaled voxel-occupancy correlation", output_stem=args.output_dir / "fig_04_voxel_fidelity_convergence", dpi=args.dpi, ylim=(0.0, 1.02))
     save_figure_pair(figure_sky_residuals, parent_sky, poster_samples, args, output_stem=args.output_dir / "fig_05_sky_cell_residuals", dpi=args.dpi)
     save_figure_pair(figure_slice_comparison, parent, poster_samples, args, output_stem=args.output_dir / "fig_06_cartesian_slice_comparison", dpi=args.dpi)
-
     manifest = {
         "format": "nasadiya-publication-evidence/v1",
         "input": {"filename": args.input.name, "sha256": file_sha256(args.input), "validated_parent_rows": len(parent)},
         "gpu_render_contract": gpu_contract,
-        "configuration": {
-            "budgets": args.budgets,
-            "poster_budget": args.poster_budget,
-            "redshift_range": [0.0, args.z_max],
-            "redshift_bins": args.z_bins,
-            "sky_grid": {"ra_bins": args.sky_ra_bins, "sin_dec_bins": args.sky_sin_dec_bins},
-            "voxel_size_mpc": args.voxel_size_mpc,
-            "slice_thickness_mpc": args.slice_thickness_mpc,
-        },
-        "policies": {
-            "gpu_index": "Exact full-cloud shader aSample threshold; depends on packed source-row order.",
-            "lowest_hash": "Stable BLAKE2b-64 object-ID selection.",
-            "tracer_sky_redshift_hash": "Stable proportional selection within tracer × equal-area sky × redshift strata.",
-        },
-        "scientific_boundary": {
-            "observed_rows_only": True,
-            "survey_weights_applied": False,
-            "random_catalogue_used": False,
-            "clustering_estimator": False,
-            "density_reconstruction": False,
-            "statement": "These figures validate browser representation of observed rows, not cosmological clustering or physical density.",
-        },
-        "figure_files": [
-            "fig_01_parent_tracer_redshift", "fig_02_redshift_residuals", "fig_03_redshift_fidelity_convergence",
-            "fig_04_voxel_fidelity_convergence", "fig_05_sky_cell_residuals", "fig_06_cartesian_slice_comparison",
-        ],
+        "configuration": {"budgets": args.budgets, "poster_budget": args.poster_budget, "redshift_range": [0.0, args.z_max], "redshift_bins": args.z_bins, "sky_grid": {"ra_bins": args.sky_ra_bins, "sin_dec_bins": args.sky_sin_dec_bins}, "voxel_size_mpc": args.voxel_size_mpc, "slice_thickness_mpc": args.slice_thickness_mpc},
+        "policies": {"gpu_index": "Exact full-cloud shader aSample threshold; depends on packed source-row order.", "lowest_hash": "Stable BLAKE2b-64 object-ID selection.", "tracer_sky_redshift_hash": "Stable proportional selection within tracer × equal-area sky × redshift strata."},
+        "scientific_boundary": {"observed_rows_only": True, "survey_weights_applied": False, "random_catalogue_used": False, "clustering_estimator": False, "density_reconstruction": False, "statement": "These figures validate browser representation of observed rows, not cosmological clustering or physical density."},
+        "figure_files": ["fig_01_parent_tracer_redshift", "fig_02_redshift_residuals", "fig_03_redshift_fidelity_convergence", "fig_04_voxel_fidelity_convergence", "fig_05_sky_cell_residuals", "fig_06_cartesian_slice_comparison"],
     }
     (args.output_dir / "evidence_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Validated observed parent rows: {len(parent):,}")
