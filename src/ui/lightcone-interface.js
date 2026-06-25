@@ -10,115 +10,49 @@ import { SURVEY_LAYERS } from '../config.js';
 
 const TRACERS = ['BGS', 'LRG', 'ELG', 'QSO'];
 const TRACER_LABELS = Object.freeze({
-  BGS: 'Bright Galaxy Survey',
+  BGS: 'Bright Galaxy Sample',
   LRG: 'Luminous Red Galaxies',
-  ELG: 'Emission-Line Galaxies',
+  ELG: 'Emission Line Galaxies',
   QSO: 'Quasars',
 });
 
-const SPATIAL_COPY = Object.freeze({
-  slice: {
-    title: 'Local observed galaxy field.',
-    description: 'A finite Cartesian slice through real spectroscopic rows. It makes nearby structure legible without reconstructed filaments or simulated galaxies.',
-    railMode: 'Local galaxy field',
-  },
-  lightcone: {
-    title: 'Observed radial lightcone.',
-    description: 'Measured source rows are positioned in an observer-centred radial volume. Distance increases outward through the active survey layer.',
-    railMode: 'Observer lightcone',
-  },
-});
-
 const COLOUR_COPY = Object.freeze({
-  catalog: 'Observed positions',
-  tracer: 'Colour mapped by DESI tracer class',
-  time: 'Colour mapped by look-back time',
-  uncertainty: 'Marker scale mapped by redshift uncertainty',
-  survey: 'Colour mapped by source survey',
+  catalog: 'Observed row colour',
+  tracer: 'Tracer class colour',
+  time: 'Look-back colour scale',
+  uncertainty: 'Uncertainty display',
+  survey: 'Source survey colour',
 });
 
-function copyForSurvey(meta, layer) {
-  const photo = meta.measurement_kind === 'photometric';
-  const survey = meta.source_survey || 'active survey';
-  const isComposite = layer?.id === 'all-live' || Boolean(meta.composite);
-  const isDesi = layer?.id === 'desi-dr1';
-  const hasDesi = isDesi || isComposite;
-  return {
-    photo,
-    isComposite,
-    isDesi,
-    hasDesi,
-    intro: isComposite
-      ? '2MRS and DESI DR1 are rendered together as a non-deduplicated observed-survey comparison stack. Colours can expose their original source layer; overlapping sky coverage must not be interpreted as a unified completeness-corrected catalogue.'
-      : isDesi
-        ? 'DESI DR1 LSS is a deep spectroscopic survey, not an all-sky reconstruction. The separated regions follow the observed North and South survey footprint; their edges reflect targeting and mask geometry, not disconnected Universes.'
-        : photo
-          ? `The full ${survey} tile store contains observed photometric-redshift rows. This browser view begins with a deterministic set of real source rows while preserving the layer’s total count and radial uncertainty.`
-          : `Real ${survey} rows are shown as an observer-centred survey volume. Drag to orbit, scroll to move closer, and select a point for its source record.`,
-    redshift: isComposite
-      ? 'All currently stacked rows are spectroscopic, but their survey selection functions remain distinct. The view is not a merged master catalogue.'
-      : photo
-        ? `${survey} uses photometric redshifts. Radial placement is a navigation convention; each accepted row retains its supplied photo-z uncertainty.`
-        : `${survey} uses measured spectroscopic redshifts. Radial placement is a cosmological visual-navigation convention.`,
-    footprint: isComposite
-      ? 'The stack retains 2MRS all-sky selection and the DESI North/South survey footprint separately. Spatial overlap can contain duplicate astrophysical sources across catalogues.'
-      : isDesi
-        ? 'DESI DR1 LSS does not observe the full sky. Separated point clouds follow the North and South Galactic Caps, targeting masks, and completeness cuts — they are not physical empty regions or isolated cosmic structures.'
-        : photo
-          ? `${survey} has a survey footprint, masking, and photo-z uncertainty. These are measurement properties, not empty physical regions.`
-          : `${survey} has target selection and sky coverage limits. Gaps in the view are survey-selection effects, not physical empty space.`,
-    empty: isComposite
-      ? '<p class="empty-state">Select a rendered source row to inspect whether it originated in 2MRS or DESI DR1. The stack preserves survey provenance and is not cross-matched.</p>'
-      : photo
-        ? `<p class="empty-state">Select a rendered ${escapeHtml(survey)} overview row to open its photometric-redshift source record.</p>`
-        : `<p class="empty-state">Select a measured ${escapeHtml(survey)} point to open its source record.</p>`,
-  };
-}
-
-function enabledTracerNames(state) {
-  return TRACERS.filter((tracer) => state.tracerFilters?.[tracer] !== false);
-}
-
-function sourceCount(metrics, id) {
-  return Number(metrics?.sourceCounts?.[id] || 0);
+function isDesiLayer(layer) { return ['desi-dr1', 'all-live'].includes(layer?.id); }
+function compact(value) { const n = Number(value) || 0; return n >= 1_000_000 ? `${(n / 1_000_000).toFixed(n % 1_000_000 ? 2 : 0)}M` : n >= 1_000 ? `${Math.round(n / 1_000)}K` : String(Math.round(n)); }
+function noteFor(meta, layer) {
+  if (layer?.id === 'all-live' || meta?.composite) return '2MRS and DESI remain separate survey layers in this non-deduplicated comparison stack.';
+  if (layer?.id === 'desi-dr1') return 'North and South regions follow DESI survey footprint, target selection, masks and completeness cuts.';
+  return 'Survey coverage, target selection and source provenance remain part of the visual context.';
 }
 
 export class LightconeInterface {
   constructor() {
-    this.currentMeta = null;
-    this.currentLayer = null;
-    this.tileStreamStatus = null;
+    this.currentMeta = null; this.currentLayer = null; this.currentMetrics = null; this.tileStreamStatus = null;
+    this.fullCloud = { available: false, active: false, recordCount: 0 };
     this.dom = {
-      datasetStatus: document.querySelector('#dataset-status'), datasetDot: document.querySelector('#dataset-dot'), surveyModeStatus: document.querySelector('#survey-mode-status'),
-      sceneEyebrow: document.querySelector('#scene-eyebrow'), sceneTitle: document.querySelector('#scene-title'), sceneDescription: document.querySelector('#scene-description'), openingCount: document.querySelector('#opening-count'), summaryLayer: document.querySelector('#summary-layer'), summaryCount: document.querySelector('#summary-count'), footprintIndicator: document.querySelector('#footprint-indicator'), footprintIndicatorCopy: document.querySelector('#footprint-indicator-copy'),
-      controlToggle: document.querySelector('#control-toggle'), controlDrawer: document.querySelector('#control-drawer'), closeControls: document.querySelector('#close-controls'),
-      surveyLayer: document.querySelector('#survey-layer'), surveyLayerStatus: document.querySelector('#survey-layer-status'), surveyLayerNote: document.querySelector('#survey-layer-note'),
-      maxRedshift: document.querySelector('#max-redshift'), maxRedshiftOutput: document.querySelector('#max-redshift-output'), redshiftNote: document.querySelector('#redshift-note'),
-      sliceThickness: document.querySelector('#slice-thickness'), sliceThicknessOutput: document.querySelector('#slice-thickness-output'), sliceOffset: document.querySelector('#slice-offset'), sliceOffsetOutput: document.querySelector('#slice-offset-output'), sliceControls: document.querySelector('#slice-controls'),
-      pointBudget: document.querySelector('#point-budget'), pointBudgetOutput: document.querySelector('#point-budget-output'), budgetNote: document.querySelector('#budget-note'), footprintNote: document.querySelector('#footprint-note'),
-      tracerSection: document.querySelector('#desi-tracer-section'), tracerInputs: [...document.querySelectorAll('[data-desi-tracer]')], tracerCounts: [...document.querySelectorAll('[data-tracer-count]')],
-      galaxies: document.querySelector('#toggle-galaxies'), reset: document.querySelector('#reset-view'), focusLocal: document.querySelector('#focus-local'),
-      visibleCount: document.querySelector('#visible-count'), depth: document.querySelector('#depth-readout'), lookback: document.querySelector('#lookback-readout'), railMode: document.querySelector('#rail-mode'), railDetail: document.querySelector('#rail-detail'),
-      sourceLink: document.querySelector('#source-link'), cornerNote: document.querySelector('#corner-note'), objectInspector: document.querySelector('#object-inspector'), closeInspector: document.querySelector('#close-inspector'), inspector: document.querySelector('#inspector-content'),
-      layerShortcuts: [...document.querySelectorAll('[data-layer-shortcut]')],
-      viewButtons: [...document.querySelectorAll('[data-spatial-mode]')], modeButtons: [...document.querySelectorAll('[data-view-mode]')], tracerModeButton: document.querySelector('[data-view-mode="tracer"]'),
-      helpButton: document.querySelector('#help-button'), helpModal: document.querySelector('#help-modal'), closeHelp: document.querySelector('#close-help'),
-      loadingScreen: document.querySelector('#loading-screen'), loadingTitle: document.querySelector('#loading-title'), loadingCopy: document.querySelector('#loading-copy'), loadingMeterBar: document.querySelector('#loading-meter-bar'), loadingDataset: document.querySelector('#loading-dataset'), loadingCount: document.querySelector('#loading-count'),
+      datasetStatus: document.querySelector('#dataset-status'), observedRowsStatus: document.querySelector('#observed-rows-status'), headerDepthStatus: document.querySelector('#header-depth-status'), headerLookbackStatus: document.querySelector('#header-lookback-status'), surveyModeStatus: document.querySelector('#survey-mode-status'),
+      sceneEyebrow: document.querySelector('#scene-eyebrow'), sceneTitle: document.querySelector('#scene-title'), sceneDescription: document.querySelector('#scene-description'), leftSurveyName: document.querySelector('#left-survey-name'), leftRowCount: document.querySelector('#left-row-count'), leftDepth: document.querySelector('#left-depth'), leftLookback: document.querySelector('#left-lookback'), leftRedshift: document.querySelector('#left-redshift'), leftCoverage: document.querySelector('#left-coverage'), sourceLink: document.querySelector('#source-link'),
+      controlToggle: document.querySelector('#control-toggle'), controlDrawer: document.querySelector('#control-drawer'), closeControls: document.querySelector('#close-controls'), surveyLayer: document.querySelector('#survey-layer'), surveyLayerStatus: document.querySelector('#survey-layer-status'), surveyLayerNote: document.querySelector('#survey-layer-note'),
+      pointBudget: document.querySelector('#point-budget'), pointBudgetOutput: document.querySelector('#point-budget-output'), densityReadout: document.querySelector('#density-readout'), densityProfiles: [...document.querySelectorAll('[data-density-rows]')], budgetNote: document.querySelector('#budget-note'),
+      maxRedshift: document.querySelector('#max-redshift'), maxRedshiftOutput: document.querySelector('#max-redshift-output'), redshiftNote: document.querySelector('#redshift-note'), sliceControls: document.querySelector('#slice-controls'), sliceThickness: document.querySelector('#slice-thickness'), sliceThicknessOutput: document.querySelector('#slice-thickness-output'), sliceOffset: document.querySelector('#slice-offset'), sliceOffsetOutput: document.querySelector('#slice-offset-output'),
+      tracerSection: document.querySelector('#desi-tracer-section'), tracerInputs: [...document.querySelectorAll('[data-desi-tracer]')], tracerCounts: [...document.querySelectorAll('[data-tracer-count]')], selectAllTracers: document.querySelector('#select-all-tracers'), modeButtons: [...document.querySelectorAll('[data-view-mode]')],
+      galaxies: document.querySelector('#toggle-galaxies'), reference: document.querySelector('#toggle-reference'), legend: document.querySelector('#toggle-legend'), reset: document.querySelector('#reset-view'), focusLocal: document.querySelector('#focus-local'),
+      tourToggle: document.querySelector('#tour-toggle'), viewportView: document.querySelector('#viewport-view-select'), viewportHelp: document.querySelector('#viewport-help'), viewportTools: [...document.querySelectorAll('[data-viewport-tool]')], fullscreenToggle: document.querySelector('#fullscreen-toggle'), referenceCardToggle: document.querySelector('#toggle-reference-card'), spatialAnnotation: document.querySelector('#spatial-annotation'), spatialCard: document.querySelector('.spatial-card'), legendCard: document.querySelector('.legend-card'), spatialRedshift: document.querySelector('#spatial-redshift'), spatialDepth: document.querySelector('#spatial-depth'), spatialLookback: document.querySelector('#spatial-lookback'), radialTicks: [...document.querySelectorAll('[data-radial-tick]')],
+      visibleCount: document.querySelector('#visible-count'), gpuCount: document.querySelector('#gpu-count'), depth: document.querySelector('#depth-readout'), lookback: document.querySelector('#lookback-readout'), redshiftReadout: document.querySelector('#redshift-readout'), coverageReadout: document.querySelector('#coverage-readout'), coverageNote: document.querySelector('#coverage-note'), displayCountNote: document.querySelector('#display-count-note'), gpuCountNote: document.querySelector('#gpu-count-note'), systemStatus: document.querySelector('#system-status'), footerDataSource: document.querySelector('#footer-data-source'),
+      objectInspector: document.querySelector('#object-inspector'), closeInspector: document.querySelector('#close-inspector'), inspector: document.querySelector('#inspector-content'), railButtons: [...document.querySelectorAll('[data-rail-section]')], helpButton: document.querySelector('#help-button'), helpModal: document.querySelector('#help-modal'), closeHelp: document.querySelector('#close-help'), loadingScreen: document.querySelector('#loading-screen'), loadingTitle: document.querySelector('#loading-title'), loadingCopy: document.querySelector('#loading-copy'), loadingMeterBar: document.querySelector('#loading-meter-bar'), loadingDataset: document.querySelector('#loading-dataset'), loadingCount: document.querySelector('#loading-count'),
     };
     this.installSurveyOptions();
-    this.installSurveyColourMode();
   }
 
   installSurveyOptions() {
-    const select = this.dom.surveyLayer;
-    if (!select) return;
-    if (!select.querySelector('option[value="all-live"]')) {
-      const option = document.createElement('option');
-      option.value = 'all-live';
-      option.textContent = 'AVAILABLE · 2MRS + DESI DR1 comparison stack';
-      select.insertBefore(option, select.firstChild);
-    }
-    [...select.options].forEach((option) => {
+    [...this.dom.surveyLayer.options].forEach((option) => {
       const layer = SURVEY_LAYERS[option.value];
       if (!layer) return;
       option.disabled = layer.installed === false;
@@ -126,23 +60,11 @@ export class LightconeInterface {
     });
   }
 
-  installSurveyColourMode() {
-    const host = document.querySelector('.mode-switch');
-    if (!host || host.querySelector('[data-view-mode="survey"]')) return;
-    const button = document.createElement('button');
-    button.className = 'mode-button';
-    button.type = 'button';
-    button.dataset.viewMode = 'survey';
-    button.textContent = 'Source';
-    button.disabled = true;
-    host.append(button);
-    host.classList.add('mode-switch--five');
-    host.style.gridTemplateColumns = 'repeat(5, minmax(0, 1fr))';
-    const style = document.createElement('style');
-    style.textContent = '@media (max-width:680px){.mode-switch--five{grid-template-columns:repeat(2,minmax(0,1fr))!important}}';
-    document.head.append(style);
-    this.dom.modeButtons = [...document.querySelectorAll('[data-view-mode]')];
-    this.dom.surveyModeButton = button;
+  drawerOpen(open) {
+    this.dom.controlDrawer.hidden = !open;
+    document.body.classList.toggle('lens-open', open);
+    this.dom.controlToggle.setAttribute('aria-expanded', String(open));
+    this.dom.controlToggle.classList.toggle('is-active', open);
   }
 
   setLoadingState({ title, copy, dataset, count, progress = 18 } = {}) {
@@ -154,301 +76,119 @@ export class LightconeInterface {
     this.dom.loadingMeterBar.style.width = `${progress}%`;
   }
 
-  hideLoading() {
-    this.dom.loadingMeterBar.style.width = '100%';
-    window.setTimeout(() => this.dom.loadingScreen.classList.add('is-hidden'), 280);
+  hideLoading() { this.dom.loadingMeterBar.style.width = '100%'; window.setTimeout(() => this.dom.loadingScreen.classList.add('is-hidden'), 320); }
+
+  setTourStatus({ active = false, phase = 'overview', progress = 0, reason = null } = {}) {
+    this.dom.tourToggle.classList.toggle('is-active', active);
+    this.dom.tourToggle.setAttribute('aria-pressed', String(active));
+    const label = this.dom.tourToggle.querySelector('span:last-child');
+    if (label) label.textContent = active ? `${phase} ${Math.round(progress * 100)}%` : 'Flythrough';
+    this.dom.tourToggle.title = active ? 'Stop guided flythrough. Any manual interaction restores navigation.' : (reason === 'manual' ? 'Manual navigation restored. Start a new guided flythrough.' : 'Start a guided route through the observed survey footprint.');
   }
 
-  updateSpatialCopy(mode, state = null) {
-    const defaultCopy = SPATIAL_COPY[mode] || SPATIAL_COPY.slice;
-    const isComposite = this.currentLayer?.id === 'all-live' || Boolean(this.currentMeta?.composite);
-    const isDesi = this.currentLayer?.id === 'desi-dr1';
-    const tracerText = state && (isDesi || isComposite) ? enabledTracerNames(state).join(' · ') || 'no tracer classes' : null;
-    const copy = isComposite && mode === 'lightcone'
-      ? {
-        title: '2MRS + DESI observed-survey stack.',
-        description: 'The nearby 2MRS anchor and deep DESI DR1 footprint are displayed together for comparison. This is a non-deduplicated stack; source colours and point inspection retain the original survey identity.',
-        railMode: 'Available survey stack',
-      }
-      : isDesi && mode === 'lightcone'
-        ? {
-          title: 'DESI DR1 spectroscopic lightcone.',
-          description: 'Six million measured redshifts underpin this view. The separated regions are the real North/South survey footprint — not a fabricated all-sky cosmic web.',
-          railMode: 'DESI DR1 lightcone',
-        }
-        : defaultCopy;
-    this.dom.sceneTitle.textContent = copy.title;
-    this.dom.sceneDescription.textContent = copy.description;
-    this.dom.railMode.textContent = copy.railMode;
-    this.dom.sliceControls.hidden = mode !== 'slice';
-    if (tracerText) this.dom.railMode.title = `Active DESI tracers: ${tracerText}`;
-  }
-
-  setTracerControls(meta, state, layer) {
-    const available = (layer?.id === 'desi-dr1' || layer?.id === 'all-live') && Object.keys(meta.tracer_counts || {}).length > 0;
-    this.dom.tracerSection.hidden = !available;
-    if (this.dom.tracerModeButton) {
-      this.dom.tracerModeButton.disabled = !available;
-      if (!available && state.viewMode === 'tracer') state.viewMode = 'catalog';
-    }
-    if (this.dom.surveyModeButton) {
-      this.dom.surveyModeButton.disabled = !meta.composite;
-      if (!meta.composite && state.viewMode === 'survey') state.viewMode = 'catalog';
-    }
-    this.dom.tracerInputs.forEach((input) => {
-      input.disabled = !available;
-      input.checked = state.tracerFilters?.[input.value] !== false;
-    });
-    this.dom.tracerCounts.forEach((countNode) => {
-      const tracer = countNode.dataset.tracerCount;
-      countNode.textContent = available ? formatNumber(meta.tracer_counts?.[tracer] || 0) : '—';
-    });
+  setFullCloudStatus(status = {}) {
+    this.fullCloud = { available: false, active: false, recordCount: 0, ...status };
+    const fullButton = this.dom.densityProfiles.find((button) => Number(button.dataset.densityRows) > 1_000_000);
+    if (fullButton) { fullButton.disabled = !this.fullCloud.available && !this.fullCloud.active; fullButton.title = this.fullCloud.available ? `Load all ${formatNumber(this.fullCloud.recordCount)} DESI rows into the GPU cloud.` : (this.fullCloud.reason || 'The full cloud is not available in this deployment.'); }
   }
 
   setLayerControls(meta, state, layer) {
-    const copy = copyForSurvey(meta, layer);
-    this.currentMeta = meta;
-    this.currentLayer = layer;
-    this.tileStreamStatus = null;
-    document.body.dataset.layer = layer.id;
+    this.currentMeta = meta; this.currentLayer = layer;
+    const composite = Boolean(meta.composite || layer?.id === 'all-live');
+    const sourceName = meta.source_survey || layer?.label || 'Observed survey';
     this.dom.surveyLayer.value = layer.id;
-    this.dom.surveyLayerStatus.textContent = copy.photo ? 'photo-z' : copy.isComposite ? 'comparison stack' : 'spectroscopic';
-    this.dom.surveyLayerNote.textContent = copy.isComposite
-      ? `${formatNumber(meta.object_count)} source rows before cross-survey matching; ${formatNumber(meta.overview_count)} public rows in the stack. The two catalogues remain separately identified and are not deduplicated.`
-      : meta.overview_count
-        ? `${formatNumber(meta.object_count)} observed rows; ${formatNumber(meta.overview_count)} real rows in the public browser overview. Full-resolution tiles remain outside Git history.`
-        : `${formatNumber(meta.object_count)} observed rows are loaded from the browser catalogue.`;
-    this.dom.sceneEyebrow.textContent = layer.eyebrow;
-    this.dom.redshiftNote.textContent = copy.redshift;
-    this.dom.footprintNote.textContent = copy.footprint;
-    this.dom.datasetStatus.textContent = meta.dataset_label || layer.label;
-    this.dom.summaryLayer.textContent = meta.source_survey || layer.label;
-    this.dom.summaryCount.textContent = meta.overview_count ? `${formatNumber(meta.overview_count)} shown` : `${formatNumber(meta.object_count)} rows`;
-    this.dom.footprintIndicator.hidden = !copy.hasDesi;
-    this.dom.footprintIndicatorCopy.textContent = copy.isComposite
-      ? '2MRS selection and DESI North/South footprint are retained separately.'
-      : copy.isDesi
-        ? 'North/South Galactic Cap coverage and targeting geometry.'
-        : 'Coverage is set by the active catalogue.';
-    this.dom.surveyModeStatus.textContent = copy.isComposite ? 'separate survey provenance' : copy.photo ? 'photo-z uncertainty retained' : 'measured redshifts';
-    this.dom.sourceLink.textContent = copy.isComposite ? 'Survey source ledger ↗' : `${meta.source_survey || layer.id} source record ↗`;
-    this.dom.sourceLink.href = 'docs/sources.md';
-    this.dom.cornerNote.textContent = copy.isComposite
-      ? '2MRS + DESI DR1 · non-deduplicated comparison stack · source colours and records retained'
-      : `${meta.source_survey || layer.id} · ${meta.source_release || 'source provenance in record'} · ${copy.hasDesi ? 'survey footprint and tracer filters shown explicitly' : copy.photo ? 'photometric redshift with radial uncertainty' : 'spectroscopic survey placement'}`;
-    this.dom.focusLocal.disabled = !layer.supportsSlice;
-    this.dom.focusLocal.textContent = layer.supportsSlice ? 'Return to local slice' : 'Observer lightcone only';
-    this.dom.viewButtons.forEach((button) => { button.disabled = button.dataset.spatialMode === 'slice' && !layer.supportsSlice; });
+    this.dom.surveyLayerStatus.textContent = composite ? 'comparison' : meta.measurement_kind === 'photometric' ? 'photo-z' : 'spectroscopic';
+    this.dom.surveyLayerNote.textContent = meta.overview_count ? `${formatNumber(meta.object_count)} observed source rows; ${formatNumber(meta.overview_count)} rows in the initial browser view. ${noteFor(meta, layer)}` : `${formatNumber(meta.object_count)} observed source rows. ${noteFor(meta, layer)}`;
+    this.dom.sceneEyebrow.textContent = layer.eyebrow || sourceName.toUpperCase();
+    this.dom.sceneTitle.textContent = composite ? 'A nearby anchor and deep spectroscopic field.' : layer.id === 'desi-dr1' ? 'DESI DR1 spectroscopic lightcone.' : 'The nearby observed Universe.';
+    this.dom.sceneDescription.textContent = composite ? '2MRS and DESI DR1 are shown together for survey comparison. Source layers remain separate and are not cross-matched or completeness-corrected.' : layer.id === 'desi-dr1' ? 'The North and South DESI regions reflect observed footprint, targeting and masks. They are not a fabricated all-sky cosmic web.' : 'A finite display of measured nearby spectroscopic rows. Use the viewport to orbit, zoom, pan and inspect source records.';
+    this.dom.surveyModeStatus.textContent = composite ? 'comparison stack' : meta.measurement_kind === 'photometric' ? 'photometric' : 'spectroscopic';
+    this.dom.leftSurveyName.textContent = sourceName;
+    this.dom.leftRowCount.textContent = formatNumber(meta.object_count);
+    this.dom.leftCoverage.textContent = composite ? '2MRS + DESI' : layer.id === 'desi-dr1' ? '~14,000 deg²' : 'survey-defined';
+    this.dom.sourceLink.href = 'docs/sources.md'; this.dom.footerDataSource.textContent = sourceName;
+    this.dom.maxRedshift.max = Math.max(0.02, Math.ceil(Number(meta.max_redshift || state.maxRedshift || 0.025) * 10000) / 10000).toFixed(4);
+    this.dom.sliceControls.hidden = !layer.supportsSlice;
     if (!layer.supportsSlice && state.spatialMode === 'slice') state.spatialMode = 'lightcone';
-    this.dom.layerShortcuts.forEach((button) => {
-      const active = button.dataset.layerShortcut === layer.id;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
+    this.dom.viewportView.value = state.spatialMode === 'slice' ? 'slice' : 'observer';
+    this.dom.focusLocal.disabled = !layer.supportsSlice; this.dom.focusLocal.textContent = layer.supportsSlice ? 'Return to local field' : 'Observer lightcone only';
     this.setTracerControls(meta, state, layer);
-    this.dom.inspector.innerHTML = copy.empty;
   }
 
-  setTileStreamingStatus({ available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason } = {}) {
-    if (!['desi-dr1', 'all-live'].includes(this.currentLayer?.id)) return;
-    this.tileStreamStatus = { available, active, totalTiles, requestedTiles, loadedTiles, streamedRows, delivery, reason };
-    const overview = formatNumber(this.currentMeta?.overview_count || 0);
-    const full = formatNumber(this.currentMeta?.object_count || 0);
-    const tiles = formatNumber(totalTiles || this.currentMeta?.tile_count || 0);
-    if (available && active) {
-      const loaded = Number.isFinite(Number(loadedTiles)) ? `${loadedTiles}/${requestedTiles || loadedTiles} active tiles` : 'adaptive tiles active';
-      const rows = Number.isFinite(Number(streamedRows)) ? `${formatNumber(streamedRows)} streamed rows` : 'camera-selected observed rows';
-      this.dom.surveyLayerNote.textContent = `Adaptive ${delivery || 'tile'} delivery is active: ${loaded}; ${rows}. The public overview remains global context while detail follows the camera.`;
-      this.dom.budgetNote.textContent = `Rendering is capped at the browser budget. Adaptive tiles add real camera-relevant rows without downloading all ${full} source rows at once.`;
-      return;
-    }
-    this.dom.surveyLayerNote.textContent = this.currentMeta?.composite
-      ? `The comparison stack contains ${overview} public rows. DESI detail can stream from its ${tiles}-tile local build or configured object-store endpoint; 2MRS remains the nearby baseline.`
-      : `This deployment renders the ${overview}-row deterministic DESI overview. The full ${full}-row store is partitioned into ${tiles} tiles; ${reason || 'no local or remote tile endpoint is configured.'}`;
-    this.dom.budgetNote.textContent = `The public overview gives an instant first load. Full-resolution tiles stream only from a local build or configured object-store endpoint.`;
+  setTracerControls(meta, state, layer) {
+    const available = isDesiLayer(layer) && Object.keys(meta.tracer_counts || {}).length > 0;
+    this.dom.tracerSection.hidden = !available;
+    this.dom.tracerInputs.forEach((input) => { input.disabled = !available; input.checked = state.tracerFilters?.[input.value] !== false; });
+    this.dom.tracerCounts.forEach((node) => { node.textContent = available ? formatNumber(meta.tracer_counts?.[node.dataset.tracerCount] || 0) : '—'; });
+    this.dom.modeButtons.forEach((button) => {
+      const needsDesi = button.dataset.viewMode === 'tracer'; const needsComposite = button.dataset.viewMode === 'survey';
+      button.disabled = (needsDesi && !available) || (needsComposite && !meta.composite);
+      if (button.disabled && state.viewMode === button.dataset.viewMode) state.viewMode = 'catalog';
+    });
   }
 
   syncControlsFromState(state) {
-    this.dom.maxRedshift.value = String(state.maxRedshift);
-    this.dom.maxRedshiftOutput.textContent = Number(state.maxRedshift).toFixed(4);
-    this.dom.sliceThickness.value = String(state.sliceThickness);
-    this.dom.sliceThicknessOutput.textContent = `${Math.round(Number(state.sliceThickness))} Mpc`;
-    this.dom.sliceOffset.value = String(state.sliceOffset);
-    this.dom.sliceOffsetOutput.textContent = `${Math.round(Number(state.sliceOffset))} Mpc`;
-    this.dom.pointBudget.value = String(state.pointBudget);
-    this.dom.pointBudgetOutput.textContent = formatNumber(state.pointBudget);
-    this.dom.galaxies.checked = state.showGalaxies;
-    this.dom.tracerInputs.forEach((input) => { input.checked = state.tracerFilters?.[input.value] !== false; });
-    this.dom.viewButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.spatialMode === state.spatialMode));
-    this.dom.modeButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.viewMode === state.viewMode));
-    this.updateSpatialCopy(state.spatialMode, state);
+    this.dom.maxRedshift.value = String(state.maxRedshift); this.dom.maxRedshiftOutput.textContent = Number(state.maxRedshift).toFixed(4);
+    this.dom.sliceThickness.value = String(state.sliceThickness); this.dom.sliceThicknessOutput.textContent = `${Math.round(state.sliceThickness)} Mpc`;
+    this.dom.sliceOffset.value = String(state.sliceOffset); this.dom.sliceOffsetOutput.textContent = `${Math.round(state.sliceOffset)} Mpc`;
+    const maximum = this.fullCloud.active ? this.fullCloud.recordCount : Math.max(125_000, Number(this.currentMeta?.overview_count || this.currentMeta?.object_count || 125_000));
+    this.dom.pointBudget.max = String(maximum); state.pointBudget = Math.min(maximum, Math.max(1_000, Number(state.pointBudget) || 1_000));
+    this.dom.pointBudget.value = String(state.pointBudget); this.dom.pointBudgetOutput.textContent = formatNumber(state.pointBudget);
+    this.dom.densityReadout.textContent = this.fullCloud.active ? `${compact(state.pointBudget)} / ${compact(this.fullCloud.recordCount)} GPU` : `${compact(state.pointBudget)} displayed`;
+    this.dom.densityProfiles.forEach((button) => { const target = Number(button.dataset.densityRows); const active = target === state.pointBudget || (target > 1_000_000 && this.fullCloud.active && state.pointBudget === this.fullCloud.recordCount); button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active)); });
+    this.dom.galaxies.checked = state.showGalaxies; this.dom.tracerInputs.forEach((input) => { input.checked = state.tracerFilters?.[input.value] !== false; }); this.dom.modeButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.viewMode === state.viewMode)); this.dom.viewportView.value = state.spatialMode === 'slice' ? 'slice' : 'observer';
   }
 
-  bind({ getState, onStateChange, onSpatialModeChange, onReset, onFocusLocal, onCloseSelection, onLayerChange }) {
-    [this.dom.surveyLayer, this.dom.maxRedshift, this.dom.sliceThickness, this.dom.sliceOffset, this.dom.pointBudget, this.dom.galaxies, this.dom.focusLocal, ...this.dom.viewButtons, ...this.dom.modeButtons].forEach((item) => { item.disabled = false; });
-    this.installSurveyOptions();
-    const drawerOpen = (open) => {
-      this.dom.controlDrawer.hidden = !open;
-      document.body.classList.toggle('lens-open', open);
-      this.dom.controlToggle.setAttribute('aria-expanded', String(open));
-    };
-    this.dom.controlToggle.addEventListener('click', () => drawerOpen(this.dom.controlDrawer.hidden));
-    this.dom.closeControls.addEventListener('click', () => drawerOpen(false));
-    const emit = () => {
-      const state = getState();
-      state.maxRedshift = Number(this.dom.maxRedshift.value);
-      state.sliceThickness = Number(this.dom.sliceThickness.value);
-      state.sliceOffset = Number(this.dom.sliceOffset.value);
-      state.pointBudget = Number(this.dom.pointBudget.value);
-      state.showGalaxies = this.dom.galaxies.checked;
-      this.syncControlsFromState(state);
-      onStateChange(state);
-    };
+  bind({ getState, onStateChange, onSpatialModeChange, onReset, onFocusLocal, onCloseSelection, onLayerChange, onReferenceChange, onLegendChange, onTourToggle, onViewportTool, onFullscreen }) {
+    [this.dom.surveyLayer, this.dom.maxRedshift, this.dom.sliceThickness, this.dom.sliceOffset, this.dom.pointBudget, this.dom.galaxies, this.dom.focusLocal, this.dom.reference, this.dom.legend, ...this.dom.modeButtons].forEach((item) => { if (item) item.disabled = false; });
+    this.drawerOpen(window.innerWidth >= 1180);
+    const emit = () => { const state = getState(); state.maxRedshift = Number(this.dom.maxRedshift.value); state.sliceThickness = Number(this.dom.sliceThickness.value); state.sliceOffset = Number(this.dom.sliceOffset.value); state.pointBudget = Number(this.dom.pointBudget.value); state.showGalaxies = this.dom.galaxies.checked; this.syncControlsFromState(state); onStateChange(state); };
+    this.dom.controlToggle.addEventListener('click', () => this.drawerOpen(this.dom.controlDrawer.hidden)); this.dom.closeControls.addEventListener('click', () => this.drawerOpen(false));
     [this.dom.maxRedshift, this.dom.sliceThickness, this.dom.sliceOffset, this.dom.pointBudget, this.dom.galaxies].forEach((item) => item.addEventListener('input', emit));
-    this.dom.tracerInputs.forEach((input) => input.addEventListener('change', () => {
-      const state = getState();
-      state.tracerFilters[input.value] = input.checked;
-      this.syncControlsFromState(state);
-      onStateChange(state);
-    }));
+    this.dom.densityProfiles.forEach((button) => button.addEventListener('click', () => { const requested = Number(button.dataset.densityRows); if (requested > 1_000_000 && !this.fullCloud.active) { if (this.fullCloud.available) window.dispatchEvent(new CustomEvent('nasadiya:full-catalogue-request')); return; } const state = getState(); state.pointBudget = Math.min(requested, this.fullCloud.active ? this.fullCloud.recordCount : Number(this.dom.pointBudget.max)); this.syncControlsFromState(state); onStateChange(state); }));
+    this.dom.tracerInputs.forEach((input) => input.addEventListener('change', () => { const state = getState(); state.tracerFilters[input.value] = input.checked; this.syncControlsFromState(state); onStateChange(state); }));
+    this.dom.selectAllTracers.addEventListener('click', () => { const state = getState(); TRACERS.forEach((tracer) => { state.tracerFilters[tracer] = true; }); this.syncControlsFromState(state); onStateChange(state); });
+    this.dom.modeButtons.forEach((button) => button.addEventListener('click', () => { if (button.disabled) return; const state = getState(); state.viewMode = button.dataset.viewMode; this.syncControlsFromState(state); onStateChange(state); }));
     this.dom.surveyLayer.addEventListener('change', () => onLayerChange(this.dom.surveyLayer.value));
-    this.dom.viewButtons.forEach((button) => button.addEventListener('click', () => {
-      if (button.disabled) return;
-      const state = getState();
-      state.spatialMode = button.dataset.spatialMode;
-      this.syncControlsFromState(state);
-      onStateChange(state);
-      onSpatialModeChange(state.spatialMode);
-    }));
-    this.dom.modeButtons.forEach((button) => button.addEventListener('click', () => {
-      if (button.disabled) return;
-      const state = getState();
-      state.viewMode = button.dataset.viewMode;
-      this.syncControlsFromState(state);
-      onStateChange(state);
-    }));
-    this.dom.reset.addEventListener('click', () => { onReset(); this.dom.objectInspector.hidden = true; });
-    this.dom.focusLocal.addEventListener('click', () => {
-      if (this.dom.focusLocal.disabled) return;
-      const state = getState();
-      state.spatialMode = 'slice';
-      state.sliceThickness = 24;
-      state.sliceOffset = 0;
-      state.maxRedshift = Math.min(0.025, Number(this.dom.maxRedshift.max));
-      this.syncControlsFromState(state);
-      onStateChange(state);
-      onFocusLocal();
-    });
-    this.dom.closeInspector.addEventListener('click', () => { this.dom.objectInspector.hidden = true; onCloseSelection(); });
-    const setHelp = (isOpen) => { this.dom.helpModal.hidden = !isOpen; if (isOpen) this.dom.closeHelp.focus(); };
-    this.dom.helpButton.addEventListener('click', () => setHelp(true));
-    this.dom.closeHelp.addEventListener('click', () => setHelp(false));
-    this.dom.helpModal.addEventListener('click', (event) => { if (event.target === this.dom.helpModal) setHelp(false); });
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') { setHelp(false); drawerOpen(false); return; }
-      const editable = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-      if (!editable && event.key.toLowerCase() === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
-        onReset();
-        this.dom.objectInspector.hidden = true;
-      }
-    });
+    this.dom.viewportView.addEventListener('change', () => { const state = getState(); state.spatialMode = this.dom.viewportView.value === 'slice' ? 'slice' : 'lightcone'; this.syncControlsFromState(state); onStateChange(state); onSpatialModeChange(state.spatialMode); });
+    this.dom.reference.addEventListener('change', () => onReferenceChange?.(this.dom.reference.checked)); this.dom.legend.addEventListener('change', () => onLegendChange?.(this.dom.legend.checked)); this.dom.referenceCardToggle.addEventListener('click', () => { this.dom.reference.checked = !this.dom.reference.checked; this.dom.reference.dispatchEvent(new Event('change')); });
+    this.dom.tourToggle.addEventListener('click', () => onTourToggle?.()); this.dom.viewportHelp.addEventListener('click', () => this.openHelp(true)); this.dom.viewportTools.forEach((button) => button.addEventListener('click', () => { this.dom.viewportTools.forEach((tool) => tool.classList.toggle('is-active', tool === button)); onViewportTool?.(button.dataset.viewportTool); })); this.dom.fullscreenToggle.addEventListener('click', () => onFullscreen?.());
+    this.dom.reset.addEventListener('click', () => { onReset(); this.dom.objectInspector.hidden = true; }); this.dom.focusLocal.addEventListener('click', () => { if (this.dom.focusLocal.disabled) return; const state = getState(); state.spatialMode = 'slice'; state.sliceThickness = 24; state.sliceOffset = 0; state.maxRedshift = Math.min(0.025, Number(this.dom.maxRedshift.max)); this.syncControlsFromState(state); onStateChange(state); onFocusLocal(); });
+    this.dom.closeInspector.addEventListener('click', () => { this.dom.objectInspector.hidden = true; onCloseSelection(); }); this.dom.helpButton.addEventListener('click', () => this.openHelp(true)); this.dom.closeHelp.addEventListener('click', () => this.openHelp(false)); this.dom.helpModal.addEventListener('click', (event) => { if (event.target === this.dom.helpModal) this.openHelp(false); });
+    this.dom.railButtons.forEach((button) => button.addEventListener('click', () => { this.dom.railButtons.forEach((item) => item.classList.toggle('is-active', item === button)); const section = button.dataset.railSection; if (section === 'filters' || section === 'data') this.drawerOpen(true); if (section === 'compare') { this.dom.surveyLayer.value = 'all-live'; onLayerChange('all-live'); } if (section === 'analysis') window.location.href = 'methods.html'; }));
+    window.addEventListener('keydown', (event) => { if (event.key === 'Escape') { this.openHelp(false); this.drawerOpen(false); return; } const editable = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName); if (!editable && event.key.toLowerCase() === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) onReset(); });
   }
+
+  openHelp(open) { this.dom.helpModal.hidden = !open; if (open) this.dom.closeHelp.focus(); }
 
   setDataReady(meta, maxRedshift, state, layer) {
-    const count = formatNumber(meta.object_count);
-    const photo = meta.measurement_kind === 'photometric';
-    const composite = Boolean(meta.composite);
-    this.setLayerControls(meta, state, layer);
-    this.dom.datasetDot.classList.remove('status-dot--pending');
-    this.dom.openingCount.textContent = composite
-      ? `${count} source rows across 2MRS + DESI · ${formatNumber(meta.overview_count)} public rows in this non-deduplicated comparison stack`
-      : meta.overview_count
-        ? `${meta.source_survey} · ${count} observed ${photo ? 'photo-z ' : ''}rows · ${formatNumber(meta.overview_count)} real rows in this overview`
-        : `${meta.source_survey} · ${count} observed rows`;
-    this.dom.maxRedshift.max = Math.max(0.02, Math.ceil(maxRedshift * 10000) / 10000).toFixed(4);
-    this.dom.pointBudget.max = String(Math.max(50_000, Number(meta.overview_count || meta.object_count || 50_000)));
-    this.syncControlsFromState(state);
-    this.setLoadingState({
-      title: composite
-        ? 'Available surveys are ready'
-        : layer.id === 'desi-dr1' ? 'The DESI survey field is ready' : photo ? 'The wide photometric Universe is ready' : 'The observed survey volume is ready',
-      copy: composite
-        ? 'Use Source colour to distinguish the nearby 2MRS anchor from the DESI DR1 overview. Each point retains its source record; the stack is not cross-matched or completeness-corrected.'
-        : layer.id === 'desi-dr1'
-          ? 'Real BGS, LRG, ELG and QSO rows are available as a deterministic browser overview. The footprint and tracer filters are visible in the Data Lens.'
-          : photo
-            ? 'Real photometric-redshift rows are displayed in an observer-centred lightcone with their published radial uncertainty retained.'
-            : 'Real measured spectroscopic rows are now arranged in an observer-centred spatial view.',
-      dataset: meta.dataset_label || layer.label,
-      count: meta.overview_count ? `${count} source rows · ${formatNumber(meta.overview_count)} overview rows` : `${count} observed rows`,
-      progress: 100,
-    });
-    this.hideLoading();
+    this.setLayerControls(meta, state, layer); this.dom.maxRedshift.max = Math.max(0.02, Math.ceil(maxRedshift * 10000) / 10000).toFixed(4); this.dom.systemStatus.textContent = 'Observed catalogue ready'; this.syncControlsFromState(state);
+    this.setLoadingState({ title: layer.id === 'desi-dr1' ? 'DESI survey field ready' : layer.id === 'all-live' ? 'Comparison stack ready' : 'Observed local field ready', copy: layer.id === 'desi-dr1' ? 'Measured DESI tracer classes and footprint geometry are ready for interactive exploration.' : layer.id === 'all-live' ? 'The 2MRS anchor and DESI overview retain separate survey provenance in the comparison stack.' : 'Measured nearby spectroscopic rows are ready for interactive exploration.', dataset: meta.dataset_label || layer.label, count: `${formatNumber(meta.object_count)} observed source rows`, progress: 100 }); this.hideLoading();
   }
 
-  showLayerUnavailable(layer, previousLayer) {
-    this.dom.surveyLayer.value = previousLayer.id;
-    this.dom.surveyLayerNote.textContent = `${layer.label} is not installed in this deployment. Local build: ${layer.localBuild}`;
-    this.dom.inspector.innerHTML = `<div class="object-tag object-tag--warning">LAYER NOT INSTALLED</div><h2>${escapeHtml(layer.label)}</h2><p class="empty-state">The code supports this survey layer, but its real source rows are not bundled with this deployment.</p><p class="empty-state"><code>${escapeHtml(layer.localBuild)}</code></p>`;
-    this.dom.objectInspector.hidden = false;
+  setTileStreamingStatus(status = {}) {
+    this.tileStreamStatus = status; if (!isDesiLayer(this.currentLayer)) return;
+    if (status.fullCatalogue) { this.dom.surveyLayerNote.textContent = this.currentLayer.id === 'all-live' ? `Full comparison stack active: 2MRS anchor plus ${formatNumber(status.streamedRows)} DESI GPU-resident rows. Survey identities remain separate.` : `Full DESI GPU cloud active: ${formatNumber(status.streamedRows)} observed rows are GPU-resident. Display density controls the rendered sample.`; this.dom.budgetNote.textContent = 'Redshift and tracer controls change shader visibility. They do not alter, weight or completeness-correct catalogue rows.'; return; }
+    if (status.available && status.active) { this.dom.surveyLayerNote.textContent = `Adaptive data delivery active: ${formatNumber(status.streamedRows || 0)} camera-relevant rows from ${status.loadedTiles || 0}/${status.requestedTiles || 0} tiles.`; return; }
+    if (status.reason) this.dom.budgetNote.textContent = status.reason;
   }
 
   updateTelemetry(metrics, state) {
-    this.dom.visibleCount.textContent = formatNumber(metrics.visibleCount);
-    this.dom.depth.textContent = formatDistance(metrics.maxDistance);
-    this.dom.lookback.textContent = formatLookback(metrics.maxLookback);
-    const activeTracers = enabledTracerNames(state);
-    this.dom.tracerCounts.forEach((countNode) => {
-      const tracer = countNode.dataset.tracerCount;
-      const count = metrics.tracerCounts?.[tracer];
-      if (count !== undefined) countNode.textContent = formatNumber(count);
-    });
-    const isComposite = this.currentLayer?.id === 'all-live' || Boolean(this.currentMeta?.composite);
-    const isDesi = this.currentLayer?.id === 'desi-dr1';
-    if (isComposite) {
-      const stream = this.tileStreamStatus;
-      const streamDetail = stream?.active
-        ? ` · ${stream.loadedTiles || 0}/${stream.requestedTiles || 0} adaptive DESI tiles`
-        : ' · public overview stack';
-      this.dom.railDetail.textContent = `2MRS ${formatNumber(sourceCount(metrics, '2mrs'))} + DESI ${formatNumber(sourceCount(metrics, 'desi-dr1'))} candidate rows · non-deduplicated${streamDetail}`;
-      this.dom.summaryCount.textContent = `${formatNumber(metrics.visibleCount)} drawn`;
-      return;
-    }
-    if (isDesi) {
-      const stream = this.tileStreamStatus;
-      const streamDetail = stream?.active
-        ? ` · ${stream.loadedTiles || 0}/${stream.requestedTiles || 0} adaptive tiles`
-        : ` · ${formatNumber(this.currentMeta?.overview_count || 0)}-row overview`;
-      this.dom.railDetail.textContent = `${activeTracers.length}/4 tracer classes · z ≤ ${Number(state.maxRedshift).toFixed(4)} · real NGC/SGC footprint${streamDetail}`;
-      this.dom.summaryCount.textContent = `${formatNumber(metrics.visibleCount)} drawn`;
-      return;
-    }
-    this.dom.summaryCount.textContent = `${formatNumber(metrics.visibleCount)} drawn`;
-    this.dom.railDetail.textContent = state.spatialMode === 'slice'
-      ? `${Math.round(state.sliceThickness)} Mpc thickness · Cartesian Z = ${Math.round(state.sliceOffset)} Mpc · ${COLOUR_COPY[state.viewMode]}`
-      : (this.currentMeta?.measurement_kind === 'photometric'
-        ? `z ≤ ${Number(state.maxRedshift).toFixed(4)} · photo-z radial uncertainty retained`
-        : `z ≤ ${Number(state.maxRedshift).toFixed(4)} · ${COLOUR_COPY[state.viewMode]}`);
+    this.currentMetrics = metrics;
+    const displayRows = Number(metrics.drawBudget || metrics.visibleCount || 0); const gpuRows = Number(metrics.gpuResidentCount || metrics.underlyingCount || displayRows); const depth = formatDistance(metrics.maxDistance); const lookback = formatLookback(metrics.maxLookback); const maxZ = Number(state.maxRedshift || 0).toFixed(2);
+    this.dom.visibleCount.textContent = formatNumber(displayRows); this.dom.gpuCount.textContent = formatNumber(gpuRows); this.dom.depth.textContent = depth; this.dom.lookback.textContent = lookback; this.dom.redshiftReadout.textContent = `0.00 – ${maxZ}`; this.dom.displayCountNote.textContent = metrics.fullCatalogue ? 'deterministic GPU sample' : 'rendered current view'; this.dom.gpuCountNote.textContent = metrics.fullCatalogue ? 'resident in memory' : 'available catalogue rows';
+    this.dom.coverageReadout.textContent = this.currentLayer?.id === 'desi-dr1' ? '~14,000 deg²' : this.currentLayer?.id === 'all-live' ? '2MRS + DESI' : 'survey-defined'; this.dom.coverageNote.textContent = this.currentLayer?.id === 'desi-dr1' ? 'DESI footprint' : this.currentLayer?.id === 'all-live' ? 'non-deduplicated stack' : 'selection footprint';
+    this.dom.datasetStatus.textContent = this.currentMeta?.dataset_label || this.currentLayer?.label || 'Observed survey'; this.dom.observedRowsStatus.textContent = `${formatNumber(gpuRows)} observed rows`; this.dom.headerDepthStatus.textContent = `Radial extent ${depth}`; this.dom.headerLookbackStatus.textContent = `Look-back time ${lookback}`; this.dom.leftDepth.textContent = depth; this.dom.leftLookback.textContent = lookback; this.dom.leftRedshift.textContent = `0.00 – ${maxZ}`; this.dom.spatialRedshift.textContent = `0.00 – ${maxZ}`; this.dom.spatialDepth.textContent = depth; this.dom.spatialLookback.textContent = lookback;
+    const fractions = [0.29, 0.58, 0.86]; this.dom.radialTicks.forEach((node, index) => { node.textContent = formatDistance(Number(metrics.maxDistance || 0) * fractions[index]); }); this.dom.tracerCounts.forEach((node) => { const value = metrics.tracerCounts?.[node.dataset.tracerCount]; if (value !== undefined) node.textContent = formatNumber(value); }); this.dom.footerDataSource.textContent = this.currentMeta?.source_survey || this.currentLayer?.label || 'Observed catalogue'; this.dom.systemStatus.textContent = metrics.fullCatalogue ? 'Full GPU cloud active' : this.tileStreamStatus?.active ? 'Adaptive data delivery active' : 'Browser overview active';
+    if (metrics.fullCatalogue) { this.fullCloud.active = true; this.fullCloud.recordCount = gpuRows; }
+    this.syncControlsFromState(state);
+    const mode = COLOUR_COPY[state.viewMode] || 'Observed row colour'; this.dom.budgetNote.textContent = metrics.fullCatalogue ? `All ${formatNumber(gpuRows)} DESI rows are GPU-resident. Display density selects ${formatNumber(displayRows)} deterministic rows; ${mode.toLowerCase()} remains active.` : `The current display contains ${formatNumber(displayRows)} observed rows. ${mode}.`;
   }
+
+  showLayerUnavailable(layer, previousLayer) { this.dom.surveyLayer.value = previousLayer.id; this.dom.surveyLayerNote.textContent = `${layer.label} is not installed in this deployment. Local build: ${layer.localBuild}`; this.dom.inspector.innerHTML = `<p class="eyebrow">LAYER NOT INSTALLED</p><h2>${escapeHtml(layer.label)}</h2><p class="empty-state">The code supports this survey layer, but its observed source rows are not bundled with this deployment.</p><p class="empty-state"><code>${escapeHtml(layer.localBuild)}</code></p>`; this.dom.objectInspector.hidden = false; }
 
   inspect(object) {
-    this.dom.objectInspector.hidden = false;
-    const photo = object.measurement_kind === 'photometric';
-    const magnitude = Number(object.magnitude ?? object.ks_mag);
-    const uncertainty = Number(object.redshift_error);
-    const hasCz = Number.isFinite(Number(object.cz_km_s));
-    const tracer = object.tracer ? `<div><dt>DESI tracer</dt><dd>${escapeHtml(object.tracer)} · ${escapeHtml(TRACER_LABELS[object.tracer] || object.tracer)}</dd></div>` : '';
-    const sourceLayer = object.source_layer ? `<div><dt>Survey layer</dt><dd>${escapeHtml(object.source_layer === '2mrs' ? '2MRS' : object.source_layer === 'desi-dr1' ? 'DESI DR1 LSS' : object.source_layer)}</dd></div>` : '';
-    const positional = `<div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>`;
-    const values = photo
-      ? `<div><dt>Photometric z</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Photo-z uncertainty</dt><dd>±${formatRedshift(uncertainty)}</dd></div><div><dt>Comoving placement</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${sourceLayer}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div><div><dt>Placement note</dt><dd>not exact radial distance</dd></div>`
-      : `<div><dt>${hasCz ? 'cz' : 'Spectroscopic z'}</dt><dd>${hasCz ? formatVelocity(object.cz_km_s) : formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back time</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div>${positional}${sourceLayer}${tracer}<div><dt>Magnitude</dt><dd>${Number.isFinite(magnitude) ? magnitude.toFixed(3) : '—'}</dd></div>`;
-    const tag = object.source_layer ? `OBSERVED / ${escapeHtml(object.source_layer.toUpperCase())}` : object.tracer ? `OBSERVED / DESI ${escapeHtml(object.tracer)}` : `OBSERVED / ${photo ? 'PHOTOMETRIC' : 'SPECTROSCOPIC'}`;
-    this.dom.inspector.innerHTML = `<div class="object-tag">${tag}</div><h2>${escapeHtml(object.name || object.object_id)}</h2><p class="object-type">${escapeHtml(object.source_survey)} · ${escapeHtml(object.source_table)} · ${escapeHtml(object.object_id)}</p><dl class="object-metrics">${values}</dl><div class="provenance-block"><span>PROVENANCE</span><strong>${escapeHtml(object.source_release)}</strong><p>${escapeHtml(object.source_url)}</p><p>${escapeHtml(object.distance_note)}</p></div>`;
-  }
-
-  showLoadError(message) {
-    this.dom.openingCount.textContent = 'Observed layer unavailable';
-    this.setLoadingState({ title: 'Observed layer unavailable', copy: message, dataset: 'Survey browser', count: 'Check the local data pipeline, then refresh', progress: 100 });
+    this.dom.objectInspector.hidden = false; const source = object.source_survey || object.source_layer || 'Observed source'; const tracer = object.tracer ? `<div><dt>DESI tracer</dt><dd>${escapeHtml(object.tracer)} · ${escapeHtml(TRACER_LABELS[object.tracer] || object.tracer)}</dd></div>` : ''; const magnitude = Number(object.magnitude ?? object.ks_mag); const cz = Number(object.cz_km_s);
+    this.dom.inspector.innerHTML = `<p class="eyebrow">OBSERVED SOURCE RECORD</p><h2>${escapeHtml(object.name || object.object_id || 'Catalogue row')}</h2><dl><div><dt>Survey</dt><dd>${escapeHtml(source)}</dd></div><div><dt>Redshift</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div><div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>${tracer}${Number.isFinite(cz) ? `<div><dt>cz</dt><dd>${formatVelocity(cz)}</dd></div>` : ''}${Number.isFinite(magnitude) ? `<div><dt>Magnitude</dt><dd>${magnitude.toFixed(3)}</dd></div>` : ''}</dl>`;
   }
 }
