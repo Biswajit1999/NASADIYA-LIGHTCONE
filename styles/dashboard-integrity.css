@@ -18,12 +18,19 @@
   opacity: 1;
 }
 
-/* A 2MRS catalogue is a local survey layer, not a single spatial object. */
+/* A 2MRS catalogue is a local layer, not one point in DESI-only geometry. */
 .spatial-annotation .anchor-label { display: none !important; }
 
 .spatial-annotation .axis {
   color: #89e7f8;
   font-size: 10px;
+  letter-spacing: .03em;
+}
+
+.spatial-annotation .axis small {
+  color: #90aebf;
+  font-size: 7px;
+  letter-spacing: 0;
 }
 
 .spatial-annotation .observer-label {
@@ -32,6 +39,32 @@
 }
 
 .spatial-annotation .radial-tick {
-  color: #8ca6b5;
+  color: #9ab5c4;
   font-size: 8.5px;
+}
+
+/* Reduce the dashboard's concept-art density and improve projector readability. */
+@media (min-width: 1100px) {
+  .overview-panel { padding-right: 18px; }
+  .overview-panel h1 { font-size: 24px; line-height: 1.12; }
+  .overview-panel > p:not(.eyebrow) { font-size: 10.5px; line-height: 1.62; }
+  .what-you-see, .quick-facts { gap: 13px; padding: 13px; }
+  .what-you-see h2, .quick-facts h2 { font-size: 9.5px; }
+  .explanation-row b { font-size: 9.5px; }
+  .explanation-row span { font-size: 8.9px; line-height: 1.42; }
+  .quick-facts dt, .quick-facts dd { font-size: 8.4px; }
+  .drawer-heading h2 { font-size: 27px; }
+  .drawer-section label, .drawer-label, .drawer-label-row { font-size: 10.5px; }
+  .drawer-section p { font-size: 9.2px; line-height: 1.52; }
+  .telemetry-cell small, .telemetry-cell em { font-size: 7.5px; }
+  .telemetry-cell b { font-size: 15px; }
+}
+
+/* The footprint label is a data note, not a decorative title. */
+#spatial-coordinate-note {
+  display: block;
+  margin-top: 9px;
+  color: var(--dim);
+  font-size: 7.5px;
+  line-height: 1.4;
 }
