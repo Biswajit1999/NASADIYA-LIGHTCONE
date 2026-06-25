@@ -1,1 +1,1 @@
-export const SCENE_HUD_VERSION = 1;
+export const SCENE_HUD_VERSION = 2;
