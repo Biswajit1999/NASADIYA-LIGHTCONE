@@ -26,11 +26,31 @@ It does **not** apply survey weights, a random catalogue, angular masks, complet
 
 The browser stores this sequence in a `Float32Array`; the evidence code reproduces the Float32 conversion. This policy depends on the row order used by `scripts/full_gpu.py`. The analysis checks that the valid parent-row count matches `full-cloud.json` before treating it as an exact renderer comparison.
 
-## Run locally
+## Run locally with the installed Anaconda Python
+
+Use the same Python executable that owns the installed Parquet dependencies:
+
+```bat
+C:\Users\biswa\anaconda3\python.exe
+```
+
+When PyArrow is missing or has a Windows DLL problem, install the dependencies through Conda rather than mixing unrelated Python installations:
+
+```bat
+C:\Users\biswa\anaconda3\Scripts\conda.exe install -n base -c conda-forge pyarrow pandas numpy scipy matplotlib -y
+```
+
+Verify the exact interpreter and PyArrow import:
+
+```bat
+C:\Users\biswa\anaconda3\python.exe -c "import sys, pyarrow; print(sys.executable); print(pyarrow.__version__)"
+```
+
+Then run:
 
 ```bat
 cd /d C:\Users\biswa\Documents\GitHub\NASADIYA-LIGHTCONE
-python scripts\build_desi_publication_figures.py ^
+C:\Users\biswa\anaconda3\python.exe scripts\build_desi_publication_figures.py ^
   --input data\research\desi_dr1_lss_research_bundle.parquet ^
   --full-cloud-manifest data\processed\desi-dr1\full-cloud\full-cloud.json ^
   --output-dir figures\publication_evidence ^
@@ -38,6 +58,12 @@ python scripts\build_desi_publication_figures.py ^
   --poster-budget 125000 ^
   --dpi 300
 ```
+
+## Run in Google Colab
+
+Open `notebooks/DESI_DR1_Publication_Evidence_Colab.ipynb` directly in Google Colab. It is a real notebook, not a Windows command. It installs dependencies in Colab, accepts the Parquet file from Google Drive or direct upload, runs the figure suite, displays the outputs, and downloads a ZIP archive.
+
+## Outputs
 
 The run writes both PNG and vector PDF figures, `representation_fidelity_metrics.csv`, `tracer_fraction_residuals.csv`, and `evidence_manifest.json`.
 
