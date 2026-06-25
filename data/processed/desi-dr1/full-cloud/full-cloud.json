@@ -1,0 +1,45 @@
+{
+  "format": "nasadiya-gpu-cloud/v1",
+  "dataset_id": "desi-dr1-lss-full-observed-cloud",
+  "record_count": 6093818,
+  "rejected_rows": 0,
+  "binary": {
+    "path": "desi-dr1-full-cloud.f32",
+    "encoding": "little-endian-float32-interleaved",
+    "fields": [
+      "x_mpc",
+      "y_mpc",
+      "z_mpc",
+      "redshift",
+      "tracer_code"
+    ],
+    "stride_floats": 5,
+    "stride_bytes": 20,
+    "byte_length": 121876360,
+    "sha256": "9841f8a3b5576f0e111e0773702f9ab9b218201d2295200f364977d43acac795"
+  },
+  "tracer_codes": {
+    "UNKNOWN": 0,
+    "BGS": 1,
+    "LRG": 2,
+    "ELG": 3,
+    "QSO": 4
+  },
+  "tracer_counts": {
+    "BGS": 300017,
+    "ELG": 2432027,
+    "LRG": 2138604,
+    "QSO": 1223170
+  },
+  "source": {
+    "input_file": "desi_dr1_lss_research_bundle.parquet",
+    "survey": "DESI DR1 LSS",
+    "release": "DESI DR1",
+    "measurement_kind": "spectroscopic"
+  },
+  "rendering_scope": {
+    "point_inspection_available": false,
+    "tile_store_required_for_row_inspection": true,
+    "note": "Full GPU cloud contains real observed rows for rendering only; it is not a completeness-corrected density field or a clustering-ready catalogue."
+  }
+}
