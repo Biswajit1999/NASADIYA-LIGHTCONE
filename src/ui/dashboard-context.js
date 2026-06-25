@@ -15,8 +15,18 @@ function contextRows() {
   return [...document.querySelectorAll('.what-you-see .explanation-row')];
 }
 
+function ensureCoordinateNote() {
+  const card = document.querySelector('.spatial-card');
+  if (!card || document.querySelector('#spatial-coordinate-note')) return;
+  const note = document.createElement('p');
+  note.id = 'spatial-coordinate-note';
+  note.textContent = 'Axes are display coordinates derived from source RA/Dec and comoving distance.';
+  card.append(note);
+}
+
 LightconeInterface.prototype.setLayerControls = function dashboardSetLayerControls(meta, state, layer) {
   originalSetLayerControls.call(this, meta, state, layer);
+  ensureCoordinateNote();
   const [, localAnchor, footprint] = contextRows();
   const comparison = layer?.id === 'all-live' || Boolean(meta?.composite);
   if (localAnchor) localAnchor.hidden = !comparison;
@@ -41,6 +51,4 @@ LightconeInterface.prototype.updateTelemetry = function dashboardUpdateTelemetry
     : `${formatNumber(this.currentMeta?.object_count || displayed)} source rows`;
   const origin = document.querySelector('#spatial-origin');
   if (origin) origin.textContent = 'Observer-centred Cartesian';
-  const coordinateNote = document.querySelector('#spatial-coordinate-note');
-  if (coordinateNote) coordinateNote.textContent = 'Axes are display coordinates derived from source RA/Dec and comoving distance.';
 };
