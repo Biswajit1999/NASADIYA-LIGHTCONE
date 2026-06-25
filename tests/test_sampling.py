@@ -23,10 +23,7 @@ def catalogue() -> pd.DataFrame:
 
 def test_stable_object_hash_matches_tile_store_contract() -> None:
     identifier = "desi-dr1-lss:123456"
-    expected = int.from_bytes(
-        hashlib.blake2b(identifier.encode("utf-8"), digest_size=8).digest(),
-        "big",
-    )
+    expected = int.from_bytes(hashlib.blake2b(identifier.encode("utf-8"), digest_size=8).digest(), "big")
     assert int(sampling.stable_object_hash(identifier)) == expected
 
 
@@ -47,6 +44,22 @@ def test_lowest_hash_matches_full_sort_reference() -> None:
     assert selected["object_id"].tolist() == expected
 
 
+def test_gpu_golden_ratio_values_match_float32_render_contract() -> None:
+    values = sampling.gpu_golden_ratio_values(5)
+    expected = np.asarray([0.0, 0.618033988749895, 0.23606797749979, 0.854101966249685, 0.47213595499958], dtype=np.float32)
+    np.testing.assert_allclose(values, expected)
+
+
+def test_gpu_selection_is_index_order_dependent_and_reproducible() -> None:
+    frame = catalogue()
+    first = sampling.select_gpu_golden_ratio_index(frame, 8)
+    second = sampling.select_gpu_golden_ratio_index(frame, 8)
+    assert first["object_id"].tolist() == second["object_id"].tolist()
+    assert len(first) >= 1
+    shuffled = sampling.select_gpu_golden_ratio_index(frame.sample(frac=1.0, random_state=19).reset_index(drop=True), 8)
+    assert first["object_id"].tolist() != shuffled["object_id"].tolist()
+
+
 def test_seeded_random_is_reproducible() -> None:
     frame = catalogue()
     first = sampling.select_seeded_random(frame, 7, seed=42)
@@ -62,11 +75,7 @@ def test_largest_remainder_preserves_total_and_proportions() -> None:
 
 
 def test_stratified_lowest_hash_respects_tracer_budget() -> None:
-    selected = sampling.select_stratified_lowest_hash(
-        catalogue(),
-        10,
-        group_columns=("tracer",),
-    )
+    selected = sampling.select_stratified_lowest_hash(catalogue(), 10, group_columns=("tracer",))
     assert len(selected) == 10
     assert selected["tracer"].value_counts().to_dict() == {"BGS": 6, "LRG": 3, "QSO": 1}
 

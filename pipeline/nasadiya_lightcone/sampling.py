@@ -22,6 +22,7 @@ import pandas as pd
 
 HASH_ALGORITHM = "blake2b-64"
 HASH_DIGEST_SIZE = 8
+GPU_GOLDEN_RATIO = 0.618033988749895
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,6 @@ class SamplingMetadata:
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-ready record suitable for a manifest."""
-
         return {
             "strategy": self.strategy,
             "parent_rows": self.parent_rows,
@@ -75,31 +75,17 @@ def _require_object_ids(frame: pd.DataFrame, object_id_column: str) -> pd.Series
 
 def stable_object_hash(value: object) -> np.uint64:
     """Return the tile-store-compatible deterministic 64-bit BLAKE2b hash."""
-
-    digest = hashlib.blake2b(
-        str(value).encode("utf-8"),
-        digest_size=HASH_DIGEST_SIZE,
-    ).digest()
+    digest = hashlib.blake2b(str(value).encode("utf-8"), digest_size=HASH_DIGEST_SIZE).digest()
     return np.uint64(int.from_bytes(digest, "big"))
 
 
 def stable_object_hashes(values: Iterable[object]) -> np.ndarray:
     """Return deterministic BLAKE2b-64 hashes for an iterable of object IDs."""
-
-    return np.fromiter(
-        (stable_object_hash(value) for value in values),
-        dtype=np.uint64,
-    )
+    return np.fromiter((stable_object_hash(value) for value in values), dtype=np.uint64)
 
 
 def _lowest_hash_positions(hashes: np.ndarray, object_ids: pd.Series, n_rows: int) -> np.ndarray:
-    """Return exact lowest-hash positions without sorting every object ID.
-
-    ``argpartition`` identifies the threshold in linear time. Object-ID sorting is
-    used only if a theoretical 64-bit hash tie occurs at the retained boundary.
-    This keeps the selection practical for multi-million-row parent catalogues.
-    """
-
+    """Return exact lowest-hash positions without sorting every object ID."""
     if n_rows == len(hashes):
         return np.arange(len(hashes), dtype=np.int64)
     candidate = np.argpartition(hashes, n_rows - 1)[:n_rows]
@@ -109,9 +95,7 @@ def _lowest_hash_positions(hashes: np.ndarray, object_ids: pd.Series, n_rows: in
     boundary = np.flatnonzero(hashes == cutoff)
     if remaining:
         boundary_ids = object_ids.iloc[boundary].astype(str)
-        chosen_boundary = boundary[
-            np.argsort(boundary_ids.to_numpy(dtype=str), kind="mergesort")[:remaining]
-        ]
+        chosen_boundary = boundary[np.argsort(boundary_ids.to_numpy(dtype=str), kind="mergesort")[:remaining]]
         selected = np.concatenate([strict, chosen_boundary])
     else:
         selected = strict
@@ -124,21 +108,45 @@ def select_lowest_hash(
     *,
     object_id_column: str = "object_id",
 ) -> pd.DataFrame:
-    """Select real rows using the lowest stable object-ID hashes.
-
-    The returned frame is ordered by object ID so equivalent parent catalogues
-    yield stable table ordering independent of input or chunk order.
-    """
-
+    """Select real rows using the lowest stable object-ID hashes."""
     _require_valid_budget(frame, n_rows)
     object_ids = _require_object_ids(frame, object_id_column)
     if n_rows == len(frame):
         return frame.sort_values(object_id_column, kind="mergesort").reset_index(drop=True)
-
     hashes = stable_object_hashes(object_ids)
     positions = _lowest_hash_positions(hashes, object_ids, n_rows)
     selected = frame.iloc[positions].copy()
     return selected.sort_values(object_id_column, kind="mergesort").reset_index(drop=True)
+
+
+def gpu_golden_ratio_values(record_count: int) -> np.ndarray:
+    """Return the Float32 sequence used by the full-WebGL cloud ``aSample`` field.
+
+    The browser computes ``(index * 0.618033988749895) % 1`` into a JavaScript
+    ``Float32Array`` and the shader renders a point where ``aSample <= budget/N``.
+    This helper intentionally reproduces that rendering policy for evidence tests.
+    It is an index-order policy, not an object-ID-stable catalogue sampling method.
+    """
+    if record_count < 1:
+        raise ValueError("record_count must be positive.")
+    indices = np.arange(record_count, dtype=np.float64)
+    return np.remainder(indices * GPU_GOLDEN_RATIO, 1.0).astype(np.float32)
+
+
+def select_gpu_golden_ratio_index(frame: pd.DataFrame, n_rows: int) -> pd.DataFrame:
+    """Reproduce the active full-cloud GPU display subset.
+
+    The parent row order must match the order used by ``scripts/full_gpu.py``.
+    The resulting count may differ by a few records from ``n_rows`` because the
+    shader applies a floating threshold rather than selecting an exact rank.
+    """
+    _require_valid_budget(frame, n_rows)
+    if n_rows == len(frame):
+        return frame.copy().reset_index(drop=True)
+    samples = gpu_golden_ratio_values(len(frame))
+    threshold = np.float32(n_rows / len(frame))
+    selected = frame.loc[samples <= threshold].copy()
+    return selected.reset_index(drop=True)
 
 
 def select_seeded_random(
@@ -149,7 +157,6 @@ def select_seeded_random(
     object_id_column: str = "object_id",
 ) -> pd.DataFrame:
     """Select a reproducible pseudo-random baseline without replacement."""
-
     _require_valid_budget(frame, n_rows)
     _require_object_ids(frame, object_id_column)
     generator = np.random.default_rng(seed)
@@ -160,7 +167,6 @@ def select_seeded_random(
 
 def largest_remainder_quotas(counts: pd.Series, n_rows: int) -> pd.Series:
     """Allocate a point budget proportionally with deterministic tie-breaking."""
-
     if counts.empty:
         raise ValueError("Cannot allocate quotas for zero strata.")
     if (counts <= 0).any():
@@ -168,15 +174,11 @@ def largest_remainder_quotas(counts: pd.Series, n_rows: int) -> pd.Series:
     total = int(counts.sum())
     if n_rows < 1 or n_rows > total:
         raise ValueError("n_rows must lie between one and the total stratum count.")
-
     expected = counts.astype(float) * (float(n_rows) / total)
     quotas = np.floor(expected).astype(int)
     remaining = int(n_rows - quotas.sum())
     if remaining:
-        ranking = sorted(
-            counts.index,
-            key=lambda key: (-(expected.loc[key] - quotas.loc[key]), str(key)),
-        )
+        ranking = sorted(counts.index, key=lambda key: (-(expected.loc[key] - quotas.loc[key]), str(key)))
         for key in ranking[:remaining]:
             quotas.loc[key] += 1
     return quotas.astype(int)
@@ -196,7 +198,6 @@ def select_stratified_lowest_hash(
     ``("tracer", "sky_cell", "redshift_bin")`` after those labels have been
     constructed from the observed parent catalogue.
     """
-
     _require_valid_budget(frame, n_rows)
     _require_object_ids(frame, object_id_column)
     columns = tuple(group_columns)
@@ -207,16 +208,13 @@ def select_stratified_lowest_hash(
         raise ValueError(f"Missing group column(s): {', '.join(missing)}.")
     if frame.loc[:, list(columns)].isna().any(axis=None):
         raise ValueError("Stratified selection requires explicit non-null stratum labels.")
-
     grouped = frame.groupby(list(columns), sort=False, observed=True, dropna=False)
     quotas = largest_remainder_quotas(grouped.size(), n_rows)
     selected_groups: list[pd.DataFrame] = []
     for label, group in grouped:
         quota = int(quotas.loc[label])
         if quota:
-            selected_groups.append(
-                select_lowest_hash(group, quota, object_id_column=object_id_column)
-            )
+            selected_groups.append(select_lowest_hash(group, quota, object_id_column=object_id_column))
     selected = pd.concat(selected_groups, ignore_index=True)
     return selected.sort_values(object_id_column, kind="mergesort").reset_index(drop=True)
 
@@ -231,7 +229,6 @@ def sampling_metadata(
     random_seed: int | None = None,
 ) -> SamplingMetadata:
     """Build manifest metadata after validating parent-row lineage."""
-
     _require_object_ids(frame, object_id_column)
     selected_ids = _require_object_ids(selected, object_id_column)
     parent_ids = set(frame[object_id_column].astype(str))
