@@ -14,6 +14,7 @@ import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
 import { TileStreamer } from './core/tile-streamer.js';
 import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase3';
 import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase3';
+import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
 
 const state = {
   layerId: 'desi-dr1',
@@ -38,6 +39,7 @@ const ui = new LightconeInterface();
 const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
 const observatory = new ObservatoryConsole({ scene, canvas, getState: () => state });
+const surveyReadiness = new SurveyReadinessPanel();
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();

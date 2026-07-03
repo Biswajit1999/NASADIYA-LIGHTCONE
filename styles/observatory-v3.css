@@ -67,6 +67,24 @@
 .command-results button:hover, .command-results button.is-selected { color: var(--ink); background: var(--cyan-soft); transform: translateX(2px); }
 .command-palette-card footer { display: flex; gap: 18px; padding: 11px 20px; border-top: 1px solid var(--line); background: rgba(0,0,0,.10); }
 .mode-switch--quality { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 9px; }
+.mission-queue-section { padding-top: 9px; padding-bottom: 9px; }
+.mission-queue-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; color: var(--soft); background: transparent; cursor: pointer; text-align: left; }
+.mission-queue-toggle span { display: grid; gap: 4px; }
+.mission-queue-toggle small { color: var(--cyan); font: 800 6.5px/1 var(--mono); letter-spacing: .13em; }
+.mission-queue-toggle b { font-size: 10px; }
+.mission-queue-toggle em { color: var(--dim); font: 700 7px/1 var(--mono); font-style: normal; }
+.mission-queue-toggle::after { color: var(--cyan); content: '+'; font: 500 16px/1 var(--mono); transition: transform .18s ease; }
+.mission-queue-toggle[aria-expanded="true"]::after { transform: rotate(45deg); }
+.mission-queue-list { display: grid; gap: 1px; margin-top: 10px; border-top: 1px solid var(--line); }
+.mission-queue-row { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; padding: 9px 2px; border-bottom: 1px solid rgba(115,190,226,.10); }
+.mission-queue-row > span { color: var(--dim); font: 800 6px/1 var(--mono); letter-spacing: .08em; }
+.mission-queue-row.is-blocked > span { color: var(--amber); }
+.mission-queue-row b { display: block; color: var(--soft); font-size: 8.5px; }
+.mission-queue-row small { display: block; margin-top: 3px; color: var(--dim); font-size: 7px; text-transform: capitalize; }
+.mission-queue-note, .mission-queue-state { margin: 10px 2px 2px !important; color: var(--dim); font-size: 8px !important; line-height: 1.45; }
+.mission-queue-state.is-error { color: var(--red); }
+.mission-queue-skeleton { height: 39px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, transparent, var(--cyan-soft), transparent); background-size: 220% 100%; animation: mission-loading 1.4s linear infinite; }
+@keyframes mission-loading { to { background-position: -220% 0; } }
 
 body.presentation-mode .left-rail,
 body.presentation-mode .control-drawer,

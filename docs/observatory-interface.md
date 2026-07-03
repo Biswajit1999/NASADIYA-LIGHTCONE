@@ -17,6 +17,18 @@ The viewport instrument strip reports measured browser state: rendered frame rat
 
 Screenshot capture exports the current WebGL viewport. Camera bookmarks store only camera position, orbit target and view mode. Keyboard shortcuts are `T` for theme, `P` for presentation focus, `B` to save, `1` to restore and `S` to capture.
 
+The `Ctrl/Cmd + K` command palette exposes named camera destinations, installed survey layers, the provenance-preserving comparison stack, redshift playback and shareable view URLs. A shared URL contains display state and camera coordinates only; it does not alter or export catalogue rows.
+
+## Perceptual rendering
+
+Point shaders use tracer-aware point scale, camera-distance scaling, a compact core and halo, and optional luminosity shimmer. The shimmer changes apparent intensity only. It never changes a catalogue position. Density transitions interpolate the deterministic display threshold to avoid abrupt popping.
+
+Adaptive quality uses measured frame timing to adjust renderer pixel ratio. Performance and quality modes provide explicit overrides. Reduced-motion disables shimmer, and reduced-transparency replaces blurred surfaces with solid fills.
+
+## Mission queue
+
+The Data Lens reads the future-survey registry and labels adapters as deployed, source-gated or planned. Planned missions never create placeholder points and do not enter survey counts.
+
 ## Performance boundary
 
 Instrumentation updates twice per second and reuses renderer counters already maintained by Three.js. It introduces no extra draw calls, catalogue buffers or particle motion. The underlying adaptive loading, deterministic display sampling and GPU-resident full-cloud modes remain unchanged.
