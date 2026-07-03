@@ -35,11 +35,13 @@ The workflow therefore does **not** calculate an observed number density per com
 
 ## Run the analysis
 
-```bat
-cd /d C:\Users\biswa\Documents\GitHub\NASADIYA-LIGHTCONE
-C:\Users\biswa\anaconda3\Scripts\conda.exe run -n nasadiya-evidence python scripts\analyze_desi_dr1_science.py ^
-  --input data\research\desi_dr1_lss_research_bundle.parquet ^
-  --output-dir figures\desi_dr1_science ^
+```shell
+git clone https://github.com/Biswajit1999/NASADIYA-LIGHTCONE.git
+cd NASADIYA-LIGHTCONE
+python -m pip install -r requirements.txt
+python scripts/analyze_desi_dr1_science.py \
+  --input data/research/desi_dr1_lss_research_bundle.parquet \
+  --output-dir figures/desi_dr1_science \
   --dpi 300
 ```
 

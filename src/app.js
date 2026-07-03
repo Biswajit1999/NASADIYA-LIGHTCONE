@@ -13,6 +13,7 @@ import { SurveyReferenceFrame } from './core/reference-frame.js';
 import { SurveyPoints } from './core/survey-points.js';
 import { TileStreamer } from './core/tile-streamer.js';
 import { LightconeInterface } from './ui/lightcone-interface.js';
+import { ObservatoryConsole } from './ui/observatory-console.js';
 
 const state = {
   layerId: 'desi-dr1',
@@ -35,6 +36,7 @@ const scene = new LightconeScene(canvas);
 const ui = new LightconeInterface();
 const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
+const observatory = new ObservatoryConsole({ scene, canvas });
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -417,6 +419,7 @@ function initialise() {
     flyby.tick(now);
     points?.updateTime(now * 0.001);
     scene.tick(now);
+    observatory.tick(now);
     requestAnimationFrame(animate);
   };
   requestAnimationFrame(animate);

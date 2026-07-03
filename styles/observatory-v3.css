@@ -1,0 +1,136 @@
+/* Observatory V3 adds instrumentation and operating modes without changing data rendering. */
+.command-utility {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--soft);
+  background: rgba(8, 26, 41, .82);
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease;
+}
+.command-utility span { color: var(--cyan); font: 700 14px/1 var(--mono); }
+.command-utility b { font: 800 7px/1 var(--mono); letter-spacing: .05em; }
+.command-utility:hover, .command-utility[aria-pressed="true"] { color: var(--ink); border-color: var(--line-bright); background: rgba(13, 53, 76, .94); transform: translateY(-1px); }
+.command-utility.has-bookmark span { color: var(--amber); text-shadow: 0 0 12px rgba(242,170,70,.65); }
+
+.observatory-hud {
+  position: absolute;
+  z-index: 11;
+  top: 15px;
+  left: 50%;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  min-width: 440px;
+  border: 1px solid rgba(98,222,247,.22);
+  border-radius: 7px;
+  background: linear-gradient(90deg, rgba(3,17,29,.86), rgba(7,28,45,.70));
+  box-shadow: 0 9px 30px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.03);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+.mission-pulse { display: grid; grid-template-columns: 8px 1fr; align-content: center; column-gap: 7px; min-width: 185px; padding: 8px 12px; border-right: 1px solid var(--line); }
+.mission-pulse i { grid-row: 1 / 3; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 11px rgba(125,237,173,.8); animation: mission-pulse 2.2s ease-in-out infinite; }
+.mission-pulse span { color: var(--ink); font: 800 7.5px/1 var(--mono); letter-spacing: .11em; }
+.mission-pulse small { margin-top: 3px; color: var(--dim); font: 700 6.5px/1 var(--mono); letter-spacing: .08em; }
+.observatory-hud dl { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); margin: 0; }
+.observatory-hud dl div { min-width: 80px; padding: 7px 10px; border-right: 1px solid rgba(115,190,226,.11); }
+.observatory-hud dl div:last-child { border-right: 0; }
+.observatory-hud dt { color: var(--dim); font: 700 6px/1 var(--mono); letter-spacing: .1em; }
+.observatory-hud dd { margin: 4px 0 0; color: var(--cyan); font: 800 7.5px/1 var(--mono); white-space: nowrap; }
+@keyframes mission-pulse { 50% { opacity: .45; transform: scale(.8); } }
+
+.observatory-toast { position: fixed; z-index: 120; left: 50%; bottom: 132px; padding: 10px 14px; border: 1px solid var(--line-bright); border-radius: 7px; color: var(--ink); background: rgba(4,20,33,.96); box-shadow: var(--shadow); opacity: 0; transform: translate(-50%, 10px); pointer-events: none; font: 750 8px/1 var(--mono); transition: opacity .18s ease, transform .18s ease; }
+.observatory-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+body.presentation-mode .left-rail,
+body.presentation-mode .control-drawer,
+body.presentation-mode .telemetry-deck,
+body.presentation-mode .status-strip { opacity: 0; visibility: hidden; pointer-events: none; }
+body.presentation-mode .viewport-shell { inset: 64px 0 0; transition: inset .25s ease; }
+body.presentation-mode .viewport-toolbar { right: 18px; }
+body.presentation-mode .observatory-toast { bottom: 28px; }
+body.presentation-mode .command-context,
+body.presentation-mode .command-nav { display: none; }
+body.presentation-mode .command-actions { margin-left: auto; }
+
+body[data-theme="day"] {
+  --night: #edf4f7;
+  --surface: #f8fbfc;
+  --surface-2: #e8f1f5;
+  --surface-3: #dceaf0;
+  --ink: #102a3b;
+  --soft: #36566a;
+  --dim: #617e8f;
+  --muted: #8199a7;
+  --line: rgba(26, 91, 121, .18);
+  --line-bright: rgba(0, 126, 166, .48);
+  --cyan: #007fa3;
+  --cyan-soft: rgba(0, 127, 163, .11);
+  --amber: #b66509;
+  --green: #198657;
+  --violet: #6545a4;
+  --shadow: 0 18px 50px rgba(35, 65, 82, .20);
+}
+body[data-theme="day"] .command-bar { background: linear-gradient(180deg, rgba(251,253,254,.98), rgba(239,246,249,.95)); box-shadow: 0 8px 22px rgba(42,76,95,.12); }
+body[data-theme="day"] .left-rail { background: linear-gradient(90deg, rgba(249,252,253,.98), rgba(237,245,248,.94)); }
+body[data-theme="day"] .control-drawer { background: linear-gradient(180deg, rgba(249,252,253,.99), rgba(232,242,247,.98)); box-shadow: -16px 0 38px rgba(41,73,90,.12); }
+body[data-theme="day"] .telemetry-deck { background: linear-gradient(90deg, rgba(248,252,253,.97), rgba(231,242,247,.93)); box-shadow: 0 12px 32px rgba(35,65,82,.15); }
+body[data-theme="day"] .status-strip { background: #e5eff3; }
+body[data-theme="day"] .command-nav,
+body[data-theme="day"] .command-utility,
+body[data-theme="day"] .command-button,
+body[data-theme="day"] .icon-button,
+body[data-theme="day"] .legend-card,
+body[data-theme="day"] .spatial-card,
+body[data-theme="day"] .what-you-see,
+body[data-theme="day"] .quick-facts,
+body[data-theme="day"] .observatory-hud { background: rgba(247,251,253,.91); }
+body[data-theme="day"] .overview-panel h1,
+body[data-theme="day"] .drawer-section label,
+body[data-theme="day"] .drawer-label,
+body[data-theme="day"] .drawer-label-row,
+body[data-theme="day"] .legend-card > span,
+body[data-theme="day"] .card-title,
+body[data-theme="day"] .explanation-row b { color: #102a3b; }
+body[data-theme="day"] .quick-facts dd,
+body[data-theme="day"] .legend-card li,
+body[data-theme="day"] .spatial-card dd,
+body[data-theme="day"] .telemetry-cell:nth-child(2) b { color: #17394b; }
+body[data-theme="day"] .telemetry-cell small,
+body[data-theme="day"] .telemetry-cell em,
+body[data-theme="day"] .explanation-row span,
+body[data-theme="day"] .drawer-section p { color: #617e8f; }
+body[data-theme="day"] .survey-layer-section select { color: #17394b; background: #f7fbfc; }
+body[data-theme="day"] .mode-switch,
+body[data-theme="day"] .density-profiles button,
+body[data-theme="day"] .tracer-control,
+body[data-theme="day"] .quiet-button { background: rgba(226,239,245,.72); }
+body[data-theme="day"] .viewport-atmosphere { background: linear-gradient(90deg, rgba(224,239,245,.22), transparent 24%, transparent 76%, rgba(224,239,245,.18)); }
+body[data-theme="day"] .observatory-toast { color: #102a3b; background: rgba(248,252,253,.97); }
+
+@media (max-width: 1550px) {
+  .command-utility b { display: none; }
+  .command-utility { width: 34px; justify-content: center; padding: 0; }
+  .observatory-hud { min-width: 380px; }
+  .mission-pulse { min-width: 155px; }
+}
+@media (max-width: 1400px) {
+  .observatory-hud { display: none; }
+  .telemetry-deck { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .telemetry-cell:nth-child(4), .telemetry-cell:nth-child(6) { display: none; }
+  .telemetry-cell b { font-size: 12px; }
+}
+@media (max-width: 1060px) {
+  .command-utility:nth-of-type(2), .command-utility:nth-of-type(3) { display: none; }
+}
+@media (max-width: 760px) {
+  .command-utility { display: none; }
+  #presentation-toggle { display: inline-flex; }
+  .observatory-toast { bottom: 126px; max-width: calc(100vw - 32px); text-align: center; }
+}
