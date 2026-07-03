@@ -1,18 +1,20 @@
 import * as THREE from 'three';
 
-import { DESI_TRACERS, SURVEY_LAYERS, TILE_STREAMING } from './config.js';
+import { DESI_TRACERS, LIGHTCONE_CONFIG, SURVEY_LAYERS, TILE_STREAMING } from './config.js';
 import { FULL_DESI_GPU_CLOUD } from './full-cloud-config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { probeGpuCloud } from './core/gpu-cloud-loader.js';
 import { fetchGpuCloud } from './core/gpu-cloud-binary.js';
-import { CompositeFullCloud } from './core/composite-full-cloud.js';
-import { GpuSurveyCloud } from './core/gpu-survey-cloud.js';
+import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260703-phase3';
+import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260703-phase3';
 import { GuidedFlyby } from './core/guided-flyby.js';
-import { LightconeScene } from './core/lightcone-scene.js';
+import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
-import { SurveyPoints } from './core/survey-points.js';
+import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
 import { TileStreamer } from './core/tile-streamer.js';
-import { LightconeInterface } from './ui/lightcone-interface.js';
+import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase5';
+import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase5';
+import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
 
 const state = {
   layerId: 'desi-dr1',
@@ -27,6 +29,7 @@ const state = {
   viewMode: 'tracer',
   tileStreaming: false,
   fullCatalogue: false,
+  renderQuality: 'auto',
   tracerFilters: Object.fromEntries(DESI_TRACERS.map((tracer) => [tracer, true])),
 };
 
@@ -35,6 +38,8 @@ const scene = new LightconeScene(canvas);
 const ui = new LightconeInterface();
 const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
+const observatory = new ObservatoryConsole({ scene, canvas, getState: () => state });
+const surveyReadiness = new SurveyReadinessPanel();
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -48,7 +53,9 @@ let tileRefreshBusy = false;
 let fullCloudProbe = null;
 let fullCloudLoading = false;
 let pointerStart = null;
+let hoverTimer = null;
 let loadSequence = 0;
+let redshiftPlayback = null;
 
 function maxField(objects, field) {
   return objects.reduce((maximum, object) => Math.max(maximum, Number(object[field]) || 0), 0);
@@ -102,6 +109,7 @@ function applyState({ scheduleTiles = true } = {}) {
   ui.updateTelemetry(metrics, state);
   scene.renderer.toneMappingExposure = metrics.fullCatalogue ? 0.94 : 1.08;
   scene.scene.fog.density = metrics.fullCatalogue ? 0.00023 : 0.00030;
+  scene.setRenderQuality(state.renderQuality);
   updateSpatialAids();
   if (scheduleTiles && !state.fullCatalogue) scheduleAdaptiveTileRefresh();
 }
@@ -209,13 +217,17 @@ async function returnToAdaptiveCloud() {
   applyState({ scheduleTiles: false });
 }
 
-function selectAtPointer(event) {
+function matchAtPointer(event) {
   if (!points || state.fullCatalogue) return;
   const bounds = canvas.getBoundingClientRect();
   pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
   pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
   raycaster.setFromCamera(pointer, scene.camera);
-  const match = points.selectFromRaycaster(raycaster);
+  return points.selectFromRaycaster(raycaster);
+}
+
+function selectAtPointer(event) {
+  const match = matchAtPointer(event);
   if (match) {
     scene.setSelection(points.getDisplayPosition(match.index));
     ui.inspect(match.object);
@@ -367,6 +379,82 @@ function toggleFullscreen() {
   else document.exitFullscreen?.();
 }
 
+function searchObservedObject(query) {
+  const value = String(query || '').trim().toLowerCase();
+  if (value.length < 3) return;
+  const inspectable = points?.objects?.length ? points.objects : overviewObjects;
+  const identifier = (object) => String(object.object_id || object.name || '').toLowerCase();
+  let index = inspectable.findIndex((object) => identifier(object) === value);
+  if (index < 0) index = inspectable.findIndex((object) => identifier(object).includes(value));
+  if (index < 0) {
+    observatory.notify('No matching object in the currently loaded inspectable rows');
+    return;
+  }
+  const object = inspectable[index];
+  const usesRenderableObjects = inspectable === points?.objects;
+  const position = usesRenderableObjects
+    ? points.getDisplayPosition(index)
+    : new THREE.Vector3(Number(object.x_mpc), Number(object.y_mpc), Number(object.z_mpc)).multiplyScalar(LIGHTCONE_CONFIG.displayScale);
+  scene.setSelection(position);
+  scene.focusOn(position, 70);
+  ui.inspect(object);
+  observatory.notify(`Focused observed source ${object.object_id || object.name || ''}`.trim());
+}
+
+function applySharedView(shared) {
+  if (!shared) return;
+  const observedCeiling = Math.max(0.003, maxField(overviewObjects, 'redshift'));
+  if (Number.isFinite(Number(shared.maxRedshift))) state.maxRedshift = Math.min(Number(shared.maxRedshift), observedCeiling);
+  if (Number.isFinite(Number(shared.pointBudget))) state.pointBudget = Number(shared.pointBudget);
+  if (typeof shared.viewMode === 'string') state.viewMode = shared.viewMode;
+  if (['auto', 'performance', 'quality'].includes(shared.renderQuality)) state.renderQuality = shared.renderQuality;
+  if (shared.tracerFilters && typeof shared.tracerFilters === 'object') state.tracerFilters = { ...state.tracerFilters, ...shared.tracerFilters };
+  ui.syncControlsFromState(state);
+  applyState({ scheduleTiles: false });
+  if (Array.isArray(shared.camera) && Array.isArray(shared.target)) {
+    const position = scene.camera.position.clone().fromArray(shared.camera);
+    const target = scene.controls.target.clone().fromArray(shared.target);
+    scene.animateCamera(position, target, 900);
+  }
+  if (shared.theme) observatory.applyTheme(shared.theme);
+}
+
+function toggleRedshiftPlayback() {
+  if (redshiftPlayback) {
+    redshiftPlayback = null;
+    observatory.notify('Redshift scan paused');
+    return;
+  }
+  const ceiling = Math.max(0.05, maxField(overviewObjects, 'redshift'));
+  redshiftPlayback = { startedAt: performance.now(), start: 0.03, ceiling, duration: 12_000, lastUpdate: 0 };
+  state.maxRedshift = redshiftPlayback.start;
+  observatory.notify('Redshift scan active · visibility changes, catalogue positions remain fixed');
+}
+
+function updateRedshiftPlayback(now) {
+  if (!redshiftPlayback || now - redshiftPlayback.lastUpdate < 90) return;
+  redshiftPlayback.lastUpdate = now;
+  const progress = Math.min(1, (now - redshiftPlayback.startedAt) / redshiftPlayback.duration);
+  state.maxRedshift = redshiftPlayback.start + (redshiftPlayback.ceiling - redshiftPlayback.start) * progress;
+  ui.syncControlsFromState(state);
+  applyState({ scheduleTiles: false });
+  if (progress >= 1) {
+    redshiftPlayback = null;
+    observatory.notify('Redshift scan complete');
+  }
+}
+
+async function handleObservatoryCommand(command) {
+  if (command.startsWith('destination-')) {
+    flyby.stop('preset');
+    scene.focusDestination(command.replace('destination-', ''));
+    return;
+  }
+  if (command === 'redshift-play') return toggleRedshiftPlayback();
+  const layers = { 'layer-local': '2mrs', 'layer-desi': 'desi-dr1', 'layer-comparison': 'all-live' };
+  if (layers[command]) await activateLayer(layers[command]);
+}
+
 function initialise() {
   flyby.onChange((status) => ui.setTourStatus(status));
   ui.bind({
@@ -402,21 +490,38 @@ function initialise() {
   });
   window.addEventListener('nasadiya:full-catalogue-request', () => activateFullCloud());
   window.addEventListener('nasadiya:adaptive-catalogue-request', () => returnToAdaptiveCloud());
+  window.addEventListener('nasadiya:observatory-command', (event) => event.detail?.command === 'object-search' ? searchObservedObject(event.detail?.query) : handleObservatoryCommand(event.detail?.command));
+  window.addEventListener('nasadiya:performance-sample', (event) => scene.samplePerformance(Number(event.detail?.fps)));
   scene.onCameraChange(() => scheduleAdaptiveTileRefresh());
-  activateLayer('desi-dr1', { initial: true });
+  const sharedView = observatory.sharedViewFromLocation();
+  const sharedLayer = SURVEY_LAYERS[sharedView?.layerId];
+  const initialLayer = sharedLayer?.installed !== false && sharedLayer ? sharedView.layerId : 'desi-dr1';
+  activateLayer(initialLayer, { initial: true }).then(() => applySharedView(sharedView));
   canvas.addEventListener('pointerdown', (event) => {
     flyby.stop('manual');
+    ui.preview(null);
     pointerStart = { x: event.clientX, y: event.clientY };
   });
+  canvas.addEventListener('pointermove', (event) => {
+    window.clearTimeout(hoverTimer);
+    const position = { clientX: event.clientX, clientY: event.clientY };
+    hoverTimer = window.setTimeout(() => {
+      const match = matchAtPointer(position);
+      ui.preview(match?.object || null, position.clientX, position.clientY);
+    }, 120);
+  });
+  canvas.addEventListener('pointerleave', () => { window.clearTimeout(hoverTimer); ui.preview(null); });
   canvas.addEventListener('pointerup', (event) => {
     if (!pointerStart) return;
     if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 5) selectAtPointer(event);
     pointerStart = null;
   });
   const animate = (now) => {
+    updateRedshiftPlayback(now);
     flyby.tick(now);
     points?.updateTime(now * 0.001);
     scene.tick(now);
+    observatory.tick(now);
     requestAnimationFrame(animate);
   };
   requestAnimationFrame(animate);

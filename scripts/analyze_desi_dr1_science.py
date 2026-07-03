@@ -76,11 +76,13 @@ def load_catalogue(path: Path) -> pd.DataFrame:
     frame = pd.read_parquet(path, columns=required).copy()
     for column in ("ra_deg", "dec_deg", "redshift", "x_mpc", "y_mpc", "z_mpc"):
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
-    frame["object_id"] = frame["object_id"].astype("string")
-    frame["tracer"] = frame["tracer"].fillna("UNKNOWN").astype(str).str.upper()
+    frame["object_id"] = frame["object_id"].astype("string").str.strip()
+    frame["tracer"] = frame["tracer"].fillna("UNKNOWN").astype(str).str.strip().str.upper()
+    frame.loc[frame["tracer"].eq(""), "tracer"] = "UNKNOWN"
     valid = frame["object_id"].notna() & frame["object_id"].str.len().gt(0)
     valid &= np.isfinite(frame[["ra_deg", "dec_deg", "redshift", "x_mpc", "y_mpc", "z_mpc"]]).all(axis=1)
     valid &= frame["redshift"] >= 0
+    valid &= frame["ra_deg"].ge(0.0) & frame["ra_deg"].lt(360.0)
     valid &= frame["dec_deg"].between(-90.0, 90.0)
     frame = frame.loc[valid].copy()
     if frame.empty:
@@ -110,12 +112,15 @@ def deterministic_subsample(frame: pd.DataFrame, max_rows: int, seed: int) -> pd
 
 
 def redshift_slice_edges(frame: pd.DataFrame) -> np.ndarray:
-    maximum = float(np.ceil(frame["redshift"].max() * 10.0) / 10.0)
-    base = np.array([0.0, 0.4, 0.8, 1.4, maximum], dtype=float)
-    base = np.unique(np.clip(base, 0.0, maximum))
-    if len(base) < 3:
-        base = np.linspace(0.0, maximum, 5)
-    return base
+    maximum = max(0.1, float(np.ceil(frame["redshift"].max() * 10.0) / 10.0))
+    if maximum <= 1.4:
+        return np.linspace(0.0, maximum, 5)
+    return np.array([0.0, 0.4, 0.8, 1.4, maximum], dtype=float)
+
+
+def redshift_interval_label(left: float, right: float, *, final: bool) -> str:
+    upper_operator = "≤" if final else "<"
+    return f"{left:.1f} ≤ z {upper_operator} {right:.1f}"
 
 
 def mollweide_longitude(ra_deg: pd.Series) -> np.ndarray:
@@ -229,11 +234,15 @@ def plot_angular_slices(frame: pd.DataFrame, tracers: list[str], edges: np.ndarr
             if group.empty:
                 continue
             axis.scatter(mollweide_longitude(group["ra_deg"]), np.deg2rad(group["dec_deg"]), s=0.65, alpha=0.28, color=TRACER_COLOURS.get(tracer, "#555555"), rasterized=True, label=tracer)
-        axis.set_title(f"{left:.1f} ≤ z < {right:.1f}\n{len(subset):,} displayed observed rows", fontsize=12, fontweight="bold", pad=12)
+        interval = redshift_interval_label(left, right, final=panel == len(edges) - 2)
+        axis.set_title(f"{interval}\n{len(subset):,} displayed observed rows", fontsize=12, fontweight="bold", pad=12)
         axis.grid(alpha=0.23)
         axis.set_xticklabels(["150°", "120°", "90°", "60°", "30°", "0°", "330°", "300°", "270°", "240°", "210°"])
-    handles, labels = axes.flat[0].get_legend_handles_labels()
-    figure.legend(handles, labels, loc="lower center", ncol=min(5, len(handles)), frameon=False, title="Tracer class")
+    legend_entries = {}
+    for axis in axes.flat:
+        handles, labels = axis.get_legend_handles_labels()
+        legend_entries.update(zip(labels, handles))
+    figure.legend(legend_entries.values(), legend_entries.keys(), loc="lower center", ncol=min(5, len(legend_entries)), frameon=False, title="Tracer class")
     figure.suptitle("Observed DESI angular footprint across redshift slices", x=0.10, ha="left", fontsize=17, fontweight="bold")
     figure.text(0.10, 0.018, "Mollweide projections show where the survey observed targets. Uneven coverage and empty regions are primarily footprint and target-selection effects, not evidence for physical underdensities.", fontsize=9)
     figure.tight_layout(rect=(0, 0.07, 1, 0.94))
@@ -253,7 +262,8 @@ def plot_cartesian_slices(frame: pd.DataFrame, tracers: list[str], edges: np.nda
             if group.empty:
                 continue
             axis.scatter(group["x_mpc"], group["y_mpc"], s=0.55, alpha=0.26, color=TRACER_COLOURS.get(tracer, "#555555"), rasterized=True)
-        axis.set_title(f"{left:.1f} ≤ z < {right:.1f}", fontsize=12, fontweight="bold")
+        interval = redshift_interval_label(left, right, final=panel == len(edges) - 2)
+        axis.set_title(interval, fontsize=12, fontweight="bold")
         axis.set_aspect("equal", adjustable="box")
         axis.set_xlim(-limit, limit)
         axis.set_ylim(-limit, limit)
@@ -381,6 +391,12 @@ def main() -> int:
         raise FileNotFoundError(f"Input Parquet file was not found: {options.input}")
     if options.redshift_bins < 10:
         raise ValueError("--redshift-bins must be at least 10.")
+    if options.dpi < 1:
+        raise ValueError("--dpi must be positive.")
+    if options.max_points_per_panel < 1:
+        raise ValueError("--max-points-per-panel must be positive.")
+    if options.coordinate_validation_points < 1:
+        raise ValueError("--coordinate-validation-points must be positive.")
     options.output_dir.mkdir(parents=True, exist_ok=True)
 
     catalogue = load_catalogue(options.input)

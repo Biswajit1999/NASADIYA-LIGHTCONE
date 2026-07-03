@@ -50,7 +50,7 @@ NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point origi
 
 **Website:** [biswajit1999.github.io/NASADIYA-LIGHTCONE](https://biswajit1999.github.io/NASADIYA-LIGHTCONE/)
 
-The map-first explorer provides local 2MRS Cartesian slices, observer-centred radial views, a DESI deep-field layer, tracer controls, point-level source inspection, an available-survey comparison stack, and public methods/data documentation.
+The map-first explorer provides local 2MRS Cartesian slices, observer-centred radial views, a DESI deep-field layer, tracer controls, point-level source inspection, an available-survey comparison stack, and public methods/data documentation. Observatory V3 adds persistent night/day research themes, live renderer and camera instrumentation, presentation focus, viewport capture, camera bookmarks, shareable views, named destinations, redshift playback, adaptive render quality and a registry-driven future-survey mission queue without altering catalogue data or rendering semantics.
 
 - [About the project](about.html)
 - [Public data ledger](data.html)
@@ -58,6 +58,8 @@ The map-first explorer provides local 2MRS Cartesian slices, observer-centred ra
 - [Community guide](community.html)
 - [Available-survey comparison stack](docs/available-survey-stack.md)
 - [Adaptive DESI tile delivery](docs/desi-adaptive-tiles.md)
+- [Observatory interface architecture](docs/observatory-interface.md)
+- [Future survey architecture and readiness gates](docs/future-survey-architecture.md)
 
 ## Research-resolution DESI workflow
 

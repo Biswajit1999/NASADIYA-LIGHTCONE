@@ -1,5 +1,5 @@
 {
-  "format": "nasadiya-survey-registry/v3",
+  "format": "nasadiya-survey-registry/v4",
   "project": "NĀSADĪYA LIGHTCONE",
   "maintainer": "Biswajit Jana",
   "policy": "Real source rows only. Raw catalogues and multi-million-row tile stores are excluded from Git history.",
@@ -11,6 +11,7 @@
       "measurement_kind": "spectroscopic",
       "object_count": 43533,
       "browser_status": "public-baseline",
+      "readiness": "deployed",
       "source_url": "https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/ApJS/199/26/table3",
       "notes": "Local spectroscopic anchor. Browser rows retain source identifiers, recession velocities, velocity errors, and provenance."
     },
@@ -20,7 +21,9 @@
       "survey": "2MASS Photometric Redshift Catalogue",
       "measurement_kind": "photometric",
       "expected_object_count": 1000000,
-      "browser_status": "local-tile-store-supported",
+      "browser_status": "blocked-source-validation",
+      "readiness": "blocked",
+      "required_contract": ["object_id", "ra_deg", "dec_deg", "photometric_redshift", "per_object_redshift_uncertainty"],
       "source_url": "https://arxiv.org/abs/1311.5246",
       "notes": "Discovery downloader validates a published per-row photo-z error field before building a local lightcone tile store."
     },
@@ -30,7 +33,9 @@
       "survey": "WISE × SuperCOSMOS Photometric Redshift Catalogue",
       "measurement_kind": "photometric",
       "expected_object_count": 20000000,
-      "browser_status": "local-chunked-tile-store-supported",
+      "browser_status": "blocked-source-validation",
+      "readiness": "blocked",
+      "required_contract": ["object_id", "ra_deg", "dec_deg", "photometric_redshift", "per_object_redshift_uncertainty"],
       "source_url": "https://arxiv.org/abs/1607.01182",
       "notes": "Chunked builder prevents the full wide photo-z catalogue from being loaded into one browser JSON document."
     },
@@ -39,7 +44,8 @@
       "label": "DESI DR1 LSS",
       "survey": "Dark Energy Spectroscopic Instrument Data Release 1",
       "measurement_kind": "spectroscopic",
-      "browser_status": "local-chunked-tile-store-supported",
+      "browser_status": "public-adaptive-and-gpu",
+      "readiness": "deployed",
       "source_url": "https://data.desi.lbl.gov/doc/releases/dr1/",
       "notes": "Uses official BGS, LRG, ELG and QSO clustering products selected explicitly by the user; source selection remains visible."
     },
@@ -49,8 +55,65 @@
       "survey": "Gaia DR3",
       "measurement_kind": "astrometric",
       "browser_status": "separate-galactic-product-supported",
+      "readiness": "planned",
+      "required_contract": ["source_id", "ra_deg", "dec_deg", "parallax", "parallax_error", "astrometric_quality"],
       "source_url": "https://gea.esac.esa.int/archive/",
       "notes": "Bounded public-TAP stellar sample only. Gaia is not merged into extragalactic galaxy statistics."
+    },
+    {
+      "id": "desi-future-release",
+      "label": "Future DESI release",
+      "survey": "Dark Energy Spectroscopic Instrument",
+      "measurement_kind": "spectroscopic",
+      "browser_status": "planned-release-adapter",
+      "readiness": "planned",
+      "source_url": "https://data.desi.lbl.gov/doc/releases/",
+      "required_contract": ["target_id", "ra_deg", "dec_deg", "redshift", "tracer", "release_provenance"],
+      "notes": "Each release receives a new immutable dataset identifier, manifest and validation run. It never silently replaces DR1."
+    },
+    {
+      "id": "rubin-lsst",
+      "label": "Rubin / LSST",
+      "survey": "Vera C. Rubin Observatory Legacy Survey of Space and Time",
+      "measurement_kind": "photometric-time-domain",
+      "browser_status": "planned-mission-adapter",
+      "readiness": "planned",
+      "source_url": "https://www.lsst.org/scientists/data-products",
+      "required_contract": ["object_id", "ra_deg", "dec_deg", "release", "validated_distance_or_photoz_product", "per_object_uncertainty"],
+      "notes": "Sky detections are not assigned radial positions unless a cited distance or photo-z product with uncertainty is selected."
+    },
+    {
+      "id": "euclid",
+      "label": "Euclid",
+      "survey": "ESA Euclid mission",
+      "measurement_kind": "spectroscopic-and-photometric",
+      "browser_status": "planned-mission-adapter",
+      "readiness": "planned",
+      "source_url": "https://www.cosmos.esa.int/web/euclid",
+      "required_contract": ["object_id", "ra_deg", "dec_deg", "redshift_product", "redshift_kind", "per_object_uncertainty", "release_provenance"],
+      "notes": "Spectroscopic and photometric products remain distinguishable in the interface and manifest."
+    },
+    {
+      "id": "roman",
+      "label": "Roman Space Telescope",
+      "survey": "Nancy Grace Roman Space Telescope",
+      "measurement_kind": "mission-product-dependent",
+      "browser_status": "planned-mission-adapter",
+      "readiness": "planned",
+      "source_url": "https://roman.gsfc.nasa.gov/science/",
+      "required_contract": ["object_id", "sky_position", "distance_or_redshift_product", "uncertainty", "release_provenance"],
+      "notes": "Adapters will be release-specific and will not infer unprovided radial distances."
+    },
+    {
+      "id": "spherex",
+      "label": "SPHEREx",
+      "survey": "NASA SPHEREx mission",
+      "measurement_kind": "spectrophotometric",
+      "browser_status": "planned-mission-adapter",
+      "readiness": "planned",
+      "source_url": "https://spherex.caltech.edu/",
+      "required_contract": ["object_id", "ra_deg", "dec_deg", "redshift_estimate", "per_object_uncertainty", "release_provenance"],
+      "notes": "Spectrophotometric redshift estimates retain their uncertainty and are never styled as exact spectroscopic positions."
     }
   ]
 }

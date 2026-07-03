@@ -15,7 +15,7 @@ import sys
 repo = Path('/content/NASADIYA-LIGHTCONE')
 if not repo.exists():
     subprocess.run([
-        'git', 'clone', '--depth', '1', '--branch', 'science-first-desi-analysis-v1',
+        'git', 'clone', '--depth', '1',
         'https://github.com/Biswajit1999/NASADIYA-LIGHTCONE.git',
         str(repo),
     ], check=True)
