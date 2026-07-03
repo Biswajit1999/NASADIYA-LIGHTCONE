@@ -47,6 +47,9 @@ export class LightconeScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.11;
+    this.renderQuality = 'auto';
+    this.adaptivePixelRatio = Math.min(window.devicePixelRatio, 1.55);
+    this.performanceSamples = [];
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.065;
@@ -78,6 +81,30 @@ export class LightconeScene {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+  }
+
+  setRenderQuality(mode = 'auto') {
+    const nextMode = ['performance', 'quality'].includes(mode) ? mode : 'auto';
+    const cap = nextMode === 'performance' ? 1.05 : nextMode === 'quality' ? 1.9 : this.adaptivePixelRatio;
+    const target = Math.min(window.devicePixelRatio, cap);
+    if (this.renderQuality === nextMode && Math.abs(this.renderer.getPixelRatio() - target) < 0.01) return;
+    this.renderQuality = nextMode;
+    this.renderer.setPixelRatio(target);
+    this.resize();
+  }
+
+  samplePerformance(fps) {
+    if (this.renderQuality !== 'auto' || !Number.isFinite(fps)) return;
+    this.performanceSamples.push(fps);
+    if (this.performanceSamples.length < 4) return;
+    const average = this.performanceSamples.reduce((sum, value) => sum + value, 0) / this.performanceSamples.length;
+    this.performanceSamples.length = 0;
+    const maximum = Math.min(window.devicePixelRatio, 1.65);
+    const next = average < 38 ? Math.max(1.0, this.adaptivePixelRatio - 0.15) : average > 56 ? Math.min(maximum, this.adaptivePixelRatio + 0.08) : this.adaptivePixelRatio;
+    if (Math.abs(next - this.adaptivePixelRatio) < 0.01) return;
+    this.adaptivePixelRatio = next;
+    this.renderer.setPixelRatio(next);
+    this.resize();
   }
 
   defaultFrame(mode = this.mode) {

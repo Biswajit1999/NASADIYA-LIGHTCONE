@@ -5,15 +5,15 @@ import { FULL_DESI_GPU_CLOUD } from './full-cloud-config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { probeGpuCloud } from './core/gpu-cloud-loader.js';
 import { fetchGpuCloud } from './core/gpu-cloud-binary.js';
-import { CompositeFullCloud } from './core/composite-full-cloud.js';
-import { GpuSurveyCloud } from './core/gpu-survey-cloud.js';
+import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260703-phase3';
+import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260703-phase3';
 import { GuidedFlyby } from './core/guided-flyby.js';
-import { LightconeScene } from './core/lightcone-scene.js';
+import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
-import { SurveyPoints } from './core/survey-points.js';
+import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
 import { TileStreamer } from './core/tile-streamer.js';
-import { LightconeInterface } from './ui/lightcone-interface.js';
-import { ObservatoryConsole } from './ui/observatory-console.js';
+import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase3';
+import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase3';
 
 const state = {
   layerId: 'desi-dr1',
@@ -28,6 +28,7 @@ const state = {
   viewMode: 'tracer',
   tileStreaming: false,
   fullCatalogue: false,
+  renderQuality: 'auto',
   tracerFilters: Object.fromEntries(DESI_TRACERS.map((tracer) => [tracer, true])),
 };
 
@@ -105,6 +106,7 @@ function applyState({ scheduleTiles = true } = {}) {
   ui.updateTelemetry(metrics, state);
   scene.renderer.toneMappingExposure = metrics.fullCatalogue ? 0.94 : 1.08;
   scene.scene.fog.density = metrics.fullCatalogue ? 0.00023 : 0.00030;
+  scene.setRenderQuality(state.renderQuality);
   updateSpatialAids();
   if (scheduleTiles && !state.fullCatalogue) scheduleAdaptiveTileRefresh();
 }
@@ -376,6 +378,7 @@ function applySharedView(shared) {
   if (Number.isFinite(Number(shared.maxRedshift))) state.maxRedshift = Math.min(Number(shared.maxRedshift), observedCeiling);
   if (Number.isFinite(Number(shared.pointBudget))) state.pointBudget = Number(shared.pointBudget);
   if (typeof shared.viewMode === 'string') state.viewMode = shared.viewMode;
+  if (['auto', 'performance', 'quality'].includes(shared.renderQuality)) state.renderQuality = shared.renderQuality;
   if (shared.tracerFilters && typeof shared.tracerFilters === 'object') state.tracerFilters = { ...state.tracerFilters, ...shared.tracerFilters };
   ui.syncControlsFromState(state);
   applyState({ scheduleTiles: false });
@@ -459,6 +462,7 @@ function initialise() {
   window.addEventListener('nasadiya:full-catalogue-request', () => activateFullCloud());
   window.addEventListener('nasadiya:adaptive-catalogue-request', () => returnToAdaptiveCloud());
   window.addEventListener('nasadiya:observatory-command', (event) => handleObservatoryCommand(event.detail?.command));
+  window.addEventListener('nasadiya:performance-sample', (event) => scene.samplePerformance(Number(event.detail?.fps)));
   scene.onCameraChange(() => scheduleAdaptiveTileRefresh());
   const sharedView = observatory.sharedViewFromLocation();
   const sharedLayer = SURVEY_LAYERS[sharedView?.layerId];

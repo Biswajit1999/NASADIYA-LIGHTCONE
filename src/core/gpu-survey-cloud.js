@@ -17,8 +17,11 @@ const VERTEX_SHADER = /* glsl */ `
   uniform float uTracerQSO;
   uniform float uViewMode;
   uniform float uPointScale;
+  uniform float uTime;
+  uniform float uMotion;
   varying vec3 vColor;
   varying float vAlpha;
+  varying float vLuminosity;
 
   bool tracerEnabled() {
     if (aTracer < 0.5) return true;
@@ -48,6 +51,14 @@ const VERTEX_SHADER = /* glsl */ `
     return vec3(1.0, 0.70, 0.41);
   }
 
+  float tracerPointScale() {
+    if (aTracer < 0.5) return 0.92;
+    if (aTracer < 1.5) return 1.18;
+    if (aTracer < 2.5) return 1.06;
+    if (aTracer < 3.5) return 0.96;
+    return 1.20;
+  }
+
   void main() {
     bool visible = uShowGalaxies > 0.5 && aRedshift <= uMaxRedshift && tracerEnabled() && aSample <= uDisplayFraction;
     vec4 mvPosition = modelViewMatrix * vec4(position * uDisplayScale, 1.0);
@@ -59,24 +70,29 @@ const VERTEX_SHADER = /* glsl */ `
       return;
     }
     float perspective = clamp(760.0 / max(1.0, -mvPosition.z), 0.14, 3.0);
-    gl_PointSize = clamp(uPointScale * perspective, 0.42, 2.45);
+    float shimmer = 1.0 + uMotion * 0.035 * sin(uTime * (0.42 + aSample * 0.74) + aSample * 6.28318);
+    gl_PointSize = clamp(uPointScale * tracerPointScale() * perspective * shimmer, 0.42, 2.65);
     gl_Position = projectionMatrix * mvPosition;
     float depthFade = mix(1.0, 0.62, clamp(aRedshift / max(0.001, uMaxRedshift), 0.0, 1.0));
     vAlpha = 0.115 * depthFade;
     vColor = colourForMode();
+    vLuminosity = shimmer;
   }
 `;
 
 const FRAGMENT_SHADER = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
+  varying float vLuminosity;
   void main() {
     vec2 uv = gl_PointCoord - vec2(0.5);
     float radius = length(uv);
-    float body = 1.0 - smoothstep(0.18, 0.50, radius);
-    float alpha = body * vAlpha;
+    float core = 1.0 - smoothstep(0.02, 0.18, radius);
+    float body = 1.0 - smoothstep(0.15, 0.48, radius);
+    float halo = 1.0 - smoothstep(0.28, 0.50, radius);
+    float alpha = max(core, body * 0.72 + halo * 0.12 * vLuminosity) * vAlpha;
     if (alpha < 0.008) discard;
-    gl_FragColor = vec4(vColor, alpha);
+    gl_FragColor = vec4(mix(vColor, vec3(1.0), core * 0.34), alpha);
   }
 `;
 
@@ -124,9 +140,10 @@ export class GpuSurveyCloud {
       vertexShader: VERTEX_SHADER, fragmentShader: FRAGMENT_SHADER, transparent: true, depthWrite: false, depthTest: true, blending: THREE.NormalBlending,
       uniforms: {
         uDisplayScale: { value: LIGHTCONE_CONFIG.displayScale }, uMaxRedshift: { value: this.stats.maxRedshift }, uDisplayFraction: { value: 1.0 }, uShowGalaxies: { value: 1.0 },
-        uTracerBGS: { value: 1.0 }, uTracerLRG: { value: 1.0 }, uTracerELG: { value: 1.0 }, uTracerQSO: { value: 1.0 }, uViewMode: { value: 0.0 }, uPointScale: { value: 0.82 },
+        uTracerBGS: { value: 1.0 }, uTracerLRG: { value: 1.0 }, uTracerELG: { value: 1.0 }, uTracerQSO: { value: 1.0 }, uViewMode: { value: 0.0 }, uPointScale: { value: 0.82 }, uTime: { value: 0.0 }, uMotion: { value: 1.0 },
       },
     });
+    this.targetDisplayFraction = 1.0;
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.name = 'desi-dr1-full-gpu-cloud'; this.points.frustumCulled = false;
   }
@@ -138,12 +155,16 @@ export class GpuSurveyCloud {
     const activeRedshift = Math.min(this.stats.maxRedshift, Math.max(0.001, Number(state.maxRedshift) || 0.001));
     const drawBudget = Math.min(this.recordCount, Math.max(1_000, Number(state.pointBudget) || this.recordCount));
     uniforms.uMaxRedshift.value = activeRedshift;
-    uniforms.uDisplayFraction.value = drawBudget / this.recordCount;
+    this.targetDisplayFraction = drawBudget / this.recordCount;
     uniforms.uShowGalaxies.value = state.showGalaxies ? 1.0 : 0.0;
     uniforms.uTracerBGS.value = enabled(state, 'BGS'); uniforms.uTracerLRG.value = enabled(state, 'LRG');
     uniforms.uTracerELG.value = enabled(state, 'ELG'); uniforms.uTracerQSO.value = enabled(state, 'QSO');
     uniforms.uViewMode.value = modeCode(state.viewMode);
-    uniforms.uPointScale.value = state.viewMode === 'uncertainty' ? 0.92 : 0.82;
+    const densityScale = THREE.MathUtils.lerp(1.04, 0.76, Math.sqrt(this.targetDisplayFraction));
+    const qualityScale = state.renderQuality === 'performance' ? 0.82 : state.renderQuality === 'quality' ? 1.08 : 1.0;
+    uniforms.uPointScale.value = (state.viewMode === 'uncertainty' ? 0.92 : 0.82) * densityScale * qualityScale;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    uniforms.uMotion.value = state.renderQuality === 'performance' || reducedMotion ? 0.0 : 1.0;
     return {
       visibleCount: drawBudget, drawBudget, gpuResidentCount: this.recordCount, candidateCount: this.recordCount, underlyingCount: this.recordCount,
       overviewCount: Number(this.meta.overview_count || 0), maxDistance: this.stats.maxDistanceMpc, maxLookback: lookbackTimeGyr(activeRedshift),
@@ -151,7 +172,11 @@ export class GpuSurveyCloud {
     };
   }
 
-  updateTime() {}
+  updateTime(seconds) {
+    this.material.uniforms.uTime.value = seconds;
+    const current = this.material.uniforms.uDisplayFraction.value;
+    this.material.uniforms.uDisplayFraction.value = THREE.MathUtils.lerp(current, this.targetDisplayFraction, 0.12);
+  }
   dispose() { this.geometry.dispose(); this.material.dispose(); this.buffer = null; }
   getObject() { return null; }
   getDisplayPosition() { return new THREE.Vector3(); }

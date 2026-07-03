@@ -228,6 +228,7 @@ export class ObservatoryConsole {
       maxRedshift: currentState.maxRedshift,
       pointBudget: currentState.pointBudget,
       viewMode: currentState.viewMode,
+      renderQuality: currentState.renderQuality,
       tracerFilters: currentState.tracerFilters,
       camera: this.scene.camera.position.toArray().map((value) => Number(value.toFixed(3))),
       target: this.scene.controls.target.toArray().map((value) => Number(value.toFixed(3))),
@@ -263,5 +264,6 @@ export class ObservatoryConsole {
     if (this.dom.fps) this.dom.fps.textContent = `${fps} FPS`;
     if (this.dom.gpu) this.dom.gpu.textContent = `${memory.geometries} GEO · ${memory.textures} TEX`;
     if (this.dom.camera) this.dom.camera.textContent = `${Math.round(cameraRadius).toLocaleString('en-GB')} U`;
+    window.dispatchEvent(new CustomEvent('nasadiya:performance-sample', { detail: { fps } }));
   }
 }

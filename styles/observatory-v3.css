@@ -66,6 +66,7 @@
 .command-results button small { color: var(--dim); font-size: 8px; }
 .command-results button:hover, .command-results button.is-selected { color: var(--ink); background: var(--cyan-soft); transform: translateX(2px); }
 .command-palette-card footer { display: flex; gap: 18px; padding: 11px 20px; border-top: 1px solid var(--line); background: rgba(0,0,0,.10); }
+.mode-switch--quality { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 9px; }
 
 body.presentation-mode .left-rail,
 body.presentation-mode .control-drawer,
@@ -157,4 +158,13 @@ body[data-theme="day"] .command-search input { color: #102a3b; }
   .command-utility { display: none; }
   #presentation-toggle { display: inline-flex; }
   .observatory-toast { bottom: 126px; max-width: calc(100vw - 32px); text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .command-bar, .left-rail, .control-drawer, .telemetry-deck, .observatory-hud, .command-palette-card { backdrop-filter: none; }
+  .command-bar, .left-rail, .control-drawer, .telemetry-deck { background: var(--surface); }
 }

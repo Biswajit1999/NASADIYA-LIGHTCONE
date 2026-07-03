@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
-import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js';
+import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260703-phase3';
 import { hslToRgb } from '../utils/math.js';
 
 const TRACER_COLOURS = Object.freeze({
@@ -125,7 +125,7 @@ export class SurveyPoints {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uPointScale: { value: 1.0 }, uMode: { value: 0 }, uTime: { value: 0 } },
+      uniforms: { uPointScale: { value: 1.0 }, uMode: { value: 0 }, uTime: { value: 0 }, uMotion: { value: 1.0 } },
     });
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.name = `observed-${meta.dataset_id || 'survey'}-points`;
@@ -206,9 +206,12 @@ export class SurveyPoints {
     size.needsUpdate = true;
     this.material.uniforms.uMode.value = state.viewMode === 'uncertainty' ? 1 : state.viewMode === 'time' ? 2 : 0;
     const denseScale = this.objects.length > 75_000 ? 0.96 : 1.0;
+    const qualityScale = state.renderQuality === 'performance' ? 0.86 : state.renderQuality === 'quality' ? 1.10 : 1.0;
     this.material.uniforms.uPointScale.value = isSlice
-      ? denseScale * (state.pointBudget < 12_000 ? 1.34 : 1.16)
-      : denseScale * (state.pointBudget < 12_000 ? 1.20 : 1.08);
+      ? qualityScale * denseScale * (state.pointBudget < 12_000 ? 1.34 : 1.16)
+      : qualityScale * denseScale * (state.pointBudget < 12_000 ? 1.20 : 1.08);
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    this.material.uniforms.uMotion.value = state.renderQuality === 'performance' || reducedMotion ? 0.0 : 1.0;
 
     return {
       visibleCount: visibleSet.size,

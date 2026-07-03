@@ -7,6 +7,7 @@ export const pointVertexShader = /* glsl */ `
   uniform float uPointScale;
   uniform float uMode;
   uniform float uTime;
+  uniform float uMotion;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vHalo;
@@ -14,7 +15,7 @@ export const pointVertexShader = /* glsl */ `
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     float perspective = clamp(1050.0 / max(1.0, -mvPosition.z), 0.25, 6.3);
     float uncertaintyBoost = mix(0.0, min(7.5, aUncertainty * 2300.0), step(0.5, uMode));
-    float shimmer = 0.91 + 0.09 * sin(uTime * (0.38 + aTwinkle * 1.1) * 1.5 + aTwinkle * 6.28318);
+    float shimmer = 1.0 + uMotion * 0.045 * sin(uTime * (0.38 + aTwinkle * 1.1) * 1.5 + aTwinkle * 6.28318);
     gl_PointSize = clamp((aSize + uncertaintyBoost) * uPointScale * perspective * shimmer, 1.0, 27.0);
     gl_Position = projectionMatrix * mvPosition;
     vColor = color;
