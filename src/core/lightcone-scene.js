@@ -113,6 +113,21 @@ export class LightconeScene {
   resetView() { const frame = this.defaultFrame(); this.animateCamera(frame.position, frame.target, 720); }
   focusLocalSlice() { this.setSpatialMode('slice'); }
 
+  focusDestination(destination) {
+    const radius = Math.max(900, this.datasetMaxDistanceMpc * 3.0);
+    const frames = {
+      observer: this.defaultFrame('lightcone'),
+      north: { position: new THREE.Vector3(radius * 0.28, radius * 0.92, radius * 0.48), target: new THREE.Vector3(0, radius * 0.18, radius * 0.12) },
+      south: { position: new THREE.Vector3(radius * 0.36, -radius * 0.88, radius * 0.44), target: new THREE.Vector3(0, -radius * 0.18, -radius * 0.12) },
+      deep: { position: new THREE.Vector3(radius * 1.18, radius * 0.18, radius * 0.76), target: new THREE.Vector3(radius * 0.08, 0, 0) },
+    };
+    const frame = frames[destination] || frames.observer;
+    this.mode = 'lightcone';
+    this.observer.visible = true;
+    this.annotations?.setContext({ extentMpc: this.datasetMaxDistanceMpc, mode: 'lightcone' });
+    this.animateCamera(frame.position, frame.target, 980);
+  }
+
   focusOn(position, scale = 80) {
     if (this.mode === 'slice') {
       this.animateCamera(position.clone().add(new THREE.Vector3(0, 0, THREE.MathUtils.clamp(scale * 3 + 150, 260, 720))), position, 750);

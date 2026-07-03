@@ -14,9 +14,10 @@ function isTypingTarget(target) {
 }
 
 export class ObservatoryConsole {
-  constructor({ scene, canvas }) {
+  constructor({ scene, canvas, getState }) {
     this.scene = scene;
     this.canvas = canvas;
+    this.getState = getState;
     this.dom = {
       theme: document.querySelector('#theme-toggle'),
       bookmark: document.querySelector('#bookmark-view'),
@@ -27,12 +28,19 @@ export class ObservatoryConsole {
       camera: document.querySelector('#instrument-camera'),
       toast: document.querySelector('#observatory-toast'),
       themeMeta: document.querySelector('meta[name="theme-color"]'),
+      paletteToggle: document.querySelector('#command-palette-toggle'),
+      palette: document.querySelector('#command-palette'),
+      paletteClose: document.querySelector('#close-command-palette'),
+      commandSearch: document.querySelector('#command-search-input'),
+      commandButtons: [...document.querySelectorAll('[data-observatory-command]')],
     };
     this.presentation = false;
     this.lastFrame = 0;
     this.frameSamples = [];
     this.lastInstrumentUpdate = 0;
     this.toastTimer = null;
+    this.filteredCommands = this.dom.commandButtons;
+    this.commandIndex = 0;
     this.applyTheme(readStorage(THEME_KEY, 'night'));
     this.updateBookmarkState();
     this.bind();
@@ -44,6 +52,12 @@ export class ObservatoryConsole {
     this.dom.bookmark?.addEventListener('dblclick', () => this.restoreBookmark());
     this.dom.capture?.addEventListener('click', () => this.capture());
     this.dom.presentation?.addEventListener('click', () => this.togglePresentation());
+    this.dom.paletteToggle?.addEventListener('click', () => this.openPalette(true));
+    this.dom.paletteClose?.addEventListener('click', () => this.openPalette(false));
+    this.dom.palette?.addEventListener('click', (event) => { if (event.target === this.dom.palette) this.openPalette(false); });
+    this.dom.commandSearch?.addEventListener('input', () => this.filterCommands());
+    this.dom.commandSearch?.addEventListener('keydown', (event) => this.handlePaletteKey(event));
+    this.dom.commandButtons.forEach((button) => button.addEventListener('click', () => this.runCommand(button.dataset.observatoryCommand)));
     window.addEventListener('keydown', (event) => {
       if (isTypingTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
       const key = event.key.toLowerCase();
@@ -54,6 +68,67 @@ export class ObservatoryConsole {
       if (key === 's') this.capture();
       if (event.key === 'Escape' && this.presentation) this.togglePresentation(false);
     });
+    window.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        this.openPalette(true);
+      }
+      if (event.key === 'Escape' && !this.dom.palette?.hidden) this.openPalette(false);
+    });
+  }
+
+  openPalette(open) {
+    if (!this.dom.palette) return;
+    this.dom.palette.hidden = !open;
+    this.dom.paletteToggle?.setAttribute('aria-expanded', String(open));
+    if (open) {
+      this.dom.commandSearch.value = '';
+      this.filterCommands();
+      this.dom.commandSearch.focus();
+    } else {
+      this.dom.paletteToggle?.focus();
+    }
+  }
+
+  filterCommands() {
+    const query = this.dom.commandSearch?.value.trim().toLowerCase() || '';
+    this.filteredCommands = this.dom.commandButtons.filter((button) => {
+      const visible = !query || button.textContent.toLowerCase().includes(query);
+      button.hidden = !visible;
+      return visible;
+    });
+    this.commandIndex = 0;
+    this.syncCommandSelection();
+  }
+
+  syncCommandSelection() {
+    this.dom.commandButtons.forEach((button) => button.classList.remove('is-selected'));
+    this.filteredCommands[this.commandIndex]?.classList.add('is-selected');
+  }
+
+  handlePaletteKey(event) {
+    if (!this.filteredCommands.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.commandIndex = (this.commandIndex + 1) % this.filteredCommands.length;
+      this.syncCommandSelection();
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.commandIndex = (this.commandIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
+      this.syncCommandSelection();
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.filteredCommands[this.commandIndex]?.click();
+    }
+  }
+
+  runCommand(command) {
+    this.openPalette(false);
+    if (command === 'toggle-presentation') return this.togglePresentation();
+    if (command === 'share-view') return this.shareView();
+    window.dispatchEvent(new CustomEvent('nasadiya:observatory-command', { detail: { command } }));
   }
 
   applyTheme(theme) {
@@ -134,6 +209,35 @@ export class ObservatoryConsole {
       window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       this.notify('Scientific viewport captured as PNG');
     }, 'image/png');
+  }
+
+  sharedViewFromLocation() {
+    const match = window.location.hash.match(/^#view=([A-Za-z0-9_-]+)$/);
+    if (!match) return null;
+    try {
+      const encoded = match[1].replaceAll('-', '+').replaceAll('_', '/');
+      return JSON.parse(window.atob(encoded));
+    } catch { return null; }
+  }
+
+  shareView() {
+    const currentState = this.getState?.() || {};
+    const payload = {
+      version: 1,
+      layerId: currentState.layerId,
+      maxRedshift: currentState.maxRedshift,
+      pointBudget: currentState.pointBudget,
+      viewMode: currentState.viewMode,
+      tracerFilters: currentState.tracerFilters,
+      camera: this.scene.camera.position.toArray().map((value) => Number(value.toFixed(3))),
+      target: this.scene.controls.target.toArray().map((value) => Number(value.toFixed(3))),
+      theme: document.body.dataset.theme || 'night',
+    };
+    const token = window.btoa(JSON.stringify(payload)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    window.history.replaceState(null, '', `#view=${token}`);
+    const copy = navigator.clipboard?.writeText(window.location.href);
+    if (copy?.catch) copy.catch(() => {});
+    this.notify('Shareable view copied · URL includes camera, layer and filters');
   }
 
   notify(message) {

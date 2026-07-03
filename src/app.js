@@ -36,7 +36,7 @@ const scene = new LightconeScene(canvas);
 const ui = new LightconeInterface();
 const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
-const observatory = new ObservatoryConsole({ scene, canvas });
+const observatory = new ObservatoryConsole({ scene, canvas, getState: () => state });
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -51,6 +51,7 @@ let fullCloudProbe = null;
 let fullCloudLoading = false;
 let pointerStart = null;
 let loadSequence = 0;
+let redshiftPlayback = null;
 
 function maxField(objects, field) {
   return objects.reduce((maximum, object) => Math.max(maximum, Number(object[field]) || 0), 0);
@@ -369,6 +370,59 @@ function toggleFullscreen() {
   else document.exitFullscreen?.();
 }
 
+function applySharedView(shared) {
+  if (!shared) return;
+  const observedCeiling = Math.max(0.003, maxField(overviewObjects, 'redshift'));
+  if (Number.isFinite(Number(shared.maxRedshift))) state.maxRedshift = Math.min(Number(shared.maxRedshift), observedCeiling);
+  if (Number.isFinite(Number(shared.pointBudget))) state.pointBudget = Number(shared.pointBudget);
+  if (typeof shared.viewMode === 'string') state.viewMode = shared.viewMode;
+  if (shared.tracerFilters && typeof shared.tracerFilters === 'object') state.tracerFilters = { ...state.tracerFilters, ...shared.tracerFilters };
+  ui.syncControlsFromState(state);
+  applyState({ scheduleTiles: false });
+  if (Array.isArray(shared.camera) && Array.isArray(shared.target)) {
+    const position = scene.camera.position.clone().fromArray(shared.camera);
+    const target = scene.controls.target.clone().fromArray(shared.target);
+    scene.animateCamera(position, target, 900);
+  }
+  if (shared.theme) observatory.applyTheme(shared.theme);
+}
+
+function toggleRedshiftPlayback() {
+  if (redshiftPlayback) {
+    redshiftPlayback = null;
+    observatory.notify('Redshift scan paused');
+    return;
+  }
+  const ceiling = Math.max(0.05, maxField(overviewObjects, 'redshift'));
+  redshiftPlayback = { startedAt: performance.now(), start: 0.03, ceiling, duration: 12_000, lastUpdate: 0 };
+  state.maxRedshift = redshiftPlayback.start;
+  observatory.notify('Redshift scan active · visibility changes, catalogue positions remain fixed');
+}
+
+function updateRedshiftPlayback(now) {
+  if (!redshiftPlayback || now - redshiftPlayback.lastUpdate < 90) return;
+  redshiftPlayback.lastUpdate = now;
+  const progress = Math.min(1, (now - redshiftPlayback.startedAt) / redshiftPlayback.duration);
+  state.maxRedshift = redshiftPlayback.start + (redshiftPlayback.ceiling - redshiftPlayback.start) * progress;
+  ui.syncControlsFromState(state);
+  applyState({ scheduleTiles: false });
+  if (progress >= 1) {
+    redshiftPlayback = null;
+    observatory.notify('Redshift scan complete');
+  }
+}
+
+async function handleObservatoryCommand(command) {
+  if (command.startsWith('destination-')) {
+    flyby.stop('preset');
+    scene.focusDestination(command.replace('destination-', ''));
+    return;
+  }
+  if (command === 'redshift-play') return toggleRedshiftPlayback();
+  const layers = { 'layer-local': '2mrs', 'layer-desi': 'desi-dr1', 'layer-comparison': 'all-live' };
+  if (layers[command]) await activateLayer(layers[command]);
+}
+
 function initialise() {
   flyby.onChange((status) => ui.setTourStatus(status));
   ui.bind({
@@ -404,8 +458,12 @@ function initialise() {
   });
   window.addEventListener('nasadiya:full-catalogue-request', () => activateFullCloud());
   window.addEventListener('nasadiya:adaptive-catalogue-request', () => returnToAdaptiveCloud());
+  window.addEventListener('nasadiya:observatory-command', (event) => handleObservatoryCommand(event.detail?.command));
   scene.onCameraChange(() => scheduleAdaptiveTileRefresh());
-  activateLayer('desi-dr1', { initial: true });
+  const sharedView = observatory.sharedViewFromLocation();
+  const sharedLayer = SURVEY_LAYERS[sharedView?.layerId];
+  const initialLayer = sharedLayer?.installed !== false && sharedLayer ? sharedView.layerId : 'desi-dr1';
+  activateLayer(initialLayer, { initial: true }).then(() => applySharedView(sharedView));
   canvas.addEventListener('pointerdown', (event) => {
     flyby.stop('manual');
     pointerStart = { x: event.clientX, y: event.clientY };
@@ -416,6 +474,7 @@ function initialise() {
     pointerStart = null;
   });
   const animate = (now) => {
+    updateRedshiftPlayback(now);
     flyby.tick(now);
     points?.updateTime(now * 0.001);
     scene.tick(now);
