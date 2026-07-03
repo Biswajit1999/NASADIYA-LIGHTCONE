@@ -47,6 +47,7 @@ export class LightconeInterface {
       tourToggle: document.querySelector('#tour-toggle'), viewportView: document.querySelector('#viewport-view-select'), viewportHelp: document.querySelector('#viewport-help'), viewportTools: [...document.querySelectorAll('[data-viewport-tool]')], fullscreenToggle: document.querySelector('#fullscreen-toggle'), referenceCardToggle: document.querySelector('#toggle-reference-card'), spatialAnnotation: document.querySelector('#spatial-annotation'), spatialCard: document.querySelector('.spatial-card'), legendCard: document.querySelector('.legend-card'), spatialRedshift: document.querySelector('#spatial-redshift'), spatialDepth: document.querySelector('#spatial-depth'), spatialLookback: document.querySelector('#spatial-lookback'), radialTicks: [...document.querySelectorAll('[data-radial-tick]')],
       visibleCount: document.querySelector('#visible-count'), gpuCount: document.querySelector('#gpu-count'), depth: document.querySelector('#depth-readout'), lookback: document.querySelector('#lookback-readout'), redshiftReadout: document.querySelector('#redshift-readout'), coverageReadout: document.querySelector('#coverage-readout'), coverageNote: document.querySelector('#coverage-note'), displayCountNote: document.querySelector('#display-count-note'), gpuCountNote: document.querySelector('#gpu-count-note'), systemStatus: document.querySelector('#system-status'), footerDataSource: document.querySelector('#footer-data-source'),
       objectInspector: document.querySelector('#object-inspector'), closeInspector: document.querySelector('#close-inspector'), inspector: document.querySelector('#inspector-content'), railButtons: [...document.querySelectorAll('[data-rail-section]')], helpButton: document.querySelector('#help-button'), helpModal: document.querySelector('#help-modal'), closeHelp: document.querySelector('#close-help'), loadingScreen: document.querySelector('#loading-screen'), loadingTitle: document.querySelector('#loading-title'), loadingCopy: document.querySelector('#loading-copy'), loadingMeterBar: document.querySelector('#loading-meter-bar'), loadingDataset: document.querySelector('#loading-dataset'), loadingCount: document.querySelector('#loading-count'),
+      hoverInspector: document.querySelector('#hover-inspector'),
     };
     this.installSurveyOptions();
   }
@@ -191,5 +192,18 @@ export class LightconeInterface {
   inspect(object) {
     this.dom.objectInspector.hidden = false; const source = object.source_survey || object.source_layer || 'Observed source'; const tracer = object.tracer ? `<div><dt>DESI tracer</dt><dd>${escapeHtml(object.tracer)} · ${escapeHtml(TRACER_LABELS[object.tracer] || object.tracer)}</dd></div>` : ''; const magnitude = Number(object.magnitude ?? object.ks_mag); const cz = Number(object.cz_km_s);
     this.dom.inspector.innerHTML = `<p class="eyebrow">OBSERVED SOURCE RECORD</p><h2>${escapeHtml(object.name || object.object_id || 'Catalogue row')}</h2><dl><div><dt>Survey</dt><dd>${escapeHtml(source)}</dd></div><div><dt>Redshift</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div><div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>${tracer}${Number.isFinite(cz) ? `<div><dt>cz</dt><dd>${formatVelocity(cz)}</dd></div>` : ''}${Number.isFinite(magnitude) ? `<div><dt>Magnitude</dt><dd>${magnitude.toFixed(3)}</dd></div>` : ''}</dl>`;
+  }
+
+  preview(object, clientX = 0, clientY = 0) {
+    if (!object || !this.dom.hoverInspector) {
+      if (this.dom.hoverInspector) this.dom.hoverInspector.hidden = true;
+      return;
+    }
+    const name = object.name || object.object_id || 'Observed catalogue row';
+    const tracer = object.tracer ? ` · ${object.tracer}` : '';
+    this.dom.hoverInspector.textContent = `${name}${tracer} · z ${formatRedshift(object.redshift)}`;
+    this.dom.hoverInspector.style.left = `${Math.min(window.innerWidth - 270, clientX + 14)}px`;
+    this.dom.hoverInspector.style.top = `${Math.min(window.innerHeight - 80, clientY + 14)}px`;
+    this.dom.hoverInspector.hidden = false;
   }
 }

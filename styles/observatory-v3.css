@@ -65,6 +65,7 @@
 .command-results button b { font-size: 10px; }
 .command-results button small { color: var(--dim); font-size: 8px; }
 .command-results button:hover, .command-results button.is-selected { color: var(--ink); background: var(--cyan-soft); transform: translateX(2px); }
+.command-results button:active, .command-utility:active, .command-button:active, .mode-button:active { transform: translateY(1px) scale(.985); }
 .command-palette-card footer { display: flex; gap: 18px; padding: 11px 20px; border-top: 1px solid var(--line); background: rgba(0,0,0,.10); }
 .mode-switch--quality { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 9px; }
 .mission-queue-section { padding-top: 9px; padding-bottom: 9px; }
@@ -85,6 +86,8 @@
 .mission-queue-state.is-error { color: var(--red); }
 .mission-queue-skeleton { height: 39px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, transparent, var(--cyan-soft), transparent); background-size: 220% 100%; animation: mission-loading 1.4s linear infinite; }
 @keyframes mission-loading { to { background-position: -220% 0; } }
+.hover-inspector { position: fixed; z-index: 55; max-width: 250px; padding: 8px 10px; border: 1px solid var(--line-bright); border-radius: 6px; color: var(--ink); background: rgba(4,17,29,.94); box-shadow: 0 12px 28px rgba(0,0,0,.28); backdrop-filter: blur(12px); pointer-events: none; font: 700 7.5px/1.35 var(--mono); }
+body[data-theme="day"] .hover-inspector { color: #102a3b; background: rgba(247,251,253,.96); }
 
 body.presentation-mode .left-rail,
 body.presentation-mode .control-drawer,

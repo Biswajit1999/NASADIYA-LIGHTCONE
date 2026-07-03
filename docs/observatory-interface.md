@@ -17,7 +17,7 @@ The viewport instrument strip reports measured browser state: rendered frame rat
 
 Screenshot capture exports the current WebGL viewport. Camera bookmarks store only camera position, orbit target and view mode. Keyboard shortcuts are `T` for theme, `P` for presentation focus, `B` to save, `1` to restore and `S` to capture.
 
-The `Ctrl/Cmd + K` command palette exposes named camera destinations, installed survey layers, the provenance-preserving comparison stack, redshift playback and shareable view URLs. A shared URL contains display state and camera coordinates only; it does not alter or export catalogue rows.
+The `Ctrl/Cmd + K` command palette exposes named camera destinations, installed survey layers, the provenance-preserving comparison stack, redshift playback, shareable view URLs and search across the currently loaded inspectable object IDs. Pointer hover provides a lightweight measured-record preview; selecting or searching an object opens the full source record without changing its catalogue position. A shared URL contains display state and camera coordinates only; it does not alter or export catalogue rows.
 
 ## Perceptual rendering
 

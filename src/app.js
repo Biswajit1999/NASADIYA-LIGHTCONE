@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { DESI_TRACERS, SURVEY_LAYERS, TILE_STREAMING } from './config.js';
+import { DESI_TRACERS, LIGHTCONE_CONFIG, SURVEY_LAYERS, TILE_STREAMING } from './config.js';
 import { FULL_DESI_GPU_CLOUD } from './full-cloud-config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { probeGpuCloud } from './core/gpu-cloud-loader.js';
@@ -12,8 +12,8 @@ import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
 import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
 import { TileStreamer } from './core/tile-streamer.js';
-import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase3';
-import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase3';
+import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase5';
+import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase5';
 import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
 
 const state = {
@@ -53,6 +53,7 @@ let tileRefreshBusy = false;
 let fullCloudProbe = null;
 let fullCloudLoading = false;
 let pointerStart = null;
+let hoverTimer = null;
 let loadSequence = 0;
 let redshiftPlayback = null;
 
@@ -216,13 +217,17 @@ async function returnToAdaptiveCloud() {
   applyState({ scheduleTiles: false });
 }
 
-function selectAtPointer(event) {
+function matchAtPointer(event) {
   if (!points || state.fullCatalogue) return;
   const bounds = canvas.getBoundingClientRect();
   pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
   pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
   raycaster.setFromCamera(pointer, scene.camera);
-  const match = points.selectFromRaycaster(raycaster);
+  return points.selectFromRaycaster(raycaster);
+}
+
+function selectAtPointer(event) {
+  const match = matchAtPointer(event);
   if (match) {
     scene.setSelection(points.getDisplayPosition(match.index));
     ui.inspect(match.object);
@@ -374,6 +379,28 @@ function toggleFullscreen() {
   else document.exitFullscreen?.();
 }
 
+function searchObservedObject(query) {
+  const value = String(query || '').trim().toLowerCase();
+  if (value.length < 3) return;
+  const inspectable = points?.objects?.length ? points.objects : overviewObjects;
+  const identifier = (object) => String(object.object_id || object.name || '').toLowerCase();
+  let index = inspectable.findIndex((object) => identifier(object) === value);
+  if (index < 0) index = inspectable.findIndex((object) => identifier(object).includes(value));
+  if (index < 0) {
+    observatory.notify('No matching object in the currently loaded inspectable rows');
+    return;
+  }
+  const object = inspectable[index];
+  const usesRenderableObjects = inspectable === points?.objects;
+  const position = usesRenderableObjects
+    ? points.getDisplayPosition(index)
+    : new THREE.Vector3(Number(object.x_mpc), Number(object.y_mpc), Number(object.z_mpc)).multiplyScalar(LIGHTCONE_CONFIG.displayScale);
+  scene.setSelection(position);
+  scene.focusOn(position, 70);
+  ui.inspect(object);
+  observatory.notify(`Focused observed source ${object.object_id || object.name || ''}`.trim());
+}
+
 function applySharedView(shared) {
   if (!shared) return;
   const observedCeiling = Math.max(0.003, maxField(overviewObjects, 'redshift'));
@@ -463,7 +490,7 @@ function initialise() {
   });
   window.addEventListener('nasadiya:full-catalogue-request', () => activateFullCloud());
   window.addEventListener('nasadiya:adaptive-catalogue-request', () => returnToAdaptiveCloud());
-  window.addEventListener('nasadiya:observatory-command', (event) => handleObservatoryCommand(event.detail?.command));
+  window.addEventListener('nasadiya:observatory-command', (event) => event.detail?.command === 'object-search' ? searchObservedObject(event.detail?.query) : handleObservatoryCommand(event.detail?.command));
   window.addEventListener('nasadiya:performance-sample', (event) => scene.samplePerformance(Number(event.detail?.fps)));
   scene.onCameraChange(() => scheduleAdaptiveTileRefresh());
   const sharedView = observatory.sharedViewFromLocation();
@@ -472,8 +499,18 @@ function initialise() {
   activateLayer(initialLayer, { initial: true }).then(() => applySharedView(sharedView));
   canvas.addEventListener('pointerdown', (event) => {
     flyby.stop('manual');
+    ui.preview(null);
     pointerStart = { x: event.clientX, y: event.clientY };
   });
+  canvas.addEventListener('pointermove', (event) => {
+    window.clearTimeout(hoverTimer);
+    const position = { clientX: event.clientX, clientY: event.clientY };
+    hoverTimer = window.setTimeout(() => {
+      const match = matchAtPointer(position);
+      ui.preview(match?.object || null, position.clientX, position.clientY);
+    }, 120);
+  });
+  canvas.addEventListener('pointerleave', () => { window.clearTimeout(hoverTimer); ui.preview(null); });
   canvas.addEventListener('pointerup', (event) => {
     if (!pointerStart) return;
     if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 5) selectAtPointer(event);

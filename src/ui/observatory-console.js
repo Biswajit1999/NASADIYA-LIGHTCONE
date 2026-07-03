@@ -33,6 +33,8 @@ export class ObservatoryConsole {
       paletteClose: document.querySelector('#close-command-palette'),
       commandSearch: document.querySelector('#command-search-input'),
       commandButtons: [...document.querySelectorAll('[data-observatory-command]')],
+      objectSearch: document.querySelector('#object-search-command'),
+      objectSearchLabel: document.querySelector('#object-search-label'),
     };
     this.presentation = false;
     this.lastFrame = 0;
@@ -58,6 +60,7 @@ export class ObservatoryConsole {
     this.dom.commandSearch?.addEventListener('input', () => this.filterCommands());
     this.dom.commandSearch?.addEventListener('keydown', (event) => this.handlePaletteKey(event));
     this.dom.commandButtons.forEach((button) => button.addEventListener('click', () => this.runCommand(button.dataset.observatoryCommand)));
+    this.dom.objectSearch?.addEventListener('click', () => this.runCommand('object-search', this.dom.commandSearch?.value));
     window.addEventListener('keydown', (event) => {
       if (isTypingTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
       const key = event.key.toLowerCase();
@@ -97,6 +100,12 @@ export class ObservatoryConsole {
       button.hidden = !visible;
       return visible;
     });
+    const showObjectSearch = query.length >= 3;
+    if (this.dom.objectSearch) this.dom.objectSearch.hidden = !showObjectSearch;
+    if (showObjectSearch) {
+      this.dom.objectSearchLabel.textContent = `Find observed object “${this.dom.commandSearch.value.trim()}”`;
+      this.filteredCommands.push(this.dom.objectSearch);
+    }
     this.commandIndex = 0;
     this.syncCommandSelection();
   }
@@ -124,11 +133,11 @@ export class ObservatoryConsole {
     }
   }
 
-  runCommand(command) {
+  runCommand(command, query = null) {
     this.openPalette(false);
     if (command === 'toggle-presentation') return this.togglePresentation();
     if (command === 'share-view') return this.shareView();
-    window.dispatchEvent(new CustomEvent('nasadiya:observatory-command', { detail: { command } }));
+    window.dispatchEvent(new CustomEvent('nasadiya:observatory-command', { detail: { command, query } }));
   }
 
   applyTheme(theme) {
