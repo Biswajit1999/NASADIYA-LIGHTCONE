@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="841mm" height="1189mm" viewBox="0 0 841 1189">
+<defs>
+  <linearGradient id="coneL" x1="0" x2="1"><stop offset="0" stop-color="#3ce6ff" stop-opacity=".08"/><stop offset=".58" stop-color="#28bce9" stop-opacity=".50"/><stop offset="1" stop-color="#f2b15b" stop-opacity=".85"/></linearGradient>
+  <linearGradient id="coneR" x1="1" x2="0"><stop offset="0" stop-color="#7c67e8" stop-opacity=".12"/><stop offset=".58" stop-color="#45d9ff" stop-opacity=".48"/><stop offset="1" stop-color="#f2b15b" stop-opacity=".85"/></linearGradient>
+  <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="1" fill="#8deaff" opacity=".7"/><circle cx="14" cy="10" r=".7" fill="#d2b0ff" opacity=".7"/><circle cx="8" cy="15" r=".6" fill="#f2b15b" opacity=".6"/></pattern>
+  <filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="841" height="1189" fill="#030915"/>
+<rect x="0" y="0" width="841" height="7" fill="#42dfff"/><rect x="0" y="7" width="841" height="1" fill="#f2b15b"/>
+<path d="M30 31 L45 40 L30 49 L15 40 Z M30 34 L39 40 L30 46 L21 40 Z" fill="none" stroke="#64e8ff" stroke-width="1.7"/>
+<text x="58" y="37" fill="#eaf8ff" font-family="Arial" font-size="17" font-weight="800" letter-spacing="1.6">NĀSADĪYA</text><text x="58" y="53" fill="#f2b15b" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.5">LIGHTCONE</text>
+<text x="420" y="44" fill="#ffffff" font-family="Georgia" font-size="31" font-weight="700" text-anchor="middle">NĀSADĪYA LIGHTCONE</text>
+<text x="420" y="67" fill="#6be7ff" font-family="Arial" font-size="14" font-weight="650" text-anchor="middle">Survey-native browser for 2MRS and DESI DR1 spectroscopic catalogues</text>
+<text x="420" y="86" fill="#adcad9" font-family="Arial" font-size="9.2" text-anchor="middle">Biswajit Jana  |  Independent Researcher  |  github.com/Biswajit1999/NASADIYA-LIGHTCONE</text>
+<line x1="28" y1="103" x2="813" y2="103" stroke="#295878"/>
+<!-- left panels -->
+<rect x="30" y="123" width="178" height="216" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="47" y="147" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">SCIENTIFIC AIM</text><line x1="47" y1="157" x2="191" y2="157" stroke="#28678d"/>
+<text x="47" y="180" fill="#d6e8f2" font-family="Arial" font-size="10">• Interactive view of measured survey geometry</text>
+<text x="47" y="199" fill="#d6e8f2" font-family="Arial" font-size="10">• Separate 2MRS and DESI source identities</text>
+<text x="47" y="218" fill="#d6e8f2" font-family="Arial" font-size="10">• Expose redshift, tracers and density controls</text>
+<text x="47" y="250" fill="#9bb8ca" font-family="Arial" font-size="10">Not a reconstructed all-sky density field.</text>
+<rect x="30" y="354" width="178" height="270" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="47" y="378" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">DATA &amp; METHOD</text><line x1="47" y1="388" x2="191" y2="388" stroke="#28678d"/>
+<text x="47" y="416" fill="#f2b15b" font-family="Arial" font-size="15" font-weight="800">43,533</text><text x="47" y="430" fill="#b8d1df" font-family="Arial" font-size="9">2MRS nearby galaxies</text>
+<text x="47" y="462" fill="#6ce5ff" font-family="Arial" font-size="15" font-weight="800">6,093,818</text><text x="47" y="476" fill="#b8d1df" font-family="Arial" font-size="9">DESI DR1 LSS observed rows</text>
+<text x="47" y="509" fill="#d6e8f2" font-family="Arial" font-size="10">Observer-centred coordinates:</text>
+<text x="47" y="529" fill="#b8d1df" font-family="Courier New" font-size="10">x = r cos(δ) cos(α)</text><text x="47" y="545" fill="#b8d1df" font-family="Courier New" font-size="10">y = r cos(δ) sin(α)</text><text x="47" y="561" fill="#b8d1df" font-family="Courier New" font-size="10">z = r sin(δ)</text>
+<text x="47" y="593" fill="#d6e8f2" font-family="Arial" font-size="10">Static ES modules · Three.js · WebGL</text>
+<!-- hero -->
+<rect x="226" y="123" width="390" height="501" rx="12" fill="#061426" stroke="#2d759d" stroke-width="1.2"/>
+<text x="246" y="149" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">OBSERVER-CENTRED LIGHTCONE VIEW</text>
+<text x="596" y="149" fill="#a9c7d9" font-family="Arial" font-size="9" text-anchor="end">z = 0–2.5</text><line x1="246" y1="160" x2="596" y2="160" stroke="#28678d"/>
+<text x="421" y="185" fill="#ffffff" font-family="Arial" font-size="15" font-weight="700" text-anchor="middle">DESI DR1 LSS observed footprint</text>
+<path d="M420 380 L252 235 Q300 205 365 225 Q405 245 420 380 Q394 505 320 555 Q270 530 252 500 Z" fill="url(#coneL)" stroke="#3ce6ff" stroke-opacity=".55"/>
+<path d="M420 380 L588 235 Q540 205 475 225 Q435 245 420 380 Q446 505 520 555 Q570 530 588 500 Z" fill="url(#coneR)" stroke="#8e82ff" stroke-opacity=".55"/>
+<path d="M420 380 L252 235 Q300 205 365 225 Q405 245 420 380 Q394 505 320 555 Q270 530 252 500 Z" fill="url(#dots)" opacity=".86"/>
+<path d="M420 380 L588 235 Q540 205 475 225 Q435 245 420 380 Q446 505 520 555 Q570 530 588 500 Z" fill="url(#dots)" opacity=".86"/>
+<ellipse cx="420" cy="380" rx="44" ry="16" fill="none" stroke="#49cdf0" stroke-opacity=".25"/><ellipse cx="420" cy="380" rx="88" ry="32" fill="none" stroke="#49cdf0" stroke-opacity=".22"/><ellipse cx="420" cy="380" rx="133" ry="48" fill="none" stroke="#49cdf0" stroke-opacity=".18"/><ellipse cx="420" cy="380" rx="174" ry="63" fill="none" stroke="#f2b15b" stroke-opacity=".14"/>
+<circle cx="420" cy="380" r="9" fill="#061426" stroke="#f2b15b" stroke-width="2" filter="url(#glow)"/><circle cx="420" cy="380" r="2.6" fill="#ffffff"/>
+<text x="436" y="368" fill="#ffffff" font-family="Arial" font-size="10" font-weight="700">Observer</text>
+<text x="270" y="212" fill="#6ce5ff" font-family="Arial" font-size="10" font-weight="700">North / South footprint</text>
+<text x="553" y="535" fill="#f2b15b" font-family="Arial" font-size="10" font-weight="700" text-anchor="end">2MRS anchor · 43,533</text>
+<text x="248" y="590" fill="#a9c7d9" font-family="Arial" font-size="9">0</text><text x="596" y="590" fill="#a9c7d9" font-family="Arial" font-size="9" text-anchor="end">6.95 Gpc</text><text x="421" y="607" fill="#a9c7d9" font-family="Arial" font-size="10" text-anchor="middle">Comoving radial distance</text>
+<!-- right panel -->
+<rect x="634" y="123" width="177" height="501" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="651" y="147" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">CURRENT BUILD</text><line x1="651" y1="157" x2="794" y2="157" stroke="#28678d"/>
+<text x="651" y="185" fill="#ffffff" font-family="Arial" font-size="13" font-weight="700">GPU-resident catalogue</text>
+<text x="651" y="211" fill="#6ce5ff" font-family="Arial" font-size="19" font-weight="800">6.09M</text><text x="651" y="226" fill="#b8d1df" font-family="Arial" font-size="9">DESI rows resident in GPU memory</text>
+<text x="651" y="262" fill="#ffffff" font-family="Arial" font-size="11" font-weight="700">Display density</text><text x="651" y="278" fill="#b8d1df" font-family="Arial" font-size="10">125K · 250K · 500K · 1M · 6.09M</text>
+<text x="651" y="315" fill="#ffffff" font-family="Arial" font-size="11" font-weight="700">3D controls</text><text x="651" y="331" fill="#b8d1df" font-family="Arial" font-size="10">Orbit · zoom · pan · flythrough</text>
+<text x="651" y="368" fill="#ffffff" font-family="Arial" font-size="11" font-weight="700">Tracer classes</text><text x="651" y="384" fill="#b8d1df" font-family="Arial" font-size="10">BGS · LRG · ELG · QSO</text>
+<text x="651" y="421" fill="#ffffff" font-family="Arial" font-size="11" font-weight="700">Comparison stack</text><text x="651" y="437" fill="#b8d1df" font-family="Arial" font-size="10">2MRS anchor + full DESI cloud</text>
+<text x="651" y="486" fill="#ffffff" font-family="Arial" font-size="11" font-weight="700">Scope</text><text x="651" y="502" fill="#b8d1df" font-family="Arial" font-size="10">Footprint, targeting and selection effects remain visible.</text>
+<!-- metric bar -->
+<rect x="30" y="648" width="781" height="98" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="48" y="674" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">QUANTITATIVE SUMMARY</text><line x1="48" y1="685" x2="793" y2="685" stroke="#28678d"/>
+<text x="100" y="720" fill="#6ce5ff" font-family="Georgia" font-size="27" font-weight="700" text-anchor="middle">6.09M</text><text x="100" y="737" fill="#b8d1df" font-family="Arial" font-size="10" text-anchor="middle">DESI observed rows</text>
+<text x="290" y="720" fill="#f2b15b" font-family="Georgia" font-size="27" font-weight="700" text-anchor="middle">43,533</text><text x="290" y="737" fill="#b8d1df" font-family="Arial" font-size="10" text-anchor="middle">2MRS anchor galaxies</text>
+<text x="485" y="720" fill="#6ce5ff" font-family="Georgia" font-size="27" font-weight="700" text-anchor="middle">6.95 Gpc</text><text x="485" y="737" fill="#b8d1df" font-family="Arial" font-size="10" text-anchor="middle">radial extent</text>
+<text x="690" y="720" fill="#c1a6ff" font-family="Georgia" font-size="27" font-weight="700" text-anchor="middle">11.19 Gyr</text><text x="690" y="737" fill="#b8d1df" font-family="Arial" font-size="10" text-anchor="middle">look-back at z = 2.5</text>
+<!-- system -->
+<rect x="30" y="768" width="781" height="160" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="48" y="794" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">SYSTEM ARCHITECTURE</text><text x="793" y="794" fill="#9bb8ca" font-family="Arial" font-size="9" text-anchor="end">Static browser delivery of the full observed DESI cloud</text><line x1="48" y1="805" x2="793" y2="805" stroke="#28678d"/>
+<g fill="none" stroke="#6ce5ff" stroke-width="1.6"><circle cx="112" cy="850" r="24"/><circle cx="266" cy="850" r="24"/><circle cx="420" cy="850" r="24"/><circle cx="574" cy="850" r="24"/><circle cx="728" cy="850" r="24"/><path d="M136 850 H226 M290 850 H380 M444 850 H534 M598 850 H688"/></g>
+<g fill="#eaf8ff" font-family="Arial" font-size="12" font-weight="700" text-anchor="middle"><text x="112" y="855">1</text><text x="266" y="855">2</text><text x="420" y="855">3</text><text x="574" y="855">4</text><text x="728" y="855">5</text></g>
+<g fill="#eaf8ff" font-family="Arial" font-size="10" font-weight="700" text-anchor="middle"><text x="112" y="894">DESI DR1 LSS</text><text x="266" y="894">GPU cloud build</text><text x="420" y="894">Static chunks</text><text x="574" y="894">WebGL point cloud</text><text x="728" y="894">Browser controls</text></g>
+<g fill="#9bb8ca" font-family="Arial" font-size="8.5" text-anchor="middle"><text x="112" y="910">research bundle</text><text x="266" y="910">packed float32</text><text x="420" y="910">GitHub Pages</text><text x="574" y="910">shader filters</text><text x="728" y="910">density + 3D view</text></g>
+<!-- status -->
+<rect x="30" y="950" width="781" height="180" rx="10" fill="#07182a" stroke="#27668c"/>
+<text x="48" y="976" fill="#6ce5ff" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1.1">CURRENT STATUS AND NEXT ANALYSIS</text><line x1="48" y1="987" x2="793" y2="987" stroke="#28678d"/>
+<text x="52" y="1016" fill="#ffffff" font-family="Arial" font-size="12" font-weight="700">Available now</text><text x="52" y="1040" fill="#c3d8e5" font-family="Arial" font-size="10">• Full DESI cloud delivery in a static browser</text><text x="52" y="1058" fill="#c3d8e5" font-family="Arial" font-size="10">• 2MRS + DESI comparison stack</text><text x="52" y="1076" fill="#c3d8e5" font-family="Arial" font-size="10">• Display density, redshift and tracer controls</text>
+<line x1="284" y1="1008" x2="284" y2="1100" stroke="#28678d"/>
+<text x="306" y="1016" fill="#ffffff" font-family="Arial" font-size="12" font-weight="700">Interpretation</text><text x="306" y="1040" fill="#c3d8e5" font-family="Arial" font-size="10">• Survey geometry remains explicit</text><text x="306" y="1058" fill="#c3d8e5" font-family="Arial" font-size="10">• Display sample differs from the resident cloud</text><text x="306" y="1076" fill="#c3d8e5" font-family="Arial" font-size="10">• The stack is non-deduplicated</text>
+<line x1="550" y1="1008" x2="550" y2="1100" stroke="#28678d"/>
+<text x="572" y="1016" fill="#ffffff" font-family="Arial" font-size="12" font-weight="700">Next research output</text><text x="572" y="1040" fill="#c3d8e5" font-family="Arial" font-size="10">• Representation-fidelity measurements</text><text x="572" y="1058" fill="#c3d8e5" font-family="Arial" font-size="10">• Redshift, tracer, sky and voxel comparisons</text><text x="572" y="1076" fill="#c3d8e5" font-family="Arial" font-size="10">• Reproducible methods and results package</text>
+<rect x="0" y="1155" width="841" height="34" fill="#06111F"/>
+<text x="30" y="1176" fill="#dceef7" font-family="Arial" font-size="8.7">DESI DR1 LSS Catalogues  |  2MRS Redshift Survey  |  Python · Three.js · WebGL</text><text x="811" y="1176" fill="#dceef7" font-family="Arial" font-size="8.7" font-weight="700" text-anchor="end">github.com/Biswajit1999/NASADIYA-LIGHTCONE</text>
+</svg>

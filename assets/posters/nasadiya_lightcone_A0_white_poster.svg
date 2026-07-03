@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="841mm" height="1189mm" viewBox="0 0 841 1189">
+<rect width="841" height="1189" fill="#FFFFFF"/>
+<rect x="0" y="0" width="841" height="8" fill="#20A9C8"/>
+<rect x="0" y="8" width="841" height="1.2" fill="#D7722D" opacity=".75"/>
+<path d="M29 30 L43 39 L29 48 L15 39 Z M29 33 L38 39 L29 45 L20 39 Z" fill="none" stroke="#0B5D94" stroke-width="1.6"/>
+<text x="55" y="36" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" text-anchor="start" letter-spacing="1.8">NĀSADĪYA</text>
+<text x="55" y="52" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" text-anchor="start" letter-spacing="1.7">LIGHTCONE</text>
+<text x="420" y="42" fill="#0E1C33" font-family="Georgia, 'Times New Roman', serif" font-size="29" font-weight="800" text-anchor="middle">NĀSADĪYA LIGHTCONE</text>
+<text x="420" y="65" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="650" text-anchor="middle">A survey-native browser for 2MRS and DESI DR1 spectroscopic catalogues</text>
+<text x="420" y="84" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500" text-anchor="middle">Biswajit Jana  |  Independent Researcher  |  github.com/Biswajit1999/NASADIYA-LIGHTCONE</text>
+<line x1="28" y1="101" x2="813" y2="101" stroke="#B5CDE0" stroke-width="1.1"/>
+<rect x="201" y="119" width="450" height="440" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="216" y="140" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">OBSERVER-CENTRED SURVEY GEOMETRY</text>
+<text x="636" y="140" fill="#657B8F" font-family="Arial, Helvetica, sans-serif" font-size="8.8" font-weight="500" text-anchor="end">z = 0–2.5</text>
+<line x1="216" y1="149" x2="636" y2="149" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="426" y="175" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" text-anchor="middle">DESI DR1 LSS footprint + 2MRS nearby anchor</text>
+<text x="213" y="199" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="600" text-anchor="start">z = 2.5</text>
+<text x="245" y="230" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="650" text-anchor="start">DESI North / South</text>
+<text x="245" y="243" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="650" text-anchor="start">observed footprint</text>
+<ellipse cx="426" cy="359" rx="51.3" ry="24.8" fill="none" stroke="#0B5D94" stroke-opacity=".13" stroke-width=".8"/>
+<ellipse cx="426" cy="359" rx="91.2" ry="44.2" fill="none" stroke="#0B5D94" stroke-opacity=".13" stroke-width=".8"/>
+<ellipse cx="426" cy="359" rx="133" ry="64.4" fill="none" stroke="#0B5D94" stroke-opacity=".13" stroke-width=".8"/>
+<ellipse cx="426" cy="359" rx="172.9" ry="83.7" fill="none" stroke="#0B5D94" stroke-opacity=".13" stroke-width=".8"/>
+<line x1="426" y1="359" x2="521" y2="278.3" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<line x1="426" y1="359" x2="581.7" y2="310.8" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<line x1="426" y1="359" x2="609.7" y2="334.2" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<line x1="426" y1="359" x2="609.7" y2="383.8" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<line x1="426" y1="359" x2="581.7" y2="407.2" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<line x1="426" y1="359" x2="521" y2="439.7" stroke="#B5CDE0" stroke-width=".6" opacity=".42"/>
+<g opacity=".7">
+<circle cx="310" cy="337" r="1" fill="#20A9C8"/><circle cx="319" cy="354" r=".8" fill="#8059B9"/><circle cx="330" cy="367" r=".9" fill="#0B5D94"/><circle cx="347" cy="338" r=".8" fill="#D7722D"/><circle cx="358" cy="379" r="1" fill="#20A9C8"/><circle cx="374" cy="320" r=".8" fill="#8059B9"/><circle cx="389" cy="343" r=".9" fill="#0B5D94"/><circle cx="398" cy="384" r=".8" fill="#D7722D"/><circle cx="449" cy="335" r="1" fill="#20A9C8"/><circle cx="462" cy="362" r=".8" fill="#8059B9"/><circle cx="477" cy="381" r=".9" fill="#0B5D94"/><circle cx="491" cy="333" r=".8" fill="#D7722D"/><circle cx="506" cy="356" r="1" fill="#20A9C8"/><circle cx="521" cy="389" r=".8" fill="#8059B9"/><circle cx="540" cy="341" r=".9" fill="#0B5D94"/><circle cx="555" cy="367" r=".8" fill="#D7722D"/>
+<circle cx="273" cy="329" r=".7" fill="#20A9C8"/><circle cx="284" cy="381" r=".7" fill="#8059B9"/><circle cx="296" cy="406" r=".7" fill="#D7722D"/><circle cx="573" cy="320" r=".7" fill="#20A9C8"/><circle cx="589" cy="374" r=".7" fill="#8059B9"/><circle cx="562" cy="407" r=".7" fill="#D7722D"/>
+<circle cx="315" cy="317" r=".5" fill="#0B5D94"/><circle cx="338" cy="397" r=".5" fill="#20A9C8"/><circle cx="364" cy="309" r=".5" fill="#8059B9"/><circle cx="389" cy="416" r=".5" fill="#D7722D"/><circle cx="456" cy="303" r=".5" fill="#0B5D94"/><circle cx="491" cy="420" r=".5" fill="#20A9C8"/><circle cx="532" cy="310" r=".5" fill="#8059B9"/>
+</g>
+<g opacity=".8">
+<circle cx="426" cy="439" r="1.0" fill="#D7722D"/><circle cx="440" cy="444" r=".8" fill="#D7722D"/><circle cx="414" cy="447" r=".7" fill="#D7722D"/><circle cx="449" cy="453" r=".6" fill="#D7722D"/><circle cx="401" cy="455" r=".8" fill="#D7722D"/><circle cx="432" cy="463" r=".7" fill="#D7722D"/><circle cx="416" cy="469" r=".6" fill="#D7722D"/><circle cx="458" cy="469" r=".6" fill="#D7722D"/>
+</g>
+<circle cx="426" cy="359" r="7" fill="#FFFFFF" stroke="#D7722D" stroke-width="2"/>
+<circle cx="426" cy="359" r="16" fill="none" stroke="#D7722D" stroke-width="1.1" opacity=".65"/>
+<text x="442" y="345" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" text-anchor="start">Observer</text>
+<text x="620" y="476" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="700" text-anchor="end">2MRS anchor</text>
+<text x="620" y="489" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="700" text-anchor="end">43,533 galaxies</text>
+<rect x="216" y="439" width="185" height="48" rx="7" fill="#E9F1F7" stroke="#B5CDE0" stroke-width=".8"/>
+<text x="228" y="459" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="8.6" font-weight="800" text-anchor="start" letter-spacing=".9">INTERPRETATION SCOPE</text>
+<text x="228" y="474" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="550" text-anchor="start">Footprint, targeting and selection remain visible.</text>
+<text x="218" y="525" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="600" text-anchor="start">0</text>
+<text x="426" y="545" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="600" text-anchor="middle">Comoving radial distance (Mpc/Gpc)</text>
+<text x="636" y="525" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="600" text-anchor="end">6.95 Gpc</text>
+<rect x="28" y="119" width="155" height="184" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="43" y="140" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">SCIENTIFIC AIM</text>
+<line x1="43" y1="149" x2="168" y2="149" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="42" y="160" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">• Display measured survey geometry</text>
+<text x="42" y="173" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">  in an interactive 3D browser.</text>
+<text x="42" y="186" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">• Keep 2MRS and DESI identities</text>
+<text x="42" y="199" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">  separate in the comparison stack.</text>
+<text x="42" y="212" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">• Expose redshift limits, tracer</text>
+<text x="42" y="225" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">  classes and display density.</text>
+<text x="42" y="251" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">The browser is not a density-field</text>
+<text x="42" y="264" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="500">reconstruction.</text>
+<rect x="28" y="315" width="155" height="244" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="43" y="336" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">DATA &amp; COORDINATES</text>
+<line x1="43" y1="345" x2="168" y2="345" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="42" y="356" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.4" font-weight="700">2MRS nearby anchor</text>
+<text x="42" y="370" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="10.2" font-weight="700">43,533 galaxies</text>
+<text x="42" y="398" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.4" font-weight="700">DESI DR1 LSS</text>
+<text x="42" y="412" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="10.2" font-weight="700">6,093,818 observed rows</text>
+<text x="42" y="440" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.4" font-weight="700">Observer-centred placement:</text>
+<text x="42" y="454" fill="#3C5872" font-family="'Courier New', monospace" font-size="9.3" font-weight="500">x = r cos(δ) cos(α)</text>
+<text x="42" y="468" fill="#3C5872" font-family="'Courier New', monospace" font-size="9.3" font-weight="500">y = r cos(δ) sin(α)</text>
+<text x="42" y="482" fill="#3C5872" font-family="'Courier New', monospace" font-size="9.3" font-weight="500">z = r sin(δ)</text>
+<text x="42" y="510" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.4" font-weight="700">Spectroscopic redshift window</text>
+<text x="42" y="524" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="10.2" font-weight="700">0 ≤ z ≤ 2.5</text>
+<rect x="28" y="571" width="155" height="192" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="43" y="592" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">BROWSER METHOD</text>
+<line x1="43" y1="601" x2="168" y2="601" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="42" y="612" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• Static ES-module application</text>
+<text x="42" y="625" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• Three.js / WebGL rendering</text>
+<text x="42" y="638" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• GPU-resident full DESI cloud</text>
+<text x="42" y="651" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• Deterministic display samples</text>
+<text x="42" y="664" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">  125K / 250K / 500K / 1M / 6.09M</text>
+<text x="42" y="677" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• Adaptive tiles for row inspection</text>
+<text x="42" y="690" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="9.2" font-weight="500">• Orbit, zoom, pan and flythrough</text>
+<rect x="668" y="119" width="145" height="184" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="683" y="140" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">KEY METRICS</text>
+<line x1="683" y1="149" x2="798" y2="149" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="680" y="160" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="800">6.09M</text>
+<text x="680" y="173" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.6" font-weight="500">DESI observed rows</text>
+<text x="680" y="195" fill="#D7722D" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="800">43,533</text>
+<text x="680" y="208" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.6" font-weight="500">2MRS anchor</text>
+<text x="680" y="230" fill="#20A9C8" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="800">6.95 Gpc</text>
+<text x="680" y="243" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.6" font-weight="500">radial extent</text>
+<text x="680" y="265" fill="#8059B9" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="800">11.19 Gyr</text>
+<text x="680" y="278" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.6" font-weight="500">look-back at z = 2.5</text>
+<rect x="668" y="315" width="145" height="244" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="683" y="336" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">INTERACTION</text>
+<line x1="683" y1="345" x2="798" y2="345" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="681" y="355" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">Display density</text>
+<text x="681" y="367" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">125K to 6.09M</text>
+<text x="681" y="386" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">3D navigation</text>
+<text x="681" y="398" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">orbit • zoom • pan</text>
+<text x="681" y="417" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">Guided route</text>
+<text x="681" y="429" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">overview → interior</text>
+<text x="681" y="448" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">Redshift filter</text>
+<text x="681" y="460" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">0 ≤ z ≤ 2.5</text>
+<text x="681" y="479" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">Tracer filter</text>
+<text x="681" y="491" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">BGS · LRG · ELG · QSO</text>
+<text x="681" y="510" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="9.3" font-weight="700">Comparison stack</text>
+<text x="681" y="522" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500">2MRS + DESI</text>
+<rect x="668" y="571" width="145" height="192" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="683" y="592" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">CURRENT ANALYSIS</text>
+<line x1="683" y1="601" x2="798" y2="601" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="681" y="612" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">Representation-fidelity study</text>
+<text x="681" y="624" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">in progress:</text>
+<text x="681" y="648" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">• redshift distribution</text>
+<text x="681" y="660" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">• tracer fractions</text>
+<text x="681" y="672" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">• sky occupancy</text>
+<text x="681" y="684" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">• 3D voxel occupancy</text>
+<text x="681" y="696" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">• repeated random baseline</text>
+<text x="681" y="720" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">Purpose: evaluate reduced</text>
+<text x="681" y="732" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">browser samples against the</text>
+<text x="681" y="744" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500">full 6.09M parent catalogue.</text>
+<rect x="28" y="780" width="785" height="135" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="43" y="801" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">SYSTEM ARCHITECTURE</text>
+<text x="798" y="801" fill="#657B8F" font-family="Arial, Helvetica, sans-serif" font-size="8.8" font-weight="500" text-anchor="end">Full catalogue delivery and interaction path</text>
+<line x1="43" y1="810" x2="798" y2="810" stroke="#B8CCDF" stroke-width=".8"/>
+<circle cx="93" cy="842" r="21" fill="#E9F1F7" stroke="#B8CCDF" stroke-width="1"/>
+<text x="93" y="847" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" text-anchor="middle">1</text>
+<text x="93" y="875" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" text-anchor="middle">DESI DR1 LSS</text>
+<text x="93" y="888" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="500" text-anchor="middle">research bundle</text>
+<path d="M 118 842 L 173 842 L 165 836 M 173 842 L 165 848" fill="none" stroke="#20A9C8" stroke-width="1.4"/>
+<circle cx="245" cy="842" r="21" fill="#E9F1F7" stroke="#B8CCDF" stroke-width="1"/>
+<text x="245" y="847" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" text-anchor="middle">2</text>
+<text x="245" y="875" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" text-anchor="middle">GPU cloud build</text>
+<text x="245" y="888" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="500" text-anchor="middle">packed float32</text>
+<path d="M 270 842 L 325 842 L 317 836 M 325 842 L 317 848" fill="none" stroke="#20A9C8" stroke-width="1.4"/>
+<circle cx="397" cy="842" r="21" fill="#E9F1F7" stroke="#B8CCDF" stroke-width="1"/>
+<text x="397" y="847" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" text-anchor="middle">3</text>
+<text x="397" y="875" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" text-anchor="middle">Static chunks</text>
+<text x="397" y="888" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="500" text-anchor="middle">GitHub Pages</text>
+<path d="M 422 842 L 477 842 L 469 836 M 477 842 L 469 848" fill="none" stroke="#20A9C8" stroke-width="1.4"/>
+<circle cx="549" cy="842" r="21" fill="#E9F1F7" stroke="#B8CCDF" stroke-width="1"/>
+<text x="549" y="847" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" text-anchor="middle">4</text>
+<text x="549" y="875" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" text-anchor="middle">WebGL point cloud</text>
+<text x="549" y="888" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="500" text-anchor="middle">shader filters</text>
+<path d="M 574 842 L 629 842 L 621 836 M 629 842 L 621 848" fill="none" stroke="#20A9C8" stroke-width="1.4"/>
+<circle cx="701" cy="842" r="21" fill="#E9F1F7" stroke="#B8CCDF" stroke-width="1"/>
+<text x="701" y="847" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" text-anchor="middle">5</text>
+<text x="701" y="875" fill="#0E1C33" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" text-anchor="middle">Browser controls</text>
+<text x="701" y="888" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="500" text-anchor="middle">density + 3D view</text>
+<rect x="28" y="932" width="785" height="162" rx="9" fill="#F8FBFF" stroke="#B8CCDF" stroke-width="1.2"/>
+<text x="43" y="953" fill="#0A5B8F" font-family="Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1.1">CONFERENCE SUMMARY</text>
+<text x="798" y="953" fill="#657B8F" font-family="Arial, Helvetica, sans-serif" font-size="8.8" font-weight="500" text-anchor="end">Current project status</text>
+<line x1="43" y1="962" x2="798" y2="962" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="48" y="983" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="750">What is available now</text>
+<text x="48" y="1005" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Full DESI GPU cloud in the browser</text>
+<text x="48" y="1021" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• 2MRS + DESI comparison view</text>
+<text x="48" y="1037" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Tracer, redshift and density controls</text>
+<text x="48" y="1053" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Observer-centred spatial references</text>
+<line x1="286" y1="976" x2="286" y2="1077" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="303" y="983" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="750">What the interface communicates</text>
+<text x="303" y="1005" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Survey footprint is part of the data context</text>
+<text x="303" y="1021" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Display sample differs from GPU-resident rows</text>
+<text x="303" y="1037" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• The comparison stack is non-deduplicated</text>
+<text x="303" y="1053" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Source identity remains visible</text>
+<line x1="541" y1="976" x2="541" y2="1077" stroke="#B8CCDF" stroke-width=".8"/>
+<text x="558" y="983" fill="#0B5D94" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="750">Next research output</text>
+<text x="558" y="1005" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Quantitative representation-fidelity report</text>
+<text x="558" y="1021" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Figures for redshift and sky/voxel tests</text>
+<text x="558" y="1037" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Reproducible methods and results package</text>
+<text x="558" y="1053" fill="#3C5872" font-family="Arial, Helvetica, sans-serif" font-size="8.9" font-weight="500">• Manuscript after validation metrics</text>
+<rect x="0" y="1155" width="841" height="34" fill="#0A1C32"/>
+<text x="28" y="1175" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="500" text-anchor="start">DESI DR1 LSS Catalogues  |  2MRS Redshift Survey  |  Software: Python · Three.js · WebGL</text>
+<text x="813" y="1175" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="8.7" font-weight="600" text-anchor="end">github.com/Biswajit1999/NASADIYA-LIGHTCONE</text>
+</svg>
