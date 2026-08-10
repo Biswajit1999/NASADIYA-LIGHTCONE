@@ -1,0 +1,606 @@
+{
+  "format": "nasadiya-survey-integrity/v1",
+  "status": "passed",
+  "integrity_fingerprint": "f4901f2d20ce8609de9ebd51b613be85f819973007e7cc733d3b5975009d0a7f",
+  "products": {
+    "two_mrs": {
+      "dataset_id": "2mrs-table3",
+      "object_count": 43533,
+      "file": {
+        "path": "data/processed/2mrs/2mrs_lightcone.json",
+        "bytes": 35775159,
+        "sha256": "48e2223a4a1729653307d7f211a1741e01d2f2a85839e3c4f9ece45005c2422d"
+      },
+      "cz_km_s_range": [
+        -300,
+        51864
+      ]
+    },
+    "desi_index": {
+      "dataset_id": "desi-dr1",
+      "record_count": 6093818,
+      "tile_count": 4205,
+      "tile_count_sum": 6093818,
+      "overview_count": 125000,
+      "source_url": "https://data.desi.lbl.gov/public/dr1/survey/catalogs/dr1/LSS/iron/LSScats/v1.2/"
+    },
+    "desi_overview": {
+      "file": {
+        "path": "data/processed/desi-dr1/overview.json",
+        "bytes": 24299390,
+        "sha256": "60181034a114fce48d1610a40f4d0e724308110cd05494ba1476b89d7b253603"
+      },
+      "record_count": 125000,
+      "tracer_counts": {
+        "BGS": 6197,
+        "ELG": 49848,
+        "LRG": 44069,
+        "QSO": 24886
+      },
+      "redshift_range": [
+        0.10061497410917862,
+        3.499809790587135
+      ],
+      "comoving_distance_mpc_range": [
+        435.15980492867845,
+        6951.465405183595
+      ]
+    },
+    "full_cloud": {
+      "dataset_id": "desi-dr1-lss-full-observed-cloud",
+      "record_count": 6093818,
+      "byte_length": 121876360,
+      "part_count": 3,
+      "parts": [
+        {
+          "path": "data/processed/desi-dr1/full-cloud/desi-dr1-full-cloud.part-000.f32",
+          "bytes": 41943040,
+          "sha256": "b87a70169d61b6c402efd3fdc35654edac247ddeae8661ea6427f96fe643a57e"
+        },
+        {
+          "path": "data/processed/desi-dr1/full-cloud/desi-dr1-full-cloud.part-001.f32",
+          "bytes": 41943040,
+          "sha256": "c686d78746633b23b5c3caa817ddfbac43ac9da36079e179bb679c023afc1668"
+        },
+        {
+          "path": "data/processed/desi-dr1/full-cloud/desi-dr1-full-cloud.part-002.f32",
+          "bytes": 37990280,
+          "sha256": "d4522e629848010f45ecebd9157f89a5df47f7ba5d1cde34a25fc7138d57b381"
+        }
+      ],
+      "tracer_counts": {
+        "BGS": 300017,
+        "ELG": 2432027,
+        "LRG": 2138604,
+        "QSO": 1223170
+      }
+    },
+    "research_summary": {
+      "input_rows": 6093818,
+      "rendered_rows": 120000,
+      "tracer_counts": {
+        "BGS": 300017,
+        "ELG": 2432027,
+        "LRG": 2138604,
+        "QSO": 1223170
+      },
+      "maximum_observed_redshift": 3.499997854232788,
+      "maximum_comoving_distance_mpc": 6951.6201171875,
+      "maximum_lookback_time_gyr": 11.987621307373047,
+      "figure_files": [
+        {
+          "path": "figures/desi_dr1_lss_3d_research_view.png",
+          "bytes": 962259,
+          "sha256": "64f8dd6d9cccd1e9436d8aa36a2261ffaf182cf0514b65bbb0255bc91a8955c6"
+        },
+        {
+          "path": "figures/desi_dr1_lss_redshift_summary.png",
+          "bytes": 109617,
+          "sha256": "fc7d780400cb9ef6041de62f7f867616edb419f56d9d798787c7020bbea64e6b"
+        },
+        {
+          "path": "figures/desi_dr1_lss_sky_footprint.png",
+          "bytes": 429829,
+          "sha256": "7d1f3ae768fdc08664b69ff09e7672abe79afac3cc88dea9b690d2637668861d"
+        },
+        {
+          "path": "figures/desi_dr1_lss_research_summary.json",
+          "bytes": 5891,
+          "sha256": "e351650658e9b99c1adcc655e98f9d9a1e8470a62fad6dc539ec20f6ab70ade9"
+        }
+      ]
+    },
+    "publication_evidence": {
+      "parent_rows": 6093818,
+      "input_sha256": "aba7c9236e516459e914d079e4b38bf1e75823ef0707e90da066914a5bda942e",
+      "gpu_manifest_record_count": 6093818,
+      "fidelity_csv": {
+        "path": "figures/publication_evidence/representation_fidelity_metrics.csv",
+        "bytes": 3706,
+        "sha256": "e5272654f200e6eeb814d0b0e98375a491dcb72fc8da6852adfb69565226e301"
+      },
+      "fidelity_rows": 12,
+      "figure_identifiers": [
+        "fig_01_parent_tracer_redshift",
+        "fig_02_redshift_residuals",
+        "fig_03_redshift_fidelity_convergence",
+        "fig_04_voxel_fidelity_convergence",
+        "fig_05_sky_cell_residuals",
+        "fig_06_cartesian_slice_comparison"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "survey registry format",
+      "passed": true,
+      "detail": "nasadiya-survey-registry/v4"
+    },
+    {
+      "name": "survey registry layer array",
+      "passed": true,
+      "detail": "10 layers"
+    },
+    {
+      "name": "survey registry contains no non-human authorship metadata",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "name": "registry deployed layer 2mrs-table3",
+      "passed": true,
+      "detail": "deployed"
+    },
+    {
+      "name": "registry deployed layer desi-dr1-lss",
+      "passed": true,
+      "detail": "deployed"
+    },
+    {
+      "name": "photometric uncertainty gate 2mpz",
+      "passed": true,
+      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"photometric_redshift\",\"per_object_redshift_uncertainty\"]"
+    },
+    {
+      "name": "photometric uncertainty gate wise-sc",
+      "passed": true,
+      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"photometric_redshift\",\"per_object_redshift_uncertainty\"]"
+    },
+    {
+      "name": "photometric uncertainty gate rubin-lsst",
+      "passed": true,
+      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"release\",\"validated_distance_or_photoz_product\",\"per_object_uncertainty\"]"
+    },
+    {
+      "name": "photometric uncertainty gate euclid",
+      "passed": true,
+      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"redshift_product\",\"redshift_kind\",\"per_object_uncertainty\",\"release_provenance\"]"
+    },
+    {
+      "name": "photometric uncertainty gate spherex",
+      "passed": true,
+      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"redshift_estimate\",\"per_object_uncertainty\",\"release_provenance\"]"
+    },
+    {
+      "name": "2MRS manifest synthetic flag",
+      "passed": true,
+      "detail": "is_synthetic=false"
+    },
+    {
+      "name": "2MRS browser checksum",
+      "passed": true,
+      "detail": "48e2223a4a1729653307d7f211a1741e01d2f2a85839e3c4f9ece45005c2422d"
+    },
+    {
+      "name": "2MRS browser object array",
+      "passed": true,
+      "detail": "43533 rows"
+    },
+    {
+      "name": "2MRS object count matches manifest",
+      "passed": true,
+      "detail": "43533 vs 43533"
+    },
+    {
+      "name": "2MRS metadata count matches objects",
+      "passed": true,
+      "detail": "43533 vs 43533"
+    },
+    {
+      "name": "2MRS metadata source table",
+      "passed": true,
+      "detail": "J/ApJS/199/26/table3"
+    },
+    {
+      "name": "2MRS metadata synthetic flag",
+      "passed": true,
+      "detail": "is_synthetic=false"
+    },
+    {
+      "name": "2MRS catalogue contains no non-human authorship metadata",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "name": "2MRS row-level observed-coordinate contract",
+      "passed": true,
+      "detail": "43,533 unique observed rows"
+    },
+    {
+      "name": "DESI index format",
+      "passed": true,
+      "detail": "nasadiya-tile-store/v1"
+    },
+    {
+      "name": "DESI dataset synthetic flag",
+      "passed": true,
+      "detail": "is_synthetic=false"
+    },
+    {
+      "name": "DESI index tile count",
+      "passed": true,
+      "detail": "4205 vs 4205"
+    },
+    {
+      "name": "DESI overview count declared",
+      "passed": true,
+      "detail": "125000"
+    },
+    {
+      "name": "DESI index dataset metadata contains no non-human authorship metadata",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "name": "DESI tile counts sum to record_count",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "DESI tile files are present",
+      "passed": true,
+      "detail": "0 missing of 4205"
+    },
+    {
+      "name": "DESI tile counts are positive",
+      "passed": true,
+      "detail": "0 non-positive tiles"
+    },
+    {
+      "name": "DESI tile bounds are finite",
+      "passed": true,
+      "detail": "0 invalid bound arrays"
+    },
+    {
+      "name": "DESI source mapping file ledger",
+      "passed": true,
+      "detail": "8 files"
+    },
+    {
+      "name": "DESI source mapping row conservation",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "DESI source mapping marks overview as LOD",
+      "passed": true,
+      "detail": "true"
+    },
+    {
+      "name": "DESI source files include BGS",
+      "passed": true,
+      "detail": "2 files, 300,017 rows"
+    },
+    {
+      "name": "DESI source file checksums BGS",
+      "passed": true,
+      "detail": "0 malformed checksums"
+    },
+    {
+      "name": "DESI source files include ELG",
+      "passed": true,
+      "detail": "2 files, 2,432,027 rows"
+    },
+    {
+      "name": "DESI source file checksums ELG",
+      "passed": true,
+      "detail": "0 malformed checksums"
+    },
+    {
+      "name": "DESI source files include LRG",
+      "passed": true,
+      "detail": "2 files, 2,138,604 rows"
+    },
+    {
+      "name": "DESI source file checksums LRG",
+      "passed": true,
+      "detail": "0 malformed checksums"
+    },
+    {
+      "name": "DESI source files include QSO",
+      "passed": true,
+      "detail": "2 files, 1,223,170 rows"
+    },
+    {
+      "name": "DESI source file checksums QSO",
+      "passed": true,
+      "detail": "0 malformed checksums"
+    },
+    {
+      "name": "DESI overview format",
+      "passed": true,
+      "detail": "nasadiya-tile-store/v1 vs nasadiya-tile-store/v1"
+    },
+    {
+      "name": "DESI overview dataset id",
+      "passed": true,
+      "detail": "desi-dr1 vs desi-dr1"
+    },
+    {
+      "name": "DESI overview columns match index",
+      "passed": true,
+      "detail": "column contract comparison"
+    },
+    {
+      "name": "DESI overview row count",
+      "passed": true,
+      "detail": "125000 vs 125000"
+    },
+    {
+      "name": "DESI overview declares non-scientific LOD",
+      "passed": true,
+      "detail": "{\"method\":\"deterministic-lowest-object-hash\",\"max_points\":125000,\"not_a_scientific_selection\":true}"
+    },
+    {
+      "name": "DESI overview has object_id",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has ra_deg",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has dec_deg",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has redshift",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has comoving_distance_mpc",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has lookback_time_gyr",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has x_mpc",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has y_mpc",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview has z_mpc",
+      "passed": true,
+      "detail": "present"
+    },
+    {
+      "name": "DESI overview row-level coordinate contract",
+      "passed": true,
+      "detail": "125,000 unique observed rows"
+    },
+    {
+      "name": "full-cloud format",
+      "passed": true,
+      "detail": "nasadiya-gpu-cloud/v1"
+    },
+    {
+      "name": "full-cloud row count matches DESI index",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "full-cloud rejected rows",
+      "passed": true,
+      "detail": "0"
+    },
+    {
+      "name": "full-cloud observed source kind",
+      "passed": true,
+      "detail": "spectroscopic"
+    },
+    {
+      "name": "full-cloud byte length matches stride contract",
+      "passed": true,
+      "detail": "121,876,360 vs 121,876,360"
+    },
+    {
+      "name": "full-cloud field order",
+      "passed": true,
+      "detail": "[\"x_mpc\",\"y_mpc\",\"z_mpc\",\"redshift\",\"tracer_code\"]"
+    },
+    {
+      "name": "full-cloud part size desi-dr1-full-cloud.part-000.f32",
+      "passed": true,
+      "detail": "40.00 MiB vs 40.00 MiB"
+    },
+    {
+      "name": "full-cloud part checksum desi-dr1-full-cloud.part-000.f32",
+      "passed": true,
+      "detail": "b87a70169d61b6c402efd3fdc35654edac247ddeae8661ea6427f96fe643a57e"
+    },
+    {
+      "name": "full-cloud part size desi-dr1-full-cloud.part-001.f32",
+      "passed": true,
+      "detail": "40.00 MiB vs 40.00 MiB"
+    },
+    {
+      "name": "full-cloud part checksum desi-dr1-full-cloud.part-001.f32",
+      "passed": true,
+      "detail": "c686d78746633b23b5c3caa817ddfbac43ac9da36079e179bb679c023afc1668"
+    },
+    {
+      "name": "full-cloud part size desi-dr1-full-cloud.part-002.f32",
+      "passed": true,
+      "detail": "36.23 MiB vs 36.23 MiB"
+    },
+    {
+      "name": "full-cloud part checksum desi-dr1-full-cloud.part-002.f32",
+      "passed": true,
+      "detail": "d4522e629848010f45ecebd9157f89a5df47f7ba5d1cde34a25fc7138d57b381"
+    },
+    {
+      "name": "full-cloud summed byte length",
+      "passed": true,
+      "detail": "116.23 MiB vs 116.23 MiB"
+    },
+    {
+      "name": "full-cloud tracer counts sum to record count",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "full-cloud tracer count BGS",
+      "passed": true,
+      "detail": "300017"
+    },
+    {
+      "name": "full-cloud tracer count ELG",
+      "passed": true,
+      "detail": "2432027"
+    },
+    {
+      "name": "full-cloud tracer count LRG",
+      "passed": true,
+      "detail": "2138604"
+    },
+    {
+      "name": "full-cloud tracer count QSO",
+      "passed": true,
+      "detail": "1223170"
+    },
+    {
+      "name": "full-cloud metadata contains no non-human authorship metadata",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "name": "research summary parent rows match DESI index",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "research summary rendered rows contract",
+      "passed": true,
+      "detail": "120,000 vs 120,000"
+    },
+    {
+      "name": "research summary marked observed",
+      "passed": true,
+      "detail": "is_synthetic=false"
+    },
+    {
+      "name": "research summary tracer counts sum to input rows",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "research summary tracer counts match full-cloud",
+      "passed": true,
+      "detail": "tracer count comparison"
+    },
+    {
+      "name": "research redshift histogram sum BGS",
+      "passed": true,
+      "detail": "300,017 vs 300,017"
+    },
+    {
+      "name": "research redshift histogram sum ELG",
+      "passed": true,
+      "detail": "2,432,027 vs 2,432,027"
+    },
+    {
+      "name": "research redshift histogram sum LRG",
+      "passed": true,
+      "detail": "2,138,604 vs 2,138,604"
+    },
+    {
+      "name": "research redshift histogram sum QSO",
+      "passed": true,
+      "detail": "1,223,170 vs 1,223,170"
+    },
+    {
+      "name": "research summary sky footprint boundary",
+      "passed": true,
+      "detail": "{\"ra_bins\":360,\"dec_bins\":180,\"bin_size_deg\":[1,1],\"quantity\":\"observed rows per sky bin\",\"not_physical_density\":true}"
+    },
+    {
+      "name": "research figure non-empty figures/desi_dr1_lss_3d_research_view.png",
+      "passed": true,
+      "detail": "939.71 KiB"
+    },
+    {
+      "name": "research figure non-empty figures/desi_dr1_lss_redshift_summary.png",
+      "passed": true,
+      "detail": "107.05 KiB"
+    },
+    {
+      "name": "research figure non-empty figures/desi_dr1_lss_sky_footprint.png",
+      "passed": true,
+      "detail": "419.75 KiB"
+    },
+    {
+      "name": "research figure non-empty figures/desi_dr1_lss_research_summary.json",
+      "passed": true,
+      "detail": "5.75 KiB"
+    },
+    {
+      "name": "publication evidence format",
+      "passed": true,
+      "detail": "nasadiya-publication-evidence/v1"
+    },
+    {
+      "name": "publication evidence parent rows",
+      "passed": true,
+      "detail": "6,093,818 vs 6,093,818"
+    },
+    {
+      "name": "publication evidence GPU manifest match",
+      "passed": true,
+      "detail": "{\"manifest_checked\":true,\"manifest_path\":\"data\\\\processed\\\\desi-dr1\\\\full-cloud\\\\full-cloud.json\",\"manifest_record_count\":6093818,\"parent_rows_match_manifest\":true,\"manifest_binary_sha256\":null}"
+    },
+    {
+      "name": "publication evidence observed-row boundary",
+      "passed": true,
+      "detail": "{\"observed_rows_only\":true,\"survey_weights_applied\":false,\"random_catalogue_used\":false,\"clustering_estimator\":false,\"density_reconstruction\":false,\"statement\":\"These figures validate browser representation of observed rows, not cosmological clustering or physical density.\"}"
+    },
+    {
+      "name": "publication evidence no density reconstruction claim",
+      "passed": true,
+      "detail": "{\"observed_rows_only\":true,\"survey_weights_applied\":false,\"random_catalogue_used\":false,\"clustering_estimator\":false,\"density_reconstruction\":false,\"statement\":\"These figures validate browser representation of observed rows, not cosmological clustering or physical density.\"}"
+    },
+    {
+      "name": "publication evidence metadata contains no non-human authorship metadata",
+      "passed": true,
+      "detail": "clean"
+    },
+    {
+      "name": "publication fidelity CSV has measurements",
+      "passed": true,
+      "detail": "12 rows"
+    }
+  ],
+  "warnings": []
+}

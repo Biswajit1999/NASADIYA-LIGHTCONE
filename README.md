@@ -14,6 +14,7 @@ Created and developed by **Biswajit Jana**.
 [![CI](https://github.com/Biswajit1999/NASADIYA-LIGHTCONE/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-8be9fd.svg)](LICENSE)
 [![Data policy](https://img.shields.io/badge/data-provenance--first-efb276.svg)](DATA_POLICY.md)
+[![Survey integrity](https://img.shields.io/badge/survey%20integrity-verified%20observed%20rows-4cc9f0.svg)](SURVEY_INTEGRITY.md)
 
 <p align="center">
   <a href="https://biswajit1999.github.io/NASADIYA-LIGHTCONE/"><strong>Launch the live explorer →</strong></a>
@@ -45,6 +46,16 @@ NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point origi
 | **Gaia DR3 / GCNS** | Stellar astrometry and parallax | Planned as a separate Milky Way mode. Gaia is never merged into extragalactic galaxy counts. |
 
 > The public DESI overview is a browser level-of-detail layer, not a scientific subsample. It is selected deterministically from real source rows so the public build remains reproducible. Raw DESI FITS archives, full tiles and research Parquet bundles remain outside ordinary Git history.
+
+## Survey integrity ledger
+
+The repository now ships a machine-readable survey audit:
+
+```cmd
+npm run audit:survey
+```
+
+The audit verifies the 2MRS browser checksum, DESI tile-count conservation, DESI overview coordinate contracts, full GPU-cloud chunk sizes and checksums, research-summary tracer counts, publication-evidence boundaries, and absence of non-human authorship metadata in the scientific manifests. It writes [SURVEY_INTEGRITY.md](SURVEY_INTEGRITY.md) and [data/registry/survey_integrity.json](data/registry/survey_integrity.json) so the public explorer and research bundle can be checked from a clean clone.
 
 ## Live explorer
 
@@ -192,6 +203,7 @@ NASADIYA-LIGHTCONE/
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m ruff check pipeline scripts tests
 npm run check:modules
+npm run audit:survey
 ```
 
 ## Citation and licence
