@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
-import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260816-v5';
+import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260816-v6';
 import { hslToRgb } from '../utils/math.js';
 
 const TRACER_COLOURS = Object.freeze({

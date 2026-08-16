@@ -72,8 +72,8 @@ const VERTEX_SHADER = /* glsl */ `
     }
     float perspective = clamp(760.0 / max(1.0, -mvPosition.z), 0.14, 3.0);
     float shimmer = 1.0 + uMotion * 0.035 * sin(uTime * (0.42 + aSample * 0.74) + aSample * 6.28318);
-    float sizeBoost = mix(1.0, 1.9, uCinematicBoost);
-    gl_PointSize = clamp(uPointScale * tracerPointScale() * perspective * shimmer * sizeBoost, 0.42, 4.6);
+    float sizeBoost = mix(1.0, 3.2, uCinematicBoost);
+    gl_PointSize = clamp(uPointScale * tracerPointScale() * perspective * shimmer * sizeBoost, 0.42, 7.5);
     gl_Position = projectionMatrix * mvPosition;
     float depthFade = mix(1.0, 0.62, clamp(aRedshift / max(0.001, uMaxRedshift), 0.0, 1.0));
     vAlpha = 0.115 * depthFade;
@@ -94,9 +94,9 @@ const FRAGMENT_SHADER = /* glsl */ `
     float body = 1.0 - smoothstep(0.15, 0.48, radius);
     float halo = 1.0 - smoothstep(0.28, 0.50, radius);
     float alpha = max(core, body * 0.72 + halo * 0.12 * vLuminosity) * vAlpha;
-    alpha = clamp(alpha * mix(1.0, 3.4, uCinematicBoost), 0.0, 1.0);
+    alpha = clamp(alpha * mix(1.0, 5.8, uCinematicBoost), 0.0, 1.0);
     if (alpha < 0.008) discard;
-    gl_FragColor = vec4(mix(vColor, vec3(1.0), core * (0.34 + uCinematicBoost * 0.22)), alpha);
+    gl_FragColor = vec4(mix(vColor, vec3(1.0), core * (0.34 + uCinematicBoost * 0.34)), alpha);
   }
 `;
 

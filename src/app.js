@@ -5,17 +5,17 @@ import { FULL_DESI_GPU_CLOUD } from './full-cloud-config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { probeGpuCloud } from './core/gpu-cloud-loader.js';
 import { fetchGpuCloud } from './core/gpu-cloud-binary.js';
-import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260816-v5';
-import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260816-v5';
+import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260816-v6';
+import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260816-v6';
 import { GuidedFlyby } from './core/guided-flyby.js';
 import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
-import { SurveyPoints } from './core/survey-points.js?v=20260816-v5';
+import { SurveyPoints } from './core/survey-points.js?v=20260816-v6';
 import { TileStreamer } from './core/tile-streamer.js';
 import { LightconeInterface } from './ui/lightcone-interface.js?v=20260816-v5';
 import { ObservatoryConsole } from './ui/observatory-console.js?v=20260816-v5';
 import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
-import { AnalysisPanel } from './ui/analysis-panel.js?v=20260816-v5';
+import { AnalysisPanel } from './ui/analysis-panel.js?v=20260816-v6';
 
 const state = {
   layerId: 'desi-dr1',
