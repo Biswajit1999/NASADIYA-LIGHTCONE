@@ -1,6 +1,3 @@
-import { loadIntegritySummary } from '../utils/integrity.js';
-import { formatNumber } from '../utils/format.js';
-
 const THEME_KEY = 'nasadiya:observatory-theme';
 const BOOKMARK_KEY = 'nasadiya:camera-bookmark';
 
@@ -25,7 +22,6 @@ export class ObservatoryConsole {
       theme: document.querySelector('#theme-toggle'),
       bookmark: document.querySelector('#bookmark-view'),
       capture: document.querySelector('#capture-view'),
-      showcaseCapture: document.querySelector('#showcase-capture'),
       presentation: document.querySelector('#presentation-toggle'),
       fps: document.querySelector('#instrument-fps'),
       gpu: document.querySelector('#instrument-gpu'),
@@ -57,7 +53,6 @@ export class ObservatoryConsole {
     this.dom.bookmark?.addEventListener('click', () => this.saveBookmark());
     this.dom.bookmark?.addEventListener('dblclick', () => this.restoreBookmark());
     this.dom.capture?.addEventListener('click', () => this.capture());
-    this.dom.showcaseCapture?.addEventListener('click', () => this.captureShowcase());
     this.dom.presentation?.addEventListener('click', () => this.togglePresentation());
     this.dom.paletteToggle?.addEventListener('click', () => this.openPalette(true));
     this.dom.paletteClose?.addEventListener('click', () => this.openPalette(false));
@@ -223,71 +218,6 @@ export class ObservatoryConsole {
       window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       this.notify('Scientific viewport captured as PNG');
     }, 'image/png');
-  }
-
-  /**
-   * Prepares a clean, branded poster frame for sharing: hides interactive
-   * chrome, renders at the "quality" pixel ratio, then composites the raw
-   * WebGL frame with a provenance stat line read from the same audited
-   * registry as the boot badges. It never alters catalogue rendering itself.
-   */
-  async captureShowcase() {
-    if (this.showcaseBusy) return;
-    this.showcaseBusy = true;
-    const previousQuality = this.scene.renderQuality;
-    document.body.classList.add('showcase-capturing');
-    this.scene.setRenderQuality('quality');
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    this.scene.renderer.render(this.scene.scene, this.scene.camera);
-    const summary = await loadIntegritySummary();
-    const composite = document.createElement('canvas');
-    composite.width = this.canvas.width;
-    composite.height = this.canvas.height;
-    const context = composite.getContext('2d');
-    context.drawImage(this.canvas, 0, 0);
-    this.paintShowcaseFrame(context, composite.width, composite.height, summary);
-    composite.toBlob((blob) => {
-      document.body.classList.remove('showcase-capturing');
-      this.scene.setRenderQuality(previousQuality);
-      this.showcaseBusy = false;
-      if (!blob) {
-        this.notify('Showcase capture is unavailable in this browser');
-        return;
-      }
-      const link = document.createElement('a');
-      link.download = `nasadiya-lightcone-showcase-${new Date().toISOString().replaceAll(':', '-').slice(0, 19)}.png`;
-      link.href = URL.createObjectURL(blob);
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-      this.notify('Showcase frame captured for LinkedIn');
-    }, 'image/png');
-  }
-
-  paintShowcaseFrame(context, width, height, summary) {
-    const scale = width / 1600;
-    const gradient = context.createLinearGradient(0, height * 0.74, 0, height);
-    gradient.addColorStop(0, 'rgba(2,6,12,0)');
-    gradient.addColorStop(1, 'rgba(2,6,12,0.86)');
-    context.fillStyle = gradient;
-    context.fillRect(0, height * 0.74, width, height * 0.26);
-
-    context.textAlign = 'left';
-    context.fillStyle = '#eaf7ff';
-    context.font = `800 ${34 * scale}px "Iowan Old Style", Georgia, serif`;
-    context.fillText('NĀSADĪYA LIGHTCONE', width * 0.035, height - 74 * scale);
-
-    context.fillStyle = '#62def7';
-    context.font = `700 ${15 * scale}px "JetBrains Mono", monospace`;
-    const statLine = summary.available
-      ? `${formatNumber(summary.desiRows)} observed DESI DR1 rows · ${formatNumber(summary.twoMrsRows)} 2MRS anchor rows · measured, not simulated`
-      : 'Survey-native measured galaxy catalogues · measured, not simulated';
-    context.fillText(statLine.toUpperCase(), width * 0.035, height - 42 * scale);
-
-    context.fillStyle = 'rgba(180, 202, 217, 0.85)';
-    context.font = `700 ${11 * scale}px "JetBrains Mono", monospace`;
-    context.textAlign = 'right';
-    context.fillText('CREATED BY BISWAJIT JANA', width * 0.965, height - 42 * scale);
-    context.textAlign = 'left';
   }
 
   sharedViewFromLocation() {

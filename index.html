@@ -14,10 +14,6 @@
     <meta property="og:title" content="NĀSADĪYA LIGHTCONE — Survey-native Universe Browser" />
     <meta property="og:description" content="Navigate observed galaxy catalogues through redshift, distance and cosmic time. Built from measured survey rows, not simulated structure." />
     <meta property="og:image" content="https://biswajit1999.github.io/NASADIYA-LIGHTCONE/assets/nasadiya-lightcone-banner.png" />
-    <meta property="og:image:width" content="2172" />
-    <meta property="og:image:height" content="724" />
-    <meta property="og:image:alt" content="NĀSADĪYA LIGHTCONE — an observer-centred 3D view of measured DESI DR1 and 2MRS galaxy rows." />
-    <meta property="og:locale" content="en_GB" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="NĀSADĪYA LIGHTCONE — Survey-native Universe Browser" />
     <meta name="twitter:description" content="A browser-native 3D view of measured galaxy catalogues." />
@@ -28,7 +24,6 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="stylesheet" href="styles/main.css?v=20260625-dashboard" />
     <link rel="stylesheet" href="styles/observatory-v3.css?v=20260703" />
-    <link rel="stylesheet" href="styles/cinematic-v4.css?v=20260816" />
     <script type="application/ld+json">
       {"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"NĀSADĪYA LIGHTCONE","url":"https://biswajit1999.github.io/NASADIYA-LIGHTCONE/","description":"A survey-native 3D browser for measured galaxy catalogues.","publisher":{"@type":"Person","name":"Biswajit Jana"}},{"@type":"SoftwareApplication","name":"NĀSADĪYA LIGHTCONE","applicationCategory":"EducationalApplication","operatingSystem":"Web","browserRequirements":"JavaScript and WebGL","author":{"@type":"Person","name":"Biswajit Jana"},"url":"https://biswajit1999.github.io/NASADIYA-LIGHTCONE/"}]}
     </script>
@@ -67,7 +62,6 @@
           <button id="theme-toggle" class="command-utility" type="button" aria-label="Switch to day observatory theme" aria-pressed="false"><span aria-hidden="true">◐</span><b>Night</b></button>
           <button id="bookmark-view" class="command-utility" type="button" aria-label="Save camera bookmark"><span aria-hidden="true">◇</span><b>Bookmark</b></button>
           <button id="capture-view" class="command-utility" type="button" aria-label="Capture viewport screenshot"><span aria-hidden="true">⌁</span><b>Capture</b></button>
-          <button id="showcase-capture" class="command-utility command-utility--showcase" type="button" aria-label="Prepare a branded showcase frame for LinkedIn"><span aria-hidden="true">✺</span><b>Showcase</b></button>
           <button id="presentation-toggle" class="command-utility" type="button" aria-label="Enter presentation focus mode" aria-pressed="false"><span aria-hidden="true">▣</span><b>Focus</b></button>
           <button id="tour-toggle" class="command-button command-button--tour" type="button" aria-pressed="false"><span class="play-symbol">▷</span><span>Flythrough</span></button>
           <button id="help-button" class="icon-button" type="button" aria-label="Open explorer guide">?</button>
@@ -132,7 +126,6 @@
           <span class="radial-tick radial-tick--2" data-radial-tick="2">4.0 Gpc</span>
           <span class="radial-tick radial-tick--3" data-radial-tick="3">6.0 Gpc</span>
         </div>
-        <div id="provenance-badges" class="provenance-badges" hidden aria-hidden="true"></div>
         <aside class="legend-card" aria-label="Tracer class legend">
           <span>Tracer class</span>
           <ul><li class="legend-bgs">BGS</li><li class="legend-lrg">LRG</li><li class="legend-elg">ELG</li><li class="legend-qso">QSO</li></ul>
@@ -173,14 +166,9 @@
       <div id="help-modal" class="modal-backdrop" hidden><section class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title"><button id="close-help" class="dismiss-button" type="button" aria-label="Close explorer guide">×</button><p class="eyebrow">EXPLORER GUIDE</p><h2 id="help-title">Survey navigation controls</h2><div class="help-pairs"><div><strong>Left drag</strong><span>Orbit around the observer-centred frame.</span></div><div><strong>Right drag</strong><span>Pan across the current view.</span></div><div><strong>Scroll</strong><span>Zoom toward or away from observed rows.</span></div><div><strong>Flythrough</strong><span>Run a guided route; any manual interaction stops it.</span></div><div><strong>T / P</strong><span>Switch observatory theme / presentation focus.</span></div><div><strong>B / 1 / S</strong><span>Save view / restore view / capture viewport.</span></div></div><p class="help-note">The DESI North/South footprint is measurement geometry. It should not be interpreted as a reconstructed all-sky density field or as physically disconnected structure.</p></section></div>
       <div id="command-palette" class="modal-backdrop command-palette-backdrop" hidden><section class="command-palette-card" role="dialog" aria-modal="true" aria-labelledby="command-palette-title"><div class="command-palette-heading"><div><p class="eyebrow">OBSERVATORY COMMAND</p><h2 id="command-palette-title">Navigate the measured lightcone</h2></div><button id="close-command-palette" class="dismiss-button" type="button" aria-label="Close observatory command palette">×</button></div><label class="command-search"><span>⌕</span><input id="command-search-input" type="search" autocomplete="off" placeholder="Search commands or an observed object ID" aria-label="Search observatory commands" /><kbd>Esc</kbd></label><div id="command-results" class="command-results"><button id="object-search-command" type="button" data-object-search hidden><span>ID</span><b id="object-search-label">Find observed object</b><small>Search currently loaded inspectable rows</small></button><p>Destinations</p><button type="button" data-observatory-command="destination-observer"><span>01</span><b>Observer origin</b><small>Return to the z = 0 reference frame</small></button><button type="button" data-observatory-command="destination-north"><span>02</span><b>DESI North footprint</b><small>Camera preset; measured positions remain fixed</small></button><button type="button" data-observatory-command="destination-south"><span>03</span><b>DESI South footprint</b><small>Camera preset; measured positions remain fixed</small></button><button type="button" data-observatory-command="destination-deep"><span>04</span><b>Deep survey perspective</b><small>Frame the radial extent of the active catalogue</small></button><p>Layers and analysis</p><button type="button" data-observatory-command="layer-local"><span>2M</span><b>Local Universe</b><small>Open the observed 2MRS anchor</small></button><button type="button" data-observatory-command="layer-desi"><span>DR</span><b>DESI DR1 lightcone</b><small>Open the deep spectroscopic footprint</small></button><button type="button" data-observatory-command="layer-comparison"><span>⇄</span><b>Survey comparison</b><small>Display 2MRS and DESI with separate provenance</small></button><button type="button" data-observatory-command="redshift-play"><span>▶</span><b>Play redshift scan</b><small>Animate the visibility ceiling; objects do not move</small></button><p>Workspace</p><button type="button" data-observatory-command="share-view"><span>↗</span><b>Copy shareable view</b><small>Encode camera, filters and active layer in the URL</small></button><button type="button" data-observatory-command="toggle-presentation"><span>▣</span><b>Presentation focus</b><small>Hide peripheral panels for a clean demonstration</small></button></div><footer><span>↑↓ navigate</span><span>Enter run</span><span>Esc close</span></footer></section></div>
       <div id="observatory-toast" class="observatory-toast" role="status" aria-live="polite"></div>
-      <div id="demo-caption" class="demo-caption" hidden aria-live="polite">
-        <button id="demo-caption-exit" class="demo-caption-exit" type="button" aria-label="Exit LinkedIn showcase mode">×</button>
-        <span id="demo-caption-index" class="demo-caption-index"></span>
-        <p id="demo-caption-text" class="demo-caption-text"></p>
-      </div>
       <div id="loading-screen" class="loading-screen" aria-live="polite"><div class="loading-content"><img src="assets/nasadiya-mark.svg" class="loading-mark" alt="" /><p class="eyebrow">NĀSADĪYA LIGHTCONE</p><h2 id="loading-title">Opening the observed local Universe</h2><p id="loading-copy">Reading the 2MRS browser catalogue and its source provenance…</p><div class="loading-line"><span id="loading-meter-bar"></span></div><div class="loading-meta"><span id="loading-dataset">2MRS Table 3</span><span id="loading-count">Preparing data layer</span></div></div></div>
       <noscript><section class="noscript"><h1>NĀSADĪYA LIGHTCONE</h1><p>This survey-native 3D browser requires JavaScript and WebGL. Read the <a href="methods.html">methods</a>, <a href="data.html">data ledger</a> and <a href="community.html">community guide</a>.</p></section></noscript>
     </main>
-    <script type="module" src="src/app.js?v=20260816-phase1"></script>
+    <script type="module" src="src/app.js?v=20260703-phase5"></script>
   </body>
 </html>
