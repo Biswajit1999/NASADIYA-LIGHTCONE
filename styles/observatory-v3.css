@@ -16,7 +16,7 @@
 .command-utility b { font: 800 7px/1 var(--mono); letter-spacing: .05em; }
 .command-utility kbd { padding: 3px 5px; border: 1px solid var(--line); border-radius: 3px; color: var(--dim); background: rgba(255,255,255,.03); font: 700 6px/1 var(--mono); }
 .command-utility:hover, .command-utility[aria-pressed="true"] { color: var(--ink); border-color: var(--line-bright); background: rgba(13, 53, 76, .94); transform: translateY(-1px); }
-.command-utility.has-bookmark span { color: var(--amber); text-shadow: 0 0 12px rgba(242,170,70,.65); }
+.command-utility.has-bookmark span { color: var(--amber); text-shadow: 0 0 12px rgba(var(--amber-rgb), .65); }
 
 .observatory-hud {
   position: absolute;
@@ -27,7 +27,7 @@
   align-items: stretch;
   overflow: hidden;
   min-width: 440px;
-  border: 1px solid rgba(98,222,247,.22);
+  border: 1px solid rgba(var(--cyan-rgb), .22);
   border-radius: 7px;
   background: linear-gradient(90deg, rgba(3,17,29,.86), rgba(7,28,45,.70));
   box-shadow: 0 9px 30px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.03);
@@ -36,7 +36,7 @@
   pointer-events: none;
 }
 .mission-pulse { display: grid; grid-template-columns: 8px 1fr; align-content: center; column-gap: 7px; min-width: 185px; padding: 8px 12px; border-right: 1px solid var(--line); }
-.mission-pulse i { grid-row: 1 / 3; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 11px rgba(125,237,173,.8); animation: mission-pulse 2.2s ease-in-out infinite; }
+.mission-pulse i { grid-row: 1 / 3; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 11px rgba(var(--green-rgb), .8); animation: mission-pulse 2.2s ease-in-out infinite; }
 .mission-pulse span { color: var(--ink); font: 800 7.5px/1 var(--mono); letter-spacing: .11em; }
 .mission-pulse small { margin-top: 3px; color: var(--dim); font: 700 6.5px/1 var(--mono); letter-spacing: .08em; }
 .observatory-hud dl { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); margin: 0; }
@@ -100,29 +100,42 @@ body.presentation-mode .command-context,
 body.presentation-mode .command-nav { display: none; }
 body.presentation-mode .command-actions { margin-left: auto; }
 
+/* Day theme: "institute bulletin" — warm paper surfaces and ink, not an
+   inverted terminal. Deliberately different accent values from night mode
+   (deep teal, burnt amber) so the palette reads as composed for daylight
+   reading rather than darkened neon left over from the night theme. */
 body[data-theme="day"] {
-  --night: #edf4f7;
-  --surface: #f8fbfc;
-  --surface-2: #e8f1f5;
-  --surface-3: #dceaf0;
-  --ink: #102a3b;
-  --soft: #36566a;
-  --dim: #617e8f;
-  --muted: #8199a7;
-  --line: rgba(26, 91, 121, .18);
-  --line-bright: rgba(0, 126, 166, .48);
-  --cyan: #007fa3;
-  --cyan-soft: rgba(0, 127, 163, .11);
-  --amber: #b66509;
-  --green: #198657;
-  --violet: #6545a4;
-  --shadow: 0 18px 50px rgba(35, 65, 82, .20);
+  --night: #efe9db;
+  --surface: #faf7f0;
+  --surface-2: #f1ead9;
+  --surface-3: #e8dfc9;
+  --ink: #1c2431;
+  --soft: #46536a;
+  --dim: #5d6a7c;
+  --muted: #727f8f;
+  --line: rgba(28, 36, 49, .13);
+  --line-bright: rgba(9, 92, 122, .42);
+  --line-bright-rgb: 9, 92, 122;
+  --cyan: #0a6c8f;
+  --cyan-rgb: 10, 108, 143;
+  --cyan-soft: rgba(10, 108, 143, .10);
+  --amber: #9c5209;
+  --amber-rgb: 156, 82, 9;
+  --red: #b23a2e;
+  --red-rgb: 178, 58, 46;
+  --green: #146b48;
+  --green-rgb: 20, 107, 72;
+  --violet: #543c8c;
+  --violet-rgb: 84, 60, 140;
+  --shadow: 0 18px 50px rgba(32, 27, 16, .18);
 }
-body[data-theme="day"] .command-bar { background: linear-gradient(180deg, rgba(251,253,254,.98), rgba(239,246,249,.95)); box-shadow: 0 8px 22px rgba(42,76,95,.12); }
-body[data-theme="day"] .left-rail { background: linear-gradient(90deg, rgba(249,252,253,.98), rgba(237,245,248,.94)); }
-body[data-theme="day"] .control-drawer { background: linear-gradient(180deg, rgba(249,252,253,.99), rgba(232,242,247,.98)); box-shadow: -16px 0 38px rgba(41,73,90,.12); }
-body[data-theme="day"] .telemetry-deck { background: linear-gradient(90deg, rgba(248,252,253,.97), rgba(231,242,247,.93)); box-shadow: 0 12px 32px rgba(35,65,82,.15); }
-body[data-theme="day"] .status-strip { background: #e5eff3; }
+body[data-theme="day"] .command-bar { background: linear-gradient(180deg, rgba(253,251,245,.98), rgba(242,235,219,.95)); box-shadow: 0 8px 22px rgba(45,38,20,.10); }
+body[data-theme="day"] .left-rail { background: linear-gradient(90deg, rgba(251,248,241,.98), rgba(240,233,216,.94)); }
+body[data-theme="day"] .rail-nav { background: rgba(28, 36, 49, .035); border-right-color: var(--line); }
+body[data-theme="day"] .rail-nav-button.is-active { background: linear-gradient(90deg, rgba(var(--cyan-rgb), .12), transparent); box-shadow: inset 2px 0 0 var(--cyan); }
+body[data-theme="day"] .control-drawer { background: linear-gradient(180deg, rgba(251,248,241,.99), rgba(237,229,209,.98)); box-shadow: -16px 0 38px rgba(45,38,20,.10); }
+body[data-theme="day"] .telemetry-deck { background: linear-gradient(90deg, rgba(250,247,240,.97), rgba(238,230,211,.93)); box-shadow: 0 12px 32px rgba(45,38,20,.12); }
+body[data-theme="day"] .status-strip { background: #efe6d2; }
 body[data-theme="day"] .command-nav,
 body[data-theme="day"] .command-utility,
 body[data-theme="day"] .command-button,
@@ -131,32 +144,37 @@ body[data-theme="day"] .legend-card,
 body[data-theme="day"] .spatial-card,
 body[data-theme="day"] .what-you-see,
 body[data-theme="day"] .quick-facts,
-body[data-theme="day"] .observatory-hud { background: rgba(247,251,253,.91); }
+body[data-theme="day"] .observatory-hud { background: rgba(251,248,241,.92); }
 body[data-theme="day"] .overview-panel h1,
 body[data-theme="day"] .drawer-section label,
 body[data-theme="day"] .drawer-label,
 body[data-theme="day"] .drawer-label-row,
 body[data-theme="day"] .legend-card > span,
 body[data-theme="day"] .card-title,
-body[data-theme="day"] .explanation-row b { color: #102a3b; }
+body[data-theme="day"] .explanation-row b { color: var(--ink); }
 body[data-theme="day"] .quick-facts dd,
 body[data-theme="day"] .legend-card li,
 body[data-theme="day"] .spatial-card dd,
-body[data-theme="day"] .telemetry-cell:nth-child(2) b { color: #17394b; }
+body[data-theme="day"] .telemetry-cell:nth-child(2) b { color: #24344a; }
 body[data-theme="day"] .telemetry-cell small,
 body[data-theme="day"] .telemetry-cell em,
 body[data-theme="day"] .explanation-row span,
-body[data-theme="day"] .drawer-section p { color: #617e8f; }
-body[data-theme="day"] .survey-layer-section select { color: #17394b; background: #f7fbfc; }
+body[data-theme="day"] .drawer-section p { color: var(--dim); }
+body[data-theme="day"] .survey-layer-section select { color: #24344a; background: #faf7f0; }
 body[data-theme="day"] .mode-switch,
 body[data-theme="day"] .density-profiles button,
 body[data-theme="day"] .tracer-control,
-body[data-theme="day"] .quiet-button { background: rgba(226,239,245,.72); }
-body[data-theme="day"] .viewport-atmosphere { background: linear-gradient(90deg, rgba(224,239,245,.22), transparent 24%, transparent 76%, rgba(224,239,245,.18)); }
-body[data-theme="day"] .observatory-toast { color: #102a3b; background: rgba(248,252,253,.97); }
-body[data-theme="day"] .command-palette-card { color: #102a3b; background: rgba(247,251,253,.98); box-shadow: 0 28px 90px rgba(35,65,82,.25); }
-body[data-theme="day"] .command-search { background: rgba(226,239,245,.78); }
-body[data-theme="day"] .command-search input { color: #102a3b; }
+body[data-theme="day"] .quiet-button { background: rgba(232,223,201,.65); }
+body[data-theme="day"] .viewport-atmosphere {
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(28, 36, 49, .16) 100%),
+    linear-gradient(90deg, rgba(28, 20, 8, .14), transparent 22%, transparent 78%, rgba(28, 20, 8, .12)),
+    linear-gradient(180deg, rgba(28, 20, 8, .12), transparent 16%, transparent 84%, rgba(28, 20, 8, .10));
+}
+body[data-theme="day"] .observatory-toast { color: var(--ink); background: rgba(251,248,241,.97); }
+body[data-theme="day"] .command-palette-card { color: var(--ink); background: rgba(251,248,241,.98); box-shadow: 0 28px 90px rgba(45,38,20,.22); }
+body[data-theme="day"] .command-search { background: rgba(232,223,201,.7); }
+body[data-theme="day"] .command-search input { color: var(--ink); }
 
 @media (max-width: 1550px) {
   .command-utility b { display: none; }

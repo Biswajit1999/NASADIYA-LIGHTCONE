@@ -1,20 +1,21 @@
 import * as THREE from 'three';
 
-import { DESI_TRACERS, LIGHTCONE_CONFIG, SURVEY_LAYERS, TILE_STREAMING } from './config.js';
+import { DESI_TRACERS, LIGHTCONE_CONFIG, SURVEY_LAYERS, TILE_STREAMING } from './config.js?v=20260816-v5';
 import { FULL_DESI_GPU_CLOUD } from './full-cloud-config.js';
 import { loadCatalog, loadTileStoreOverview } from './core/catalog-loader.js';
 import { probeGpuCloud } from './core/gpu-cloud-loader.js';
 import { fetchGpuCloud } from './core/gpu-cloud-binary.js';
-import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260703-phase3';
-import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260703-phase3';
+import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260816-v5';
+import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260816-v5';
 import { GuidedFlyby } from './core/guided-flyby.js';
 import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
-import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
+import { SurveyPoints } from './core/survey-points.js?v=20260816-v5';
 import { TileStreamer } from './core/tile-streamer.js';
-import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase5';
-import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase5';
+import { LightconeInterface } from './ui/lightcone-interface.js?v=20260816-v5';
+import { ObservatoryConsole } from './ui/observatory-console.js?v=20260816-v5';
 import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
+import { AnalysisPanel } from './ui/analysis-panel.js?v=20260816-v5';
 
 const state = {
   layerId: 'desi-dr1',
@@ -40,6 +41,7 @@ const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
 const observatory = new ObservatoryConsole({ scene, canvas, getState: () => state });
 const surveyReadiness = new SurveyReadinessPanel();
+const analysisPanel = new AnalysisPanel();
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -84,6 +86,7 @@ function attachRenderable(next, extentMpc) {
     points.dispose();
   }
   points = next;
+  points.setCinematicBoost(flyby.active);
   scene.world.add(points.points);
   scene.setDatasetExtent(Math.max(1, Number(extentMpc) || 1));
   scene.setSelection(null);
@@ -111,6 +114,7 @@ function applyState({ scheduleTiles = true } = {}) {
   scene.scene.fog.density = metrics.fullCatalogue ? 0.00023 : 0.00030;
   scene.setRenderQuality(state.renderQuality);
   updateSpatialAids();
+  analysisPanel.update({ objects: overviewObjects, metrics, meta: activeMeta || {} });
   if (scheduleTiles && !state.fullCatalogue) scheduleAdaptiveTileRefresh();
 }
 
@@ -456,7 +460,7 @@ async function handleObservatoryCommand(command) {
 }
 
 function initialise() {
-  flyby.onChange((status) => ui.setTourStatus(status));
+  flyby.onChange((status) => { ui.setTourStatus(status); points?.setCinematicBoost(status.active); });
   ui.bind({
     getState: () => state,
     onStateChange: () => applyState(),
@@ -487,6 +491,7 @@ function initialise() {
     onTourToggle: () => flyby.toggle(),
     onViewportTool: configureViewportTool,
     onFullscreen: toggleFullscreen,
+    onAnalysisOpen: () => analysisPanel.open(),
   });
   window.addEventListener('nasadiya:full-catalogue-request', () => activateFullCloud());
   window.addEventListener('nasadiya:adaptive-catalogue-request', () => returnToAdaptiveCloud());

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
-import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260703-phase3';
+import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260816-v5';
 import { hslToRgb } from '../utils/math.js';
 
 const TRACER_COLOURS = Object.freeze({
@@ -125,11 +125,12 @@ export class SurveyPoints {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uPointScale: { value: 1.0 }, uMode: { value: 0 }, uTime: { value: 0 }, uMotion: { value: 1.0 } },
+      uniforms: { uPointScale: { value: 1.0 }, uMode: { value: 0 }, uTime: { value: 0 }, uMotion: { value: 1.0 }, uCinematicBoost: { value: 0.0 } },
     });
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.name = `observed-${meta.dataset_id || 'survey'}-points`;
     this.points.frustumCulled = false;
+    this.targetCinematicBoost = 0;
   }
 
   applyState(state) {
@@ -227,7 +228,14 @@ export class SurveyPoints {
     };
   }
 
-  updateTime(seconds) { this.material.uniforms.uTime.value = seconds; }
+  updateTime(seconds) {
+    this.material.uniforms.uTime.value = seconds;
+    const boost = this.material.uniforms.uCinematicBoost;
+    boost.value = THREE.MathUtils.lerp(boost.value, this.targetCinematicBoost, 0.06);
+  }
+
+  /** Only affects apparent brightness/size for the guided flythrough; never touches catalogue rows. */
+  setCinematicBoost(active) { this.targetCinematicBoost = active ? 1 : 0; }
 
   dispose() {
     this.geometry.dispose();
