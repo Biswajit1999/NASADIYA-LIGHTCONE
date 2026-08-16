@@ -8,13 +8,15 @@ import { fetchGpuCloud } from './core/gpu-cloud-binary.js';
 import { CompositeFullCloud } from './core/composite-full-cloud.js?v=20260703-phase3';
 import { GpuSurveyCloud } from './core/gpu-survey-cloud.js?v=20260703-phase3';
 import { GuidedFlyby } from './core/guided-flyby.js';
-import { LightconeScene } from './core/lightcone-scene.js?v=20260703-phase3';
+import { LightconeScene } from './core/lightcone-scene.js?v=20260816-phase1';
 import { SurveyReferenceFrame } from './core/reference-frame.js';
 import { SurveyPoints } from './core/survey-points.js?v=20260703-phase3';
 import { TileStreamer } from './core/tile-streamer.js';
 import { LightconeInterface } from './ui/lightcone-interface.js?v=20260703-phase5';
-import { ObservatoryConsole } from './ui/observatory-console.js?v=20260703-phase5';
+import { ObservatoryConsole } from './ui/observatory-console.js?v=20260816-phase1';
 import { SurveyReadinessPanel } from './ui/survey-readiness.js?v=20260703-phase4';
+import { BootSequence } from './ui/boot-sequence.js?v=20260816-phase1';
+import { LinkedInDemo, LINKEDIN_DEMO_ENTRY_LAYER_ID } from './ui/linkedin-demo.js?v=20260816-phase1';
 
 const state = {
   layerId: 'desi-dr1',
@@ -40,6 +42,13 @@ const referenceFrame = new SurveyReferenceFrame(scene.world);
 const flyby = new GuidedFlyby(scene);
 const observatory = new ObservatoryConsole({ scene, canvas, getState: () => state });
 const surveyReadiness = new SurveyReadinessPanel();
+const boot = new BootSequence();
+boot.arm();
+const linkedinDemo = new LinkedInDemo({
+  requestFullCloud: () => activateFullCloud(),
+  flyby,
+  observatory,
+});
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 9;
 const pointer = new THREE.Vector2();
@@ -348,9 +357,11 @@ async function activateLayer(layerId, { initial = false } = {}) {
     state.sliceThickness = requestedLayer.supportsSlice ? 24 : state.sliceThickness;
     state.sliceOffset = requestedLayer.supportsSlice ? 0 : state.sliceOffset;
     replacePoints(overviewObjects, meta);
-    scene.setSpatialMode(state.spatialMode, { immediate: true });
+    if (initial) scene.beginCinematicEntry(state.spatialMode);
+    else scene.setSpatialMode(state.spatialMode, { immediate: true });
     ui.setDataReady(meta, maxField(objects, 'redshift'), state, requestedLayer);
     applyState({ scheduleTiles: false });
+    if (initial) boot.run();
     document.title = `NĀSADĪYA LIGHTCONE — ${meta.source_survey || requestedLayer.id}`;
     await configureAdaptiveTiles(requestedLayer, meta, requestId);
     await configureFullCloud(requestedLayer, requestId);
@@ -495,8 +506,12 @@ function initialise() {
   scene.onCameraChange(() => scheduleAdaptiveTileRefresh());
   const sharedView = observatory.sharedViewFromLocation();
   const sharedLayer = SURVEY_LAYERS[sharedView?.layerId];
-  const initialLayer = sharedLayer?.installed !== false && sharedLayer ? sharedView.layerId : 'desi-dr1';
-  activateLayer(initialLayer, { initial: true }).then(() => applySharedView(sharedView));
+  const defaultLayer = linkedinDemo.active ? LINKEDIN_DEMO_ENTRY_LAYER_ID : 'desi-dr1';
+  const initialLayer = sharedLayer?.installed !== false && sharedLayer ? sharedView.layerId : defaultLayer;
+  activateLayer(initialLayer, { initial: true }).then(() => {
+    applySharedView(sharedView);
+    linkedinDemo.begin();
+  });
   canvas.addEventListener('pointerdown', (event) => {
     flyby.stop('manual');
     ui.preview(null);

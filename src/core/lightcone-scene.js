@@ -140,6 +140,31 @@ export class LightconeScene {
   resetView() { const frame = this.defaultFrame(); this.animateCamera(frame.position, frame.target, 720); }
   focusLocalSlice() { this.setSpatialMode('slice'); }
 
+  /**
+   * First-load-only camera choreography: starts pulled back from the default
+   * frame and eases in, so the very first view reads as the observatory
+   * "settling" onto the lightcone rather than snapping into place. Every
+   * later layer switch keeps using the plain immediate setSpatialMode.
+   */
+  beginCinematicEntry(mode = this.mode, duration = 2200) {
+    const frame = this.defaultFrame(mode);
+    this.mode = mode;
+    this.observer.visible = mode === 'lightcone';
+    this.annotations?.setContext({ extentMpc: this.datasetMaxDistanceMpc, mode });
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      this.camera.position.copy(frame.position);
+      this.controls.target.copy(frame.target);
+      this.controls.update();
+      return;
+    }
+    const establishingPosition = frame.position.clone().multiplyScalar(1.85).add(new THREE.Vector3(0, frame.position.length() * 0.06, 0));
+    this.camera.position.copy(establishingPosition);
+    this.controls.target.copy(frame.target);
+    this.controls.update();
+    this.animateCamera(frame.position, frame.target, duration);
+  }
+
   focusDestination(destination) {
     const radius = Math.max(900, this.datasetMaxDistanceMpc * 3.0);
     const frames = {
