@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import { LIGHTCONE_CONFIG } from '../config.js';
-import { loadTileRecords, probeTileStoreDelivery } from './catalog-loader.js';
+import { LIGHTCONE_CONFIG } from '../config.js?v=20260816-v7';
+import { loadTileRecords, probeTileStoreDelivery } from './catalog-loader.js?v=20260816-v8';
 
 function boxForTile(entry) {
   const bounds = entry?.bounds;

@@ -20,12 +20,13 @@
       "label": "2MPZ",
       "survey": "2MASS Photometric Redshift Catalogue",
       "measurement_kind": "photometric",
-      "expected_object_count": 1000000,
-      "browser_status": "blocked-source-validation",
-      "readiness": "blocked",
-      "required_contract": ["object_id", "ra_deg", "dec_deg", "photometric_redshift", "per_object_redshift_uncertainty"],
-      "source_url": "https://arxiv.org/abs/1311.5246",
-      "notes": "Discovery downloader validates a published per-row photo-z error field before building a local lightcone tile store."
+      "object_count": 933447,
+      "browser_status": "public-adaptive-uncertainty-shell",
+      "readiness": "deployed",
+      "source_url": "http://ssa.roe.ac.uk/TWOMPZ.html",
+      "global_redshift_sigma": 0.015,
+      "global_redshift_sigma_kind": "constant",
+      "notes": "The twompzPhotoz table exposes no per-object photo-z uncertainty column; only the survey-wide accuracy figure (sigma_z = 0.015, Bilicki et al. 2014) is published, so this layer renders with that uncertainty made visually explicit rather than as exact points."
     },
     {
       "id": "wise-sc",

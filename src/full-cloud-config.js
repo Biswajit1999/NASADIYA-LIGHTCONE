@@ -1,4 +1,4 @@
-import './ui/dashboard-context.js';
+import './ui/dashboard-context.js?v=20260816-v8';
 
 export const FULL_DESI_GPU_CLOUD = Object.freeze({
   manifestPath: './data/processed/desi-dr1/full-cloud/full-cloud.json',

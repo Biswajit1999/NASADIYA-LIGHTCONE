@@ -44,7 +44,15 @@ TILE_COLUMNS = [
 
 @dataclass(frozen=True)
 class SurveyDescriptor:
-    """Provenance required for every derived static survey layer."""
+    """Provenance required for every derived static survey layer.
+
+    ``global_redshift_sigma`` covers photometric surveys that publish only one
+    survey-wide accuracy figure (no per-object uncertainty column). It is never
+    written into a row's ``redshift_error`` field, which stays absent for such
+    rows; it is recorded once, at the manifest level, so the browser can render
+    an honestly-labelled uncertainty shell instead of implying point precision
+    the source catalogue does not provide.
+    """
 
     dataset_id: str
     survey: str
@@ -54,6 +62,8 @@ class SurveyDescriptor:
     measurement_kind: str
     object_type: str = "galaxy"
     distance_note: str = "Planck18 comoving-distance placement for visual navigation"
+    global_redshift_sigma: float | None = None
+    global_redshift_sigma_kind: str | None = None
 
     def __post_init__(self) -> None:
         if self.measurement_kind not in {"spectroscopic", "photometric"}:
@@ -61,6 +71,14 @@ class SurveyDescriptor:
         for field in ("dataset_id", "survey", "release", "source_url", "citation_key"):
             if not getattr(self, field):
                 raise ValueError(f"SurveyDescriptor.{field} must not be empty.")
+        if self.global_redshift_sigma is not None:
+            if self.global_redshift_sigma <= 0:
+                raise ValueError("global_redshift_sigma must be positive when set.")
+            if self.global_redshift_sigma_kind not in {"constant", "proportional_to_one_plus_z"}:
+                raise ValueError(
+                    "global_redshift_sigma_kind must be 'constant' or "
+                    "'proportional_to_one_plus_z' when global_redshift_sigma is set."
+                )
 
 
 def _as_numeric(series: pd.Series) -> pd.Series:
@@ -134,12 +152,17 @@ def canonicalise_survey_frame(
     frame = frame.loc[finite & valid_sky & valid_redshift & nonempty_id].copy()
 
     if descriptor.measurement_kind == "photometric":
-        if redshift_error_column is None:
+        if redshift_error_column is None and descriptor.global_redshift_sigma is None:
             raise ValueError(
-                "Photometric layers require an explicit redshift_error_column; "
-                "do not render photo-z distances as exact radial positions."
+                "Photometric layers require either a per-object redshift_error_column "
+                "or an explicit descriptor.global_redshift_sigma; do not render photo-z "
+                "distances as exact radial positions without a stated uncertainty."
             )
-        frame = frame.loc[np.isfinite(frame["redshift_error"]) & (frame["redshift_error"] > 0)].copy()
+        if redshift_error_column is not None:
+            frame = frame.loc[np.isfinite(frame["redshift_error"]) & (frame["redshift_error"] > 0)].copy()
+        # else: survey publishes only a global accuracy figure. redshift_error stays
+        # absent per row (honest - no per-object value exists); the one real number
+        # is carried at the manifest level via descriptor.global_redshift_sigma.
 
     if frame.empty:
         raise ValueError("No valid observed rows remained after source-field validation.")
@@ -305,6 +328,8 @@ def write_tile_store(
             "cosmology_id": COSMOLOGY_ID,
             "distance_note": descriptor.distance_note,
             "radial_uncertainty_required": descriptor.measurement_kind == "photometric",
+            "global_redshift_sigma": descriptor.global_redshift_sigma,
+            "global_redshift_sigma_kind": descriptor.global_redshift_sigma_kind,
         },
         "record_count": int(len(working)),
         "tile_count": len(tile_entries),
@@ -485,6 +510,8 @@ class ChunkedTileStoreWriter:
                 "cosmology_id": COSMOLOGY_ID,
                 "distance_note": self.descriptor.distance_note,
                 "radial_uncertainty_required": self.descriptor.measurement_kind == "photometric",
+                "global_redshift_sigma": self.descriptor.global_redshift_sigma,
+                "global_redshift_sigma_kind": self.descriptor.global_redshift_sigma_kind,
             },
             "record_count": int(self.record_count),
             "tile_count": len(self.tile_entries),

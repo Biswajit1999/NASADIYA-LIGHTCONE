@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { LIGHTCONE_CONFIG } from '../config.js';
+import { LIGHTCONE_CONFIG } from '../config.js?v=20260816-v7';
 
 function phase(progress) {
   if (progress < 0.25) return 'overview';

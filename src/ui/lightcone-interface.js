@@ -6,7 +6,7 @@ import {
   formatRedshift,
   formatVelocity,
 } from '../utils/format.js';
-import { SURVEY_LAYERS } from '../config.js';
+import { SURVEY_LAYERS } from '../config.js?v=20260816-v7';
 
 const TRACERS = ['BGS', 'LRG', 'ELG', 'QSO'];
 const TRACER_LABELS = Object.freeze({
@@ -191,7 +191,11 @@ export class LightconeInterface {
 
   inspect(object) {
     this.dom.objectInspector.hidden = false; const source = object.source_survey || object.source_layer || 'Observed source'; const tracer = object.tracer ? `<div><dt>DESI tracer</dt><dd>${escapeHtml(object.tracer)} · ${escapeHtml(TRACER_LABELS[object.tracer] || object.tracer)}</dd></div>` : ''; const magnitude = Number(object.magnitude ?? object.ks_mag); const cz = Number(object.cz_km_s);
-    this.dom.inspector.innerHTML = `<p class="eyebrow">OBSERVED SOURCE RECORD</p><h2>${escapeHtml(object.name || object.object_id || 'Catalogue row')}</h2><dl><div><dt>Survey</dt><dd>${escapeHtml(source)}</dd></div><div><dt>Redshift</dt><dd>${formatRedshift(object.redshift)}</dd></div><div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div><div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>${tracer}${Number.isFinite(cz) ? `<div><dt>cz</dt><dd>${formatVelocity(cz)}</dd></div>` : ''}${Number.isFinite(magnitude) ? `<div><dt>Magnitude</dt><dd>${magnitude.toFixed(3)}</dd></div>` : ''}</dl>`;
+    const globalSigma = Number(object.global_redshift_sigma); const shellMpc = Number(object.radial_shell_half_thickness_mpc);
+    const uncertainty = Number.isFinite(globalSigma) && globalSigma > 0
+      ? `<div><dt>Redshift uncertainty</dt><dd>±${globalSigma.toFixed(3)} (survey-wide, not per-object)</dd></div>${Number.isFinite(shellMpc) && shellMpc > 0 ? `<div><dt>Position uncertainty</dt><dd>±${formatDistance(shellMpc)} along sightline</dd></div>` : ''}`
+      : '';
+    this.dom.inspector.innerHTML = `<p class="eyebrow">OBSERVED SOURCE RECORD</p><h2>${escapeHtml(object.name || object.object_id || 'Catalogue row')}</h2><dl><div><dt>Survey</dt><dd>${escapeHtml(source)}</dd></div><div><dt>Redshift</dt><dd>${formatRedshift(object.redshift)}</dd></div>${uncertainty}<div><dt>Comoving distance</dt><dd>${formatDistance(object.comoving_distance_mpc)}</dd></div><div><dt>Look-back placement</dt><dd>${formatLookback(object.lookback_time_gyr)}</dd></div><div><dt>RA</dt><dd>${Number.isFinite(Number(object.ra_deg)) ? `${Number(object.ra_deg).toFixed(4)}°` : '—'}</dd></div><div><dt>Dec</dt><dd>${Number.isFinite(Number(object.dec_deg)) ? `${Number(object.dec_deg).toFixed(4)}°` : '—'}</dd></div>${tracer}${Number.isFinite(cz) ? `<div><dt>cz</dt><dd>${formatVelocity(cz)}</dd></div>` : ''}${Number.isFinite(magnitude) ? `<div><dt>Magnitude</dt><dd>${magnitude.toFixed(3)}</dd></div>` : ''}</dl>`;
   }
 
   preview(object, clientX = 0, clientY = 0) {

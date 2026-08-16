@@ -1,7 +1,7 @@
 {
   "format": "nasadiya-survey-integrity/v1",
   "status": "passed",
-  "integrity_fingerprint": "f4901f2d20ce8609de9ebd51b613be85f819973007e7cc733d3b5975009d0a7f",
+  "integrity_fingerprint": "d3962527b4fea6d5de95509d19b6f6bd642ef62190aa9679a8a284144ece62ee",
   "products": {
     "two_mrs": {
       "dataset_id": "2mrs-table3",
@@ -155,11 +155,6 @@
       "name": "registry deployed layer desi-dr1-lss",
       "passed": true,
       "detail": "deployed"
-    },
-    {
-      "name": "photometric uncertainty gate 2mpz",
-      "passed": true,
-      "detail": "[\"object_id\",\"ra_deg\",\"dec_deg\",\"photometric_redshift\",\"per_object_redshift_uncertainty\"]"
     },
     {
       "name": "photometric uncertainty gate wise-sc",
