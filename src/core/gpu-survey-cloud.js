@@ -19,6 +19,7 @@ const VERTEX_SHADER = /* glsl */ `
   uniform float uPointScale;
   uniform float uTime;
   uniform float uMotion;
+  uniform float uCinematicBoost;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vLuminosity;
@@ -71,7 +72,8 @@ const VERTEX_SHADER = /* glsl */ `
     }
     float perspective = clamp(760.0 / max(1.0, -mvPosition.z), 0.14, 3.0);
     float shimmer = 1.0 + uMotion * 0.035 * sin(uTime * (0.42 + aSample * 0.74) + aSample * 6.28318);
-    gl_PointSize = clamp(uPointScale * tracerPointScale() * perspective * shimmer, 0.42, 2.65);
+    float sizeBoost = mix(1.0, 1.9, uCinematicBoost);
+    gl_PointSize = clamp(uPointScale * tracerPointScale() * perspective * shimmer * sizeBoost, 0.42, 4.6);
     gl_Position = projectionMatrix * mvPosition;
     float depthFade = mix(1.0, 0.62, clamp(aRedshift / max(0.001, uMaxRedshift), 0.0, 1.0));
     vAlpha = 0.115 * depthFade;
@@ -84,6 +86,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
   varying float vLuminosity;
+  uniform float uCinematicBoost;
   void main() {
     vec2 uv = gl_PointCoord - vec2(0.5);
     float radius = length(uv);
@@ -91,8 +94,9 @@ const FRAGMENT_SHADER = /* glsl */ `
     float body = 1.0 - smoothstep(0.15, 0.48, radius);
     float halo = 1.0 - smoothstep(0.28, 0.50, radius);
     float alpha = max(core, body * 0.72 + halo * 0.12 * vLuminosity) * vAlpha;
+    alpha = clamp(alpha * mix(1.0, 3.4, uCinematicBoost), 0.0, 1.0);
     if (alpha < 0.008) discard;
-    gl_FragColor = vec4(mix(vColor, vec3(1.0), core * 0.34), alpha);
+    gl_FragColor = vec4(mix(vColor, vec3(1.0), core * (0.34 + uCinematicBoost * 0.22)), alpha);
   }
 `;
 
@@ -140,10 +144,11 @@ export class GpuSurveyCloud {
       vertexShader: VERTEX_SHADER, fragmentShader: FRAGMENT_SHADER, transparent: true, depthWrite: false, depthTest: true, blending: THREE.NormalBlending,
       uniforms: {
         uDisplayScale: { value: LIGHTCONE_CONFIG.displayScale }, uMaxRedshift: { value: this.stats.maxRedshift }, uDisplayFraction: { value: 1.0 }, uShowGalaxies: { value: 1.0 },
-        uTracerBGS: { value: 1.0 }, uTracerLRG: { value: 1.0 }, uTracerELG: { value: 1.0 }, uTracerQSO: { value: 1.0 }, uViewMode: { value: 0.0 }, uPointScale: { value: 0.82 }, uTime: { value: 0.0 }, uMotion: { value: 1.0 },
+        uTracerBGS: { value: 1.0 }, uTracerLRG: { value: 1.0 }, uTracerELG: { value: 1.0 }, uTracerQSO: { value: 1.0 }, uViewMode: { value: 0.0 }, uPointScale: { value: 0.82 }, uTime: { value: 0.0 }, uMotion: { value: 1.0 }, uCinematicBoost: { value: 0.0 },
       },
     });
     this.targetDisplayFraction = 1.0;
+    this.targetCinematicBoost = 0;
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.name = 'desi-dr1-full-gpu-cloud'; this.points.frustumCulled = false;
   }
@@ -176,7 +181,13 @@ export class GpuSurveyCloud {
     this.material.uniforms.uTime.value = seconds;
     const current = this.material.uniforms.uDisplayFraction.value;
     this.material.uniforms.uDisplayFraction.value = THREE.MathUtils.lerp(current, this.targetDisplayFraction, 0.12);
+    const boost = this.material.uniforms.uCinematicBoost;
+    boost.value = THREE.MathUtils.lerp(boost.value, this.targetCinematicBoost, 0.06);
   }
+
+  /** Only affects apparent brightness/size for the guided flythrough; never touches catalogue rows. */
+  setCinematicBoost(active) { this.targetCinematicBoost = active ? 1 : 0; }
+
   dispose() { this.geometry.dispose(); this.material.dispose(); this.buffer = null; }
   getObject() { return null; }
   getDisplayPosition() { return new THREE.Vector3(); }

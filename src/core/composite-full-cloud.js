@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import { GpuSurveyCloud } from './gpu-survey-cloud.js?v=20260703-phase3';
-import { SurveyPoints } from './survey-points.js?v=20260703-phase3';
+import { GpuSurveyCloud } from './gpu-survey-cloud.js?v=20260816-v5';
+import { SurveyPoints } from './survey-points.js?v=20260816-v5';
 
 /** Keeps the 2MRS anchor alongside the complete DESI GPU cloud. */
 export class CompositeFullCloud {
@@ -36,6 +36,7 @@ export class CompositeFullCloud {
   }
 
   updateTime(seconds) { this.desi.updateTime(seconds); this.anchor.updateTime(seconds); }
+  setCinematicBoost(active) { this.desi.setCinematicBoost(active); this.anchor.setCinematicBoost(active); }
   dispose() { this.desi.dispose(); this.anchor.dispose(); }
   getObject() { return null; }
   getDisplayPosition() { return new THREE.Vector3(); }

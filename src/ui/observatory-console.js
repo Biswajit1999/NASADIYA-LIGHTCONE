@@ -148,7 +148,7 @@ export class ObservatoryConsole {
     this.dom.theme?.setAttribute('aria-label', `Switch to ${next === 'day' ? 'night' : 'day'} observatory theme`);
     const label = this.dom.theme?.querySelector('b');
     if (label) label.textContent = next === 'day' ? 'Day' : 'Night';
-    if (this.dom.themeMeta) this.dom.themeMeta.content = next === 'day' ? '#eaf2f6' : '#020914';
+    if (this.dom.themeMeta) this.dom.themeMeta.content = next === 'day' ? '#efe9db' : '#020914';
     this.scene.scene.background.set(next === 'day' ? 0x071522 : 0x020611);
     this.scene.scene.fog.color.set(next === 'day' ? 0x071522 : 0x020611);
   }
