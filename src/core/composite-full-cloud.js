@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import { GpuSurveyCloud } from './gpu-survey-cloud.js?v=20260816-v5';
-import { SurveyPoints } from './survey-points.js?v=20260816-v5';
+import { GpuSurveyCloud } from './gpu-survey-cloud.js?v=20260816-v6';
+import { SurveyPoints } from './survey-points.js?v=20260816-v6';
 
 /** Keeps the 2MRS anchor alongside the complete DESI GPU cloud. */
 export class CompositeFullCloud {

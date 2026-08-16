@@ -17,8 +17,8 @@ export const pointVertexShader = /* glsl */ `
     float perspective = clamp(1050.0 / max(1.0, -mvPosition.z), 0.25, 6.3);
     float uncertaintyBoost = mix(0.0, min(7.5, aUncertainty * 2300.0), step(0.5, uMode));
     float shimmer = 1.0 + uMotion * 0.045 * sin(uTime * (0.38 + aTwinkle * 1.1) * 1.5 + aTwinkle * 6.28318);
-    float sizeBoost = mix(1.0, 1.65, uCinematicBoost);
-    gl_PointSize = clamp((aSize + uncertaintyBoost) * uPointScale * perspective * shimmer * sizeBoost, 1.0, 34.0);
+    float sizeBoost = mix(1.0, 2.6, uCinematicBoost);
+    gl_PointSize = clamp((aSize + uncertaintyBoost) * uPointScale * perspective * shimmer * sizeBoost, 1.0, 46.0);
     gl_Position = projectionMatrix * mvPosition;
     vColor = color;
     vAlpha = aAlpha;
@@ -38,9 +38,9 @@ export const pointFragmentShader = /* glsl */ `
     float body = 1.0 - smoothstep(0.09, 0.33, radius);
     float halo = 1.0 - smoothstep(0.16, 0.50, radius);
     float alpha = max(core, body * 0.58 + halo * 0.20 * vHalo) * vAlpha;
-    alpha = clamp(alpha * mix(1.0, 2.0, uCinematicBoost), 0.0, 1.0);
+    alpha = clamp(alpha * mix(1.0, 3.2, uCinematicBoost), 0.0, 1.0);
     if (alpha < 0.012) discard;
-    vec3 rgb = mix(vColor * 0.55, vec3(1.0), core * (0.60 + uCinematicBoost * 0.18) + body * (0.17 + uCinematicBoost * 0.12));
+    vec3 rgb = mix(vColor * 0.55, vec3(1.0), core * (0.60 + uCinematicBoost * 0.30) + body * (0.17 + uCinematicBoost * 0.22));
     gl_FragColor = vec4(rgb, alpha);
   }
 `;

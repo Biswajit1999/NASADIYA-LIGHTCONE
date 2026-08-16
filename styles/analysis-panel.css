@@ -1,5 +1,6 @@
 /* Analysis panel: real plots computed from the currently loaded observed rows. */
-.analysis-modal-backdrop { align-items: start; padding-top: min(9vh, 82px); }
+.analysis-modal-backdrop { align-items: start; padding-top: min(9vh, 82px); opacity: 0; transition: opacity .22s ease; }
+.analysis-modal-backdrop.is-open { opacity: 1; }
 .analysis-panel {
   width: min(920px, calc(100vw - 32px));
   max-height: min(800px, calc(100dvh - 96px));
@@ -12,7 +13,11 @@
   backdrop-filter: blur(24px) saturate(130%);
   scrollbar-width: thin;
   scrollbar-color: var(--cyan) transparent;
+  transform: scale(.97) translateY(10px);
+  opacity: 0;
+  transition: transform .34s cubic-bezier(.16,.84,.44,1), opacity .28s ease;
 }
+.analysis-modal-backdrop.is-open .analysis-panel { transform: scale(1) translateY(0); opacity: 1; }
 .analysis-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .analysis-heading h2 { margin: 0; font: 600 24px/1.08 var(--serif); letter-spacing: -.025em; }
 .analysis-heading .drawer-subtitle { max-width: 480px; margin: 7px 0 0; color: var(--dim); font-size: 9.5px; line-height: 1.45; }
@@ -31,10 +36,22 @@
 .analysis-chart { position: relative; }
 .analysis-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .analysis-axis-label { fill: var(--dim); font: 700 3.4px var(--mono); }
+.analysis-axis-title { fill: var(--muted); font: 700 2.9px var(--mono); letter-spacing: .01em; }
+.analysis-value-label { fill: var(--soft); font: 800 3.6px var(--mono); opacity: 0; transition: opacity .35s ease; }
+.analysis-chart.is-revealed .analysis-value-label { opacity: 1; }
 .analysis-empty { margin: 18px 0; color: var(--dim); font-size: 9px; text-align: center; }
 .analysis-sky-frame { fill: rgba(2, 9, 18, .5); stroke: var(--line); stroke-width: 0.4; }
 .analysis-gridline { stroke: rgba(115, 190, 226, .12); stroke-width: 0.3; }
 .analysis-svg--sky { border-radius: 6px; }
+.analysis-caption { margin: 8px 0 0; color: var(--dim); font-size: 8px; line-height: 1.42; }
+
+/* Reveal animation: bars grow from the baseline, sky points fade in, staggered
+   per-mark via an inline transition-delay set at render time. Excludes the
+   sky chart's static background frame/gridlines. */
+.analysis-svg rect:not(.analysis-sky-frame) { transform-box: fill-box; transform-origin: bottom; opacity: 0; transform: scaleY(0); transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .3s ease; }
+.analysis-chart.is-revealed .analysis-svg rect:not(.analysis-sky-frame) { opacity: 1; transform: scaleY(1); }
+.analysis-svg circle { opacity: 0; transition: opacity .5s ease; }
+.analysis-chart.is-revealed .analysis-svg circle { opacity: .55; }
 
 .analysis-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .analysis-legend span { display: inline-flex; align-items: center; gap: 5px; color: var(--soft); font: 700 7.5px/1 var(--mono); }
