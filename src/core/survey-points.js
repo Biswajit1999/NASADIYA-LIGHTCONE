@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { LIGHTCONE_CONFIG, PALETTE } from '../config.js';
+import { LIGHTCONE_CONFIG, PALETTE } from '../config.js?v=20260816-v7';
 import { pointFragmentShader, pointVertexShader } from '../shaders/point-shaders.js?v=20260816-v6';
 import { hslToRgb } from '../utils/math.js';
 
@@ -107,7 +107,10 @@ export class SurveyPoints {
       colours.set(PALETTE.cyan, offset);
       const magnitude = magnitudeOf(object);
       sizes[index] = magnitude === null ? 1.75 : THREE.MathUtils.clamp(4.8 - magnitude * 0.18, 1.45, 4.4);
-      uncertainties[index] = Math.max(0, Number(object.redshift_error) || 0);
+      // A survey with only a published survey-wide accuracy figure (no
+      // per-object error) feeds that one real number uniformly here, never a
+      // fabricated per-object value. Positions themselves are never moved.
+      uncertainties[index] = Math.max(0, Number(object.redshift_error) || Number(meta.global_redshift_sigma) || 0);
       twinkles[index] = ((index * 73) % 97) / 97;
       this.maxDatasetDistance = Math.max(this.maxDatasetDistance, Number(object.comoving_distance_mpc) || 0);
     }

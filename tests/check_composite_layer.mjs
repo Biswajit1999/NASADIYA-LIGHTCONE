@@ -8,7 +8,7 @@ assert.deepEqual(stack.memberLayerIds, ['2mrs', 'desi-dr1']);
 assert.equal(stack.installed, true);
 assert.equal(SURVEY_LAYERS['2mrs'].installed, true);
 assert.equal(SURVEY_LAYERS['desi-dr1'].installed, true);
-assert.equal(SURVEY_LAYERS['2mpz'].installed, false);
+assert.equal(SURVEY_LAYERS['2mpz'].installed, true);
 assert.equal(SURVEY_LAYERS['wise-sc'].installed, false);
 assert.equal(TILE_STREAMING['all-live'].enabled, true);
 

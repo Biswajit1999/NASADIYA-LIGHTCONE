@@ -1,5 +1,5 @@
 import { formatNumber } from '../utils/format.js';
-import { LightconeInterface } from './lightcone-interface.js';
+import { LightconeInterface } from './lightcone-interface.js?v=20260816-v7';
 
 const originalSetLayerControls = LightconeInterface.prototype.setLayerControls;
 const originalUpdateTelemetry = LightconeInterface.prototype.updateTelemetry;

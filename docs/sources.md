@@ -11,9 +11,10 @@
 ## 2MPZ
 
 - **Survey:** 2MASS Photometric Redshift Catalogue (2MPZ)
-- **Publication record:** Bilicki et al. (2014)
-- **Measurement:** photometric redshift with published source-table uncertainty required by the ingestion client
-- **Browser treatment:** observer lightcone only; uncertainty is retained and not presented as exact radial position
+- **Publication record:** Bilicki et al. (2014), ApJS 210, 9
+- **Source table:** `TWOMPZ..twompzPhotoz` on the WFAU SuperCOSMOS Science Archive (SSA) SQL server, http://ssa.roe.ac.uk/TWOMPZ.html — 934,175 raw rows, 933,447 accepted after coordinate/redshift validation
+- **Measurement:** photometric redshift (`zPhoto`); the source table has no per-object uncertainty column, only a published survey-wide accuracy figure (σz = 0.015)
+- **Browser treatment:** observer lightcone only, rendered at the exact measured position; the survey-wide σz feeds the existing per-object "Uncertainty" colour/size mode uniformly (never a fabricated per-row value) and is shown in the object inspector as a stated survey-wide figure, distinct from a per-object measurement
 - **Citation key:** `Bilicki2014_2MPZ`
 
 ## WISE × SuperCOSMOS

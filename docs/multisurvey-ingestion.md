@@ -15,24 +15,34 @@ Published source archive or public service
 
 Every tile-store manifest records source release, field mapping, raw-file checksum, accepted row count, cosmology transform, partition scheme and overview selection. The overview uses deterministic lowest object hashes and is marked **not a scientific selection**.
 
-## 2MPZ and WISE × SuperCOSMOS
+## 2MPZ (deployed)
 
-Both are photometric-redshift catalogues. The ingestion client uses VizieR discovery rather than an assumed catalogue ID, then accepts a table only when it can resolve:
+2MPZ is served by the Wide Field Astronomy Unit's SuperCOSMOS Science Archive (SSA) as a
+SQL Server table (`TWOMPZ..twompzPhotoz`), not a static bulk file or a VizieR catalogue.
+`scripts/download_2mpz.py` submits the documented SQL Cookbook query
+(http://ssa.roe.ac.uk/sqlcookbook.html §6) through the SSA's freeform-SQL endpoint and
+downloads the generated results file — 934,175 raw rows.
 
-- a source identifier;
-- right ascension and declination;
-- photometric redshift;
-- an explicit, positive per-row photo-z uncertainty.
-
-A failure to locate these fields is a correct scientific stop condition. The pipeline does not insert a global literature scatter as a fake per-object error.
+The `twompzPhotoz` table exposes no per-object photo-z uncertainty column, only the
+published survey-wide accuracy figure (σz = 0.015; Bilicki et al. 2014). This is a
+correct scientific constraint, not a missing feature: the pipeline never inserts that
+global figure into a per-row `redshift_error` field. Instead, `SurveyDescriptor.
+global_redshift_sigma` records the one real number once, at the manifest level, and the
+browser reads it from there — `redshift_error` stays honestly absent on every row.
 
 ```cmd
 .\.venv\Scripts\python.exe scripts\download_2mpz.py
 .\.venv\Scripts\python.exe scripts\build_2mpz_tile_store.py
-
-.\.venv\Scripts\python.exe scripts\download_wise_sc.py
-.\.venv\Scripts\python.exe scripts\build_wise_sc_tile_store.py
 ```
+
+## WISE × SuperCOSMOS (pending)
+
+A real bulk CSV exists (http://ssa.roe.ac.uk/cats/wiseScosPhotoz160708.csv.gz, confirmed
+reachable) but, like 2MPZ, carries no per-object uncertainty column — only a published
+survey-wide figure (σz/(1+z) = 0.033). Ingestion should reuse the same
+`global_redshift_sigma` mechanism proven by 2MPZ, at roughly 20x the row count
+(~18.5 million), so it is scoped as a separate build after 2MPZ's pipeline pattern is
+validated in production.
 
 Photo-z layers are observer-lightcone only. Sparse regions, masks and broad radial error are retained as survey properties.
 

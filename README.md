@@ -41,8 +41,8 @@ NĀSADĪYA LIGHTCONE does not fabricate a cosmic web. Every rendered point origi
 | **DESI DR1 LSS** | Spectroscopic BGS, LRG, ELG and QSO large-scale-structure catalogues | **6,093,818 accepted observed rows** across **4,205** local spatial tiles; **125,000 deterministic real rows** in the public browser overview |
 | **Validated DESI research bundle** | Full DESI DR1 LSS Parquet | **6,093,818 observed rows**, retained without sampling in a **185.12 MiB** compressed Parquet bundle; [release record and checksum](docs/desi-dr1-research-bundle-v1.md) |
 | **Available-survey stack** | 2MRS + DESI DR1 comparison view | **168,533 public rendered records**: 43,533 full 2MRS rows plus 125,000 DESI overview rows. Explicitly non-deduplicated; not a unique-galaxy count. |
-| **2MPZ** | Photometric redshifts | Not ingested. A verified downloadable source table with per-object photo-z uncertainty is required before a tile build. |
-| **WISE × SuperCOSMOS** | Photometric redshifts | Not ingested. It requires the same source-table and uncertainty validation gate. |
+| **2MPZ** | Photometric redshifts | **933,447 observed rows** from the real `TWOMPZ..twompzPhotoz` SSA source table. The source has no per-object uncertainty column, only a published survey-wide accuracy figure (σz = 0.015); positions are exact, and that one real number drives the browser's Uncertainty display mode uniformly, never a fabricated per-row value. |
+| **WISE × SuperCOSMOS** | Photometric redshifts | Not yet ingested. A real bulk source file is confirmed reachable; it has the same survey-wide-only uncertainty gap as 2MPZ and is scoped as the next build using the same pattern. |
 | **Gaia DR3 / GCNS** | Stellar astrometry and parallax | Planned as a separate Milky Way mode. Gaia is never merged into extragalactic galaxy counts. |
 
 > The public DESI overview is a browser level-of-detail layer, not a scientific subsample. It is selected deterministically from real source rows so the public build remains reproducible. Raw DESI FITS archives, full tiles and research Parquet bundles remain outside ordinary Git history.

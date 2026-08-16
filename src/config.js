@@ -52,6 +52,18 @@ export const TILE_STREAMING = Object.freeze({
     minOverviewRows: 25_000,
     refreshDebounceMs: 550,
   },
+  '2mpz': {
+    enabled: true,
+    remoteBaseUrl: null,
+    maxTiles: 512,
+    maxCachedTiles: 640,
+    maxLoadedRows: RENDERING_LIMITS.highDensityRows,
+    loadConcurrency: 10,
+    overviewReserveRows: 100_000,
+    overviewReserveFraction: 0.1,
+    minOverviewRows: 20_000,
+    refreshDebounceMs: 550,
+  },
 });
 
 export const SURVEY_LAYERS = Object.freeze({
@@ -83,16 +95,16 @@ export const SURVEY_LAYERS = Object.freeze({
   },
   '2mpz': {
     id: '2mpz',
-    label: '2MPZ · ~1 million photo-z galaxies',
+    label: '2MPZ · 933,447 photo-z galaxies',
     eyebrow: 'WIDE UNIVERSE / 2MPZ',
     dataUrl: './data/processed/2mpz/index.json',
     dataKind: 'tile-store',
-    defaultMaxRedshift: 0.24,
+    defaultMaxRedshift: 0.4,
     defaultPointBudget: 100_000,
     defaultSpatialMode: 'lightcone',
     supportsSlice: false,
-    installed: false,
-    localBuild: 'Awaiting a corrected, validated official source endpoint before local ingestion is re-enabled.',
+    installed: true,
+    localBuild: 'scripts\\download_2mpz.py then scripts\\build_2mpz_tile_store.py',
   },
   'wise-sc': {
     id: 'wise-sc',

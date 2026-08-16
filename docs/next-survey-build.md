@@ -1,46 +1,54 @@
 # Next survey build: validated photo-z layers
 
-NĀSADĪYA adds new data layers one survey at a time. The first next layer is **2MPZ**; WISE × SuperCOSMOS follows only after the same schema gate passes.
+NĀSADĪYA adds new data layers one survey at a time. **2MPZ is deployed** (933,447 real
+rows). **WISE × SuperCOSMOS** is next, following the same provenance-first pattern at
+roughly 20x the row count.
 
 ## Why this order
 
-- **2MPZ** provides the bridge between the nearby 2MRS anchor and the deeper DESI footprint. It is an approximately one-million-galaxy, almost-all-sky photometric-redshift catalogue.
-- **WISE × SuperCOSMOS** is much larger and deeper, but its wide photo-z geometry and survey mask need the same explicit uncertainty validation before any tile store is produced.
+- **2MPZ** bridges the nearby 2MRS anchor and the deeper DESI footprint: an
+  approximately one-million-galaxy, almost-all-sky photometric-redshift catalogue. Its
+  real source table (`TWOMPZ..twompzPhotoz` on the SSA SQL server) has no per-object
+  uncertainty column, only a published survey-wide accuracy figure (σz = 0.015), so it
+  ships using the `SurveyDescriptor.global_redshift_sigma` path: positions stay exact,
+  and the one real number drives the browser's existing "Uncertainty" display mode
+  uniformly rather than being written into a fabricated per-row field.
+- **WISE × SuperCOSMOS** is much larger (~18.5M rows) and has the identical gap — a real
+  downloadable CSV exists but exposes no per-object uncertainty, only σz/(1+z) = 0.033.
+  It should reuse the proven `global_redshift_sigma` mechanism rather than a new one.
 - **Gaia DR3** remains a separate Milky Way mode, not an extragalactic lightcone layer.
 
-## 1. Probe the cited source table first
+## The `global_redshift_sigma` gate
 
-Run this from the repository root after installing `requirements.txt`:
+A photometric layer must declare uncertainty one of two ways before
+`canonicalise_survey_frame` will accept it:
+
+1. a **per-object** `redshift_error_column` (e.g. a future release that publishes one), or
+2. `SurveyDescriptor.global_redshift_sigma` — the source survey's own published
+   survey-wide accuracy figure, applied uniformly, never written into a per-row field.
+
+Providing neither raises a `ValueError`. Do not manufacture a per-object value from a
+survey-wide number to satisfy the per-object path — that is exactly the case
+`global_redshift_sigma` exists to handle honestly instead.
+
+## Building 2MPZ locally
 
 ```cmd
 .\.venv\Scripts\python.exe scripts\download_2mpz.py --probe
-```
-
-The probe does not download data. It prints each candidate VizieR table and only reports `PASS` when the source exposes:
-
-1. object identifier;
-2. right ascension and declination;
-3. photometric redshift; and
-4. a **per-object** redshift uncertainty.
-
-A `REJECT` result is a scientific safeguard, not a build error. The project must not manufacture an uncertainty column from a survey-wide scatter value.
-
-## 2. Download and tile 2MPZ only after a pass
-
-```cmd
 .\.venv\Scripts\python.exe scripts\download_2mpz.py
 .\.venv\Scripts\python.exe scripts\build_2mpz_tile_store.py
 ```
 
-The raw source file and full tiles remain local. The tile builder creates a deterministic browser overview plus `index.json` for a public layer of detail.
+The raw source file stays local (gitignored); the processed tile store (index, overview,
+tiles) is committed, matching the DESI DR1 deployment pattern.
 
-## 3. Validate WISE × SuperCOSMOS separately
+## Building WISE × SuperCOSMOS (not yet implemented)
 
-```cmd
-.\.venv\Scripts\python.exe scripts\download_wise_sc.py --probe
-```
-
-Only after a `PASS` should a full WISE build be attempted. Start with a bounded test request if the selected source is large, inspect the produced mapping, then build the full local tile store.
+A real bulk file is confirmed reachable at
+`http://ssa.roe.ac.uk/cats/wiseScosPhotoz160708.csv.gz` (1.7 GB). Implementation should
+mirror `download_2mpz.py`/`build_2mpz_tile_store.py`, using
+`global_redshift_sigma_kind="proportional_to_one_plus_z"` since WISE × SuperCOSMOS's
+published accuracy scales with `(1+z)` rather than being constant.
 
 ## No synthetic backfill
 

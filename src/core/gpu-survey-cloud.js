@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import { LIGHTCONE_CONFIG } from '../config.js';
-import { lookbackTimeGyr } from '../utils/cosmology.js';
+import { LIGHTCONE_CONFIG } from '../config.js?v=20260816-v7';
+import { lookbackTimeGyr } from '../utils/cosmology.js?v=20260816-v7';
 
 const VERTEX_SHADER = /* glsl */ `
   attribute float aRedshift;

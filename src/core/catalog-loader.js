@@ -1,3 +1,5 @@
+import { redshiftShellHalfThicknessMpc } from '../utils/cosmology.js?v=20260816-v7';
+
 function fail(message) {
   throw new Error(message);
 }
@@ -40,6 +42,12 @@ export async function loadCatalog(url, label = 'the browser catalogue') {
   return observedObjects(payload, label);
 }
 
+function globalShellHalfThicknessMpc(record, dataset) {
+  const sigma = Number(dataset.global_redshift_sigma);
+  if (!(sigma > 0)) return null;
+  return redshiftShellHalfThicknessMpc(Number(record.redshift), sigma, dataset.global_redshift_sigma_kind || 'constant');
+}
+
 function objectFromRecord(columns, values, dataset) {
   const record = Object.fromEntries(columns.map((column, index) => [column, values[index] ?? null]));
   return {
@@ -55,19 +63,33 @@ function objectFromRecord(columns, values, dataset) {
     object_type: dataset.object_type,
     is_synthetic: false,
     distance_note: dataset.distance_note,
-    magnitude: Number(record.magnitude),
+    // record.magnitude is null when the source layer has no magnitude column
+    // (e.g. 2MPZ). Number(null) is 0, which would render as a fabricated
+    // "Magnitude: 0.000"; NaN correctly falls through every downstream
+    // Number.isFinite() check instead.
+    magnitude: record.magnitude == null ? NaN : Number(record.magnitude),
+    global_redshift_sigma: Number.isFinite(Number(dataset.global_redshift_sigma)) ? Number(dataset.global_redshift_sigma) : null,
+    radial_shell_half_thickness_mpc: globalShellHalfThicknessMpc(record, dataset),
   };
 }
 
-function validTileObject(object, kind) {
+function validTileObject(object, kind, dataset) {
   const core = ['x_mpc', 'y_mpc', 'z_mpc', 'redshift'].every((field) => Number.isFinite(Number(object[field])));
-  return core && (kind !== 'photometric' || (Number.isFinite(Number(object.redshift_error)) && Number(object.redshift_error) > 0));
+  if (!core || kind !== 'photometric') return core;
+  const hasPerObjectUncertainty = Number.isFinite(Number(object.redshift_error)) && Number(object.redshift_error) > 0;
+  const hasGlobalUncertainty = Number.isFinite(Number(dataset?.global_redshift_sigma)) && Number(dataset.global_redshift_sigma) > 0;
+  // A photometric layer must declare uncertainty one way or the other: either a
+  // real per-object redshift_error, or the source survey's own published
+  // survey-wide accuracy figure (rendered as an uncertainty shell, never an
+  // exact point). Neither present means the source data cannot back a radial
+  // placement at all, and the row is rejected.
+  return hasPerObjectUncertainty || hasGlobalUncertainty;
 }
 
 function objectsFromRecords(records, columns, dataset, kind) {
   return records
     .map((values) => objectFromRecord(columns, values, dataset))
-    .filter((object) => validTileObject(object, kind));
+    .filter((object) => validTileObject(object, kind, dataset));
 }
 
 function asDirectoryUrl(url) {
@@ -149,6 +171,8 @@ export async function loadTileStoreOverview(indexUrl, datasetLabel = 'the survey
       object_type: manifest.dataset.object_type,
       distance_note: manifest.dataset.distance_note,
       radial_uncertainty_required: kind === 'photometric',
+      global_redshift_sigma: Number.isFinite(Number(manifest.dataset.global_redshift_sigma)) ? Number(manifest.dataset.global_redshift_sigma) : null,
+      global_redshift_sigma_kind: manifest.dataset.global_redshift_sigma_kind || null,
       is_synthetic: false,
       overview_selection: overview.selection || null,
       tracer_counts: tracerCounts,
